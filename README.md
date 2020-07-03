@@ -6,6 +6,17 @@ This is a python package for simple access to hourly forecast data for the next 
 
 Available station-IDs can be found [here](https://www.dwd.de/DE/leistungen/met_verfahren_mosmix/mosmix_stationskatalog.cfg?view=nasPublication&nn=16102) in the third column.
 
+Forecasted weather conditions are evaluated using this [table](https://www.dwd.de/DE/leistungen/opendata/help/schluessel_datenformate/kml/mosmix_element_weather_xls.xlsx?__blob=publicationFile&v=4) and then converted into these possible weather conditions:
+
+- sunny
+- partlycloudy
+- cloudy
+- rainy
+- snowy-rainy
+- snowy
+- pouring
+- lightning-rainy
+
 ## Installation
 
 ```python
@@ -30,6 +41,8 @@ temperature_tomorrow = dwd_weather.get_forecast_temperature(time_tomorrow)
 All methods return their values as string. If no data is available for this datetime, None will be returned.
 
 ```python
+get_forecast_condition(datetime) #Result is condition as text
+
 get_forecast_temperature(datetime) #Result is in degrees Celcius
 
 get_forecast_pressure(datetime) #Result is in hPa
@@ -51,6 +64,8 @@ get_forecast_sun_duration(datetime) #Result is in minutes of the last hour
 get_daily_temp_max(datetime) #Result is in degrees Celcius
 
 get_daily_temp_min(datetime) #Result is in degrees Celcius
+
+get_daily_condition(datetime) #Result is worst condition at this day
 ```
 
 ## Licenses
