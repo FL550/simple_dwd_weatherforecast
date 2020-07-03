@@ -3,6 +3,7 @@ from io import BytesIO
 from zipfile import ZipFile
 from lxml import etree
 from datetime import datetime, timedelta
+from enum import Enum
 
 
 class Weather:
@@ -12,8 +13,48 @@ class Weather:
     issue_time = None
     forecast_data = None
 
+    weather_codes = {
+        "1": ("sunny", 29),
+        "0": ("sunny", 28),
+        "2": ("partlycloudy", 27),
+        "3": ("cloudy", 26),
+        "45": ("fog", 25),
+        "49": ("fog", 24),
+        "51": ("rainy", 20),
+        "53": ("rainy", 19),
+        "55": ("rainy", 18),
+        "56": ("rainy", 3),
+        "57": ("rainy", 2),
+        "61": ("rainy", 23),
+        "63": ("rainy", 22),
+        "65": ("rainy", 21),
+        "66": ("rainy", 5),
+        "67": ("rainy", 4),
+        "68": ("rainy", 17),
+        "69": ("snowy-rainy", 16),
+        "71": ("snowy", 15),
+        "73": ("snowy", 14),
+        "75": ("snowy", 13),
+        "80": ("rainy", 12),
+        "81": ("pouring", 11),
+        "82": ("pouring", 10),
+        "83": ("snowy-rainy", 9),
+        "84": ("snowy-rainy", 8),
+        "85": ("snowy-rainy", 7),
+        "86": ("snowy-rainy", 6),
+        "95": ("lightning-rainy", 1),
+    }
+
     def __init__(self, stationid):
         self.station_id = stationid
+
+    def get_forecast_condition(self, timestamp: datetime):
+        self.update()
+        time = self.strip_to_hour_str(timestamp)
+        if list(self.forecast_data.keys())[0] < time < list(
+                self.forecast_data.keys())[-1]:
+            return str(self.weather_codes[self.forecast_data[time]["condition"]])
+        return None
 
     def get_forecast_temperature(self, timestamp: datetime):
         self.update()
@@ -87,10 +128,25 @@ class Weather:
             return str(self.forecast_data[time]["sun_dur"])
         return None
 
+    def get_daily_condition(self, timestamp: datetime):
+        self.update()
+        if list(self.forecast_data.keys())[0] < self.strip_to_hour_str(
+                timestamp) < list(self.forecast_data.keys())[-1]:
+            weather_data = self.get_day_values(timestamp)
+            priority = 99
+            condition_text = ""
+            for item in weather_data:
+                condition = self.weather_codes[item["condition"]]
+                if condition[1] < priority:
+                    priority = condition[1]
+                    condition_text = condition[0]
+            return str(condition_text)
+        return None
+
     def get_daily_temp_max(self, timestamp: datetime):
         self.update()
-        if list(self.forecast_data.keys())[0] < self.strip_to_hour_str(timestamp) \
-            < list(self.forecast_data.keys())[-1]:
+        if list(self.forecast_data.keys())[0] < self.strip_to_hour_str(
+                timestamp) < list(self.forecast_data.keys())[-1]:
             weather_data = self.get_day_values(timestamp)
             temp = -9999999
             for item in weather_data:
@@ -102,8 +158,8 @@ class Weather:
 
     def get_daily_temp_min(self, timestamp: datetime):
         self.update()
-        if list(self.forecast_data.keys())[0] < self.strip_to_hour_str(timestamp) \
-            < list(self.forecast_data.keys())[-1]:
+        if list(self.forecast_data.keys())[0] < self.strip_to_hour_str(
+                timestamp) < list(self.forecast_data.keys())[-1]:
             weather_data = self.get_day_values(timestamp)
             temp = 9999999
             for item in weather_data:
@@ -122,11 +178,11 @@ class Weather:
                 time += timedelta(hours=1)
         else:
             time = datetime(timestamp.year, timestamp.month,
-                               timestamp.day, timestamp.hour)
+                            timestamp.day, timestamp.hour)
             endtime = datetime(timestamp.year, timestamp.month,
                                timestamp.day + 1) - timedelta(hours=-1)
             timediff = endtime - time
-            for _i in range(round(timediff.total_seconds()/3600)):
+            for _i in range(round(timediff.total_seconds() / 3600)):
                 result.append(self.forecast_data[self.strip_to_hour_str(time)])
                 time += timedelta(hours=1)
         return result
@@ -138,18 +194,15 @@ class Weather:
         return datetime(timestamp.year, timestamp.month, timestamp.day)
 
     def update(self):
-        if (self.issue_time == None) or (datetime.now() - self.issue_time >
+        if (self.issue_time is None) or (datetime.now() - self.issue_time >
                                          timedelta(hours=6)):
             kml = self.download_latest_kml(self.station_id)
             self.parse_kml(kml)
 
     def parse_kml(self, kml):
         namespaces = {
-            'kml':
-                'http://www.opengis.net/kml/2.2',
-            'dwd':
-                'https://opendata.dwd.de/weather/lib/pointforecast_dwd_extension_V1_0.xsd'
-        }
+            'kml': 'http://www.opengis.net/kml/2.2',
+            'dwd': 'https://opendata.dwd.de/weather/lib/pointforecast_dwd_extension_V1_0.xsd'}
         tree = etree.parse(BytesIO(kml))
         result = tree.xpath('//dwd:IssueTime', namespaces=namespaces)[0].text
         self.issue_time = datetime.strptime(result, '%Y-%m-%dT%H:%M:%S.%fZ')
@@ -162,6 +215,13 @@ class Weather:
 
         self.station_name = tree.xpath('//kml:Placemark/kml:description',
                                        namespaces=namespaces)[0].text
+
+        result = tree.xpath(
+            '//kml:ExtendedData/dwd:Forecast[@dwd:elementName="ww"]/dwd:value',
+            namespaces=namespaces)[0].text
+        conditions = []
+        for elem in result.split():
+            conditions.append(elem.split('.')[0])
 
         result = tree.xpath(
             '//kml:ExtendedData/dwd:Forecast[@dwd:elementName="TTT"]/dwd:value',
@@ -230,6 +290,7 @@ class Weather:
         for i in range(len(timesteps)):
             item = {
                 "temp": temperatures[i],
+                "condition": conditions[i],
                 "pressure": pressure[i],
                 "wind_dir": wind_dir[i],
                 "wind_speed": wind_speed[i],
@@ -244,7 +305,7 @@ class Weather:
 
     def download_latest_kml(self, stationid):
         url = 'https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/' \
-             + stationid + '/kml/MOSMIX_L_LATEST_' + stationid + '.kmz'
+            + stationid + '/kml/MOSMIX_L_LATEST_' + stationid + '.kmz'
         request = requests.get(url)
         file = BytesIO(request.content)
         kmz = ZipFile(file, 'r')
