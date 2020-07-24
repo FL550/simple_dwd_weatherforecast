@@ -27,15 +27,15 @@ python3 -m pip install simple_dwd_weatherforecast
 
 ```python
 from simple_dwd_weatherforecast import dwdforecast
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 #Find nearest Station-ID automatically
 #id = dwdforecast.get_nearest_station_id(50.1109221, 8.6821267)
 
 dwd_weather = dwdforecast.Weather("10385") # Station-ID For BERLIN-SCHOENEFELD
-time_now = datetime.now()
+time_now = datetime.now(timezone.utc)
 temperature_now = dwd_weather.get_forecast_temperature(time_now)
-time_tomorrow = datetime.now()+timedelta(days=1)
+time_tomorrow = datetime.now(timezone.utc)+timedelta(days=1)
 temperature_tomorrow = dwd_weather.get_forecast_temperature(time_tomorrow)
 ```
 

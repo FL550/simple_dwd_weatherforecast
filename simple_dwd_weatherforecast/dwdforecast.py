@@ -3,7 +3,8 @@ import os
 from io import BytesIO
 from zipfile import ZipFile
 from lxml import etree
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+import time
 import math
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
@@ -226,7 +227,7 @@ class Weather:
         return datetime(timestamp.year, timestamp.month, timestamp.day)
 
     def update(self):
-        if (self.issue_time is None) or (datetime.now() - self.issue_time >
+        if (self.issue_time is None) or (datetime.now(timezone.utc) - self.issue_time >
                                          timedelta(hours=6)):
             kml = self.download_latest_kml(self.station_id)
             self.parse_kml(kml)
@@ -237,7 +238,7 @@ class Weather:
             'dwd': 'https://opendata.dwd.de/weather/lib/pointforecast_dwd_extension_V1_0.xsd'}
         tree = etree.parse(BytesIO(kml))
         result = tree.xpath('//dwd:IssueTime', namespaces=namespaces)[0].text
-        self.issue_time = datetime.strptime(result, '%Y-%m-%dT%H:%M:%S.%fZ')
+        self.issue_time = datetime(*(time.strptime(result, '%Y-%m-%dT%H:%M:%S.%fZ')[0:6]), 0, timezone.utc)
 
         result = tree.xpath('//dwd:ForecastTimeSteps/dwd:TimeStep',
                             namespaces=namespaces)
