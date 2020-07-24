@@ -41,10 +41,10 @@ temperature_tomorrow = dwd_weather.get_forecast_temperature(time_tomorrow)
 
 ### Available methods
 
-All methods return their values as string. If no data is available for this datetime, None will be returned.
+All methods return their values as string. The datetime value has to be in UTC. If no data is available for this datetime, None will be returned.
 
 ```python
-dwdforecast.get_nearest_station_id(latitude,longitude) #Returns nearest Station-ID
+dwdforecast.get_nearest_station_id(latitude, longitude) #Returns nearest Station-ID for the coordinates. latitude and longitude expect float values.
 
 get_station_name() #Return Station name
 
@@ -74,6 +74,24 @@ get_daily_temp_min(datetime) #Result is in degrees Celcius
 
 get_daily_condition(datetime) #Result is worst condition at this day
 ```
+
+### Advanced Usage
+
+If you want to access the forecast data for the next 10 days directly for further processing, you can do so. All data is stored in dictonary and can be accessed like this:
+
+```python
+from simple_dwd_weatherforecast import dwdforecast
+
+dwd_weather​ ​=​ ​dwdforecast​.​Weather​(​"10385"​) # Station-ID For BERLIN-SCHOENEFELD​
+dwd_weather.update() # This has to be done manually to fetch the data from the DWD server
+access_forecast_dict = dwd_weather.forecast_data # dwd_weather.forecast_data contians the forecast as a dict
+```
+
+Keep in mind that the weather condition is stored as the original digit value as provided by DWD. So if you want to use them, you have to convert these yourself. You can use my simplified conversion from the source code in the variable `weather_codes` or the original conversion available [here](https://www.dwd.de/DE/leistungen/opendata/help/schluessel_datenformate/kml/mosmix_element_weather_xls.xlsx?__blob=publicationFile&v=4).
+
+## Help and Contribution
+
+Feel free to open an issue if you find one and I will do my best to help you. If you want to contribute, your help is appreciated! If you want to add a new feature, add a pull request first so we can chat about the details.
 
 ## Licenses
 
