@@ -190,11 +190,14 @@ class Weather:
         if list(self.forecast_data.keys())[0] < self.strip_to_hour_str(
                 timestamp) < list(self.forecast_data.keys())[-1]:
             weather_data = self.get_day_values(timestamp)
-            temp = -9999999
+            temp = None
             for item in weather_data:
                 temp_new = item["temp"]
-                if temp_new > temp:
-                    temp = temp_new
+                if temp_new:
+                    if not temp:
+                        temp = -9999999
+                    if temp_new > temp:                
+                        temp = temp_new
             return str(temp)
         return None
 
@@ -204,11 +207,14 @@ class Weather:
         if list(self.forecast_data.keys())[0] < self.strip_to_hour_str(
                 timestamp) < list(self.forecast_data.keys())[-1]:
             weather_data = self.get_day_values(timestamp)
-            temp = 9999999
+            temp = None
             for item in weather_data:
                 temp_new = item["temp"]
-                if temp_new < temp:
-                    temp = temp_new
+                if temp_new:
+                    if not temp:
+                        temp = 9999999
+                    if temp_new < temp:
+                        temp = temp_new
             return str(temp)
         return None
 
@@ -218,9 +224,13 @@ class Weather:
         if list(self.forecast_data.keys())[0] < self.strip_to_hour_str(
                 timestamp) < list(self.forecast_data.keys())[-1]:
             weather_data = self.get_day_values(timestamp)
-            precipitation = 0.0
+            precipitation = None
             for item in weather_data:
-                precipitation += float(item["prec_sum"])
+                value = item["prec_sum"]
+                if (value):
+                    if not precipitation:
+                        precipitation = 0.0
+                    precipitation += float(value)
             return str(precipitation)
         return None
 
@@ -230,11 +240,15 @@ class Weather:
         if list(self.forecast_data.keys())[0] < self.strip_to_hour_str(
                 timestamp) < list(self.forecast_data.keys())[-1]:
             weather_data = self.get_day_values(timestamp)
-            prec_prop = 0.0
+            prec_prop = None
             for item in weather_data:
-                prec_prop_new = float(item["prec_prop"])
-                if prec_prop_new > prec_prop:
-                    prec_prop = prec_prop_new
+                value = item["prec_prop"]
+                if value:
+                    if not prec_prop:
+                        prec_prop = 0.0
+                    prec_prop_new = float(value)
+                    if prec_prop_new > prec_prop:
+                        prec_prop = prec_prop_new
             return str(int(prec_prop))
         return None
 
@@ -297,64 +311,83 @@ class Weather:
             namespaces=namespaces)[0].text
         temperatures = []
         for elem in result.split():
-            temperatures.append(round(float(elem) - 273.15, 2))
+            if (elem!="-"):
+                temperatures.append(round(float(elem) - 273.15, 2))
+            else:
+                temperatures.append(None)
 
         result = tree.xpath(
             '//kml:ExtendedData/dwd:Forecast[@dwd:elementName="PPPP"]/dwd:value',
             namespaces=namespaces)[0].text
         pressure = []
         for elem in result.split():
-            pressure.append(float(elem) / 100)
-
+            if (elem!="-"):
+                pressure.append(float(elem) / 100)
+            else:
+                pressure.append(None)
         result = tree.xpath(
             '//kml:ExtendedData/dwd:Forecast[@dwd:elementName="DD"]/dwd:value',
             namespaces=namespaces)[0].text
         wind_dir = []
         for elem in result.split():
-            wind_dir.append(elem)
-
+            if (elem!="-"):
+                wind_dir.append(elem)
+            else:
+                wind_dir.append(None)
         result = tree.xpath(
             '//kml:ExtendedData/dwd:Forecast[@dwd:elementName="FF"]/dwd:value',
             namespaces=namespaces)[0].text
         wind_speed = []
         for elem in result.split():
-            wind_speed.append(elem)
-
+            if (elem!="-"):
+                wind_speed.append(elem)
+            else:
+                wind_speed.append(None)
         result = tree.xpath(
             '//kml:ExtendedData/dwd:Forecast[@dwd:elementName="RR1c"]/dwd:value',
             namespaces=namespaces)[0].text
         prec_sum = []
         for elem in result.split():
-            prec_sum.append(elem)
-
+            if (elem!="-"):
+                prec_sum.append(elem)
+            else:
+                prec_sum.append(None)
         result = tree.xpath(
             '//kml:ExtendedData/dwd:Forecast[@dwd:elementName="wwP"]/dwd:value',
             namespaces=namespaces)[0].text
         prec_prop = []
         for elem in result.split():
-            prec_prop.append(elem)
-
+            if (elem!="-"):
+                prec_prop.append(elem)
+            else:
+                prec_prop.append(None)
         result = tree.xpath(
             '//kml:ExtendedData/dwd:Forecast[@dwd:elementName="N"]/dwd:value',
             namespaces=namespaces)[0].text
         cloud_cov = []
         for elem in result.split():
-            cloud_cov.append(elem)
-
+            if (elem!="-"):
+                cloud_cov.append(elem)
+            else:
+                cloud_cov.append(None)
         result = tree.xpath(
             '//kml:ExtendedData/dwd:Forecast[@dwd:elementName="VV"]/dwd:value',
             namespaces=namespaces)[0].text
         visibility = []
         for elem in result.split():
-            visibility.append(elem)
-
+            if (elem!="-"):
+                visibility.append(elem)
+            else:
+                visibility.append(None)
         result = tree.xpath(
             '//kml:ExtendedData/dwd:Forecast[@dwd:elementName="SunD1"]/dwd:value',
             namespaces=namespaces)[0].text
         sun_dur = []
         for elem in result.split():
-            sun_dur.append(round(float(elem) / 60))
-
+            if (elem!="-"):
+                sun_dur.append(round(float(elem) / 60))
+            else:
+                sun_dur.append(None)
         merged_list = {}
         for i in range(len(timesteps)):
             item = {
