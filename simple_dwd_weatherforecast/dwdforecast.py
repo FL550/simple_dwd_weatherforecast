@@ -84,7 +84,7 @@ class Weather:
         time = self.strip_to_hour_str(timestamp)
         if list(self.forecast_data.keys())[0] < time < list(
                 self.forecast_data.keys())[-1]:
-            return str(self.weather_codes[self.forecast_data[time]["condition"]])
+            return str(self.weather_codes[self.forecast_data[time]["condition"]][0])
         return None
 
     def get_forecast_temperature(self, timestamp: datetime, shouldUpdate = True):
