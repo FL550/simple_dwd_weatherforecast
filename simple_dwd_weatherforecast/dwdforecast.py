@@ -1,5 +1,4 @@
 import requests
-import os
 from io import BytesIO
 from zipfile import ZipFile
 from lxml import etree
@@ -7,25 +6,23 @@ from datetime import datetime, timedelta, timezone
 import time
 import math
 
-__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+from .stations import stations
 
 def get_nearest_station_id(lat: float, lon: float):
     result = ""
-    with open(os.path.join(__location__, 'mosmix_stationskatalog.txt')) as file:  
-        data = file.read() 
-        distance = 99999999
-        
-        for line in data.splitlines():
-            if (line.startswith('1') or line.startswith('2') or line.startswith('3') \
-                or line.startswith('4') or line.startswith('5') or line.startswith('6') \
-                    or line.startswith('7') or line.startswith('8') or line.startswith('9') \
-                        or line.startswith('0')):
-                _lat = float(line[45:51].strip())
-                _lon = float(line[52:59].strip())
-                distance_temp = get_distance(lat,lon,_lat,_lon)
-                if distance > distance_temp:
-                    distance = distance_temp
-                    result = line[12:18].strip()
+    distance = 99999999
+    
+    for line in stations.splitlines():
+        if (line.startswith('1') or line.startswith('2') or line.startswith('3') \
+            or line.startswith('4') or line.startswith('5') or line.startswith('6') \
+                or line.startswith('7') or line.startswith('8') or line.startswith('9') \
+                    or line.startswith('0')):
+            _lat = float(line[45:51].strip())
+            _lon = float(line[52:59].strip())
+            distance_temp = get_distance(lat,lon,_lat,_lon)
+            if distance > distance_temp:
+                distance = distance_temp
+                result = line[12:18].strip()
     return result                
     
 
@@ -76,8 +73,8 @@ class Weather:
     def __init__(self, stationid):
         self.station_id = stationid
 
-    def get_station_name(self):
-        if self.station_name == '':
+    def get_station_name(self, shouldUpdate = True):
+        if self.station_name == '' and shouldUpdate:
             self.update()
         return self.station_name
 

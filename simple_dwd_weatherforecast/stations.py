@@ -1,4 +1,4 @@
-
+stations = """
 TABLE St 99999 99991 gmos 99892 99891 ecmda 99791 gmeda
 clu   CofX  id    ICAO name                 nb.    el.     elev  Hmod-H type
 ===== ----- ===== ---- -------------------- ------ ------- ----- ------ ----
@@ -5886,3 +5886,4 @@ TABLE St 99999 polar outside_gitter
 clu   CofX  id    ICAO name                 nb.    el.     elev  Hmod-H type
 ===== ----- ===== ---- -------------------- ------ ------- ----- ------ ----
 -9950       89606 ---- VOSTOK               -78.27  106.52  3420     36 LAND
+"""

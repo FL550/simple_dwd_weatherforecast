@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="simple_dwd_weatherforecast",
-    version="0.9.6",
+    version="0.9.7",
     author="Max Fermor",
     description="A simple tool to retrieve weather forecast from DWD OpenData",
     long_description=long_description,
@@ -14,7 +14,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
+        "License :: MIT License",
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',

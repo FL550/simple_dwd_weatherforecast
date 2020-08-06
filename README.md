@@ -4,7 +4,7 @@ DISCLAIMER: This project is a private open source project and doesn't have any c
 
 This is a python package for simple access to hourly forecast data for the next 10 days. The data is updated every six hours and updated when needed.
 
-Available station-IDs can be found [here](https://www.dwd.de/DE/leistungen/met_verfahren_mosmix/mosmix_stationskatalog.cfg?view=nasPublication&nn=16102) in the third column or you can use the method `dwdforecast.get_nearest_station_id(latitude, longitude)` which tries to find it for you.
+Available station-IDs can be found [here](simple_dwd_weatherforecast/stations.py) in the third column or you can use the method `dwdforecast.get_nearest_station_id(latitude, longitude)` which tries to find it for you.
 
 Forecasted weather conditions are evaluated using this [table](https://www.dwd.de/DE/leistungen/opendata/help/schluessel_datenformate/kml/mosmix_element_weather_xls.xlsx?__blob=publicationFile&v=4) and then converted into these possible weather conditions:
 
@@ -46,7 +46,7 @@ All methods return their values as string. The datetime value has to be in UTC. 
 ```python
 dwdforecast.get_nearest_station_id(latitude, longitude) #Returns nearest Station-ID for the coordinates. latitude and longitude expect float values.
 
-get_station_name() #Return Station name
+get_station_name(optional bool shouldUpdate) #Return Station name
 
 get_forecast_condition(datetime, optional bool shouldUpdate) #Result is condition as text
 
