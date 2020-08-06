@@ -58,7 +58,7 @@ get_forecast_wind_direction(datetime, optional bool shouldUpdate) #Result is in 
 
 get_forecast_wind_speed(datetime, optional bool shouldUpdate) #Result is in m/s
 
-get_forecast_precipitation(datetime, optional bool shouldUpdate) #Result is in kg/m2
+get_forecast_precipitation(datetime, optional bool shouldUpdate) #Result is in kg/m^2
 
 get_forecast_precipitation_probability(datetime, optional bool shouldUpdate) #Result is in percent
 
@@ -71,6 +71,10 @@ get_forecast_sun_duration(datetime, optional bool shouldUpdate) #Result is in mi
 get_daily_temp_max(datetime, optional bool shouldUpdate) #Result is in degrees Celcius
 
 get_daily_temp_min(datetime, optional bool shouldUpdate) #Result is in degrees Celcius
+
+get_daily_precipitation(datetime, optional bool shouldUpdate) #Result is in kg/m^2
+
+get_daily_precipitation_probability(datetime, optional bool shouldUpdate) #Result is the largest probability in percent
 
 get_daily_condition(datetime, optional bool shouldUpdate) #Result is worst condition at this day
 ```

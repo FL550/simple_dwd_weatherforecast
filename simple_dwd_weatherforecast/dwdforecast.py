@@ -212,6 +212,32 @@ class Weather:
             return str(temp)
         return None
 
+    def get_daily_precipitation(self, timestamp: datetime, shouldUpdate = True):
+        if (shouldUpdate):
+            self.update()
+        if list(self.forecast_data.keys())[0] < self.strip_to_hour_str(
+                timestamp) < list(self.forecast_data.keys())[-1]:
+            weather_data = self.get_day_values(timestamp)
+            precipitation = 0.0
+            for item in weather_data:
+                precipitation += float(item["prec_sum"])
+            return str(precipitation)
+        return None
+
+    def get_daily_precipitation_probability(self, timestamp: datetime, shouldUpdate = True):
+        if (shouldUpdate):
+            self.update()
+        if list(self.forecast_data.keys())[0] < self.strip_to_hour_str(
+                timestamp) < list(self.forecast_data.keys())[-1]:
+            weather_data = self.get_day_values(timestamp)
+            prec_prop = 0.0
+            for item in weather_data:
+                prec_prop_new = float(item["prec_prop"])
+                if prec_prop_new > prec_prop:
+                    prec_prop = prec_prop_new
+            return str(int(prec_prop))
+        return None
+
     def get_day_values(self, timestamp: datetime):
         result = []
         if timestamp.day != datetime.now().day:
