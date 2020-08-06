@@ -81,88 +81,99 @@ class Weather:
             self.update()
         return self.station_name
 
-    def get_forecast_condition(self, timestamp: datetime):
-        self.update()
+    def get_forecast_condition(self, timestamp: datetime, shouldUpdate = True):
+        if (shouldUpdate):
+            self.update()
         time = self.strip_to_hour_str(timestamp)
         if list(self.forecast_data.keys())[0] < time < list(
                 self.forecast_data.keys())[-1]:
             return str(self.weather_codes[self.forecast_data[time]["condition"]])
         return None
 
-    def get_forecast_temperature(self, timestamp: datetime):
-        self.update()
+    def get_forecast_temperature(self, timestamp: datetime, shouldUpdate = True):
+        if (shouldUpdate):
+            self.update()
         time = self.strip_to_hour_str(timestamp)
         if list(self.forecast_data.keys())[0] < time < list(
                 self.forecast_data.keys())[-1]:
             return str(self.forecast_data[time]["temp"])
         return None
 
-    def get_forecast_pressure(self, timestamp: datetime):
-        self.update()
+    def get_forecast_pressure(self, timestamp: datetime, shouldUpdate = True):
+        if (shouldUpdate):
+            self.update()
         time = self.strip_to_hour_str(timestamp)
         if list(self.forecast_data.keys())[0] < time < list(
                 self.forecast_data.keys())[-1]:
             return str(self.forecast_data[time]["pressure"])
         return None
 
-    def get_forecast_wind_direction(self, timestamp: datetime):
-        self.update()
+    def get_forecast_wind_direction(self, timestamp: datetime, shouldUpdate = True):
+        if (shouldUpdate):
+            self.update()
         time = self.strip_to_hour_str(timestamp)
         if list(self.forecast_data.keys())[0] < time < list(
                 self.forecast_data.keys())[-1]:
             return str(self.forecast_data[time]["wind_dir"])
         return None
 
-    def get_forecast_wind_speed(self, timestamp: datetime):
-        self.update()
+    def get_forecast_wind_speed(self, timestamp: datetime, shouldUpdate = True):
+        if (shouldUpdate):
+            self.update()
         time = self.strip_to_hour_str(timestamp)
         if list(self.forecast_data.keys())[0] < time < list(
                 self.forecast_data.keys())[-1]:
             return str(self.forecast_data[time]["wind_speed"])
         return None
 
-    def get_forecast_precipitation(self, timestamp: datetime):
-        self.update()
+    def get_forecast_precipitation(self, timestamp: datetime, shouldUpdate = True):
+        if (shouldUpdate):
+            self.update()
         time = self.strip_to_hour_str(timestamp)
         if list(self.forecast_data.keys())[0] < time < list(
                 self.forecast_data.keys())[-1]:
             return str(self.forecast_data[time]["prec_sum"])
         return None
 
-    def get_forecast_precipitation_probability(self, timestamp: datetime):
-        self.update()
+    def get_forecast_precipitation_probability(self, timestamp: datetime, shouldUpdate = True):
+        if (shouldUpdate):
+            self.update()
         time = self.strip_to_hour_str(timestamp)
         if list(self.forecast_data.keys())[0] < time < list(
                 self.forecast_data.keys())[-1]:
             return str(self.forecast_data[time]["prec_prop"])
         return None
 
-    def get_forecast_cloud_coverage(self, timestamp: datetime):
-        self.update()
+    def get_forecast_cloud_coverage(self, timestamp: datetime, shouldUpdate = True):
+        if (shouldUpdate):
+            self.update()
         time = self.strip_to_hour_str(timestamp)
         if list(self.forecast_data.keys())[0] < time < list(
                 self.forecast_data.keys())[-1]:
             return str(self.forecast_data[time]["cloud_cov"])
         return None
 
-    def get_forecast_visibility(self, timestamp: datetime):
-        self.update()
+    def get_forecast_visibility(self, timestamp: datetime, shouldUpdate = True):
+        if (shouldUpdate):
+            self.update()
         time = self.strip_to_hour_str(timestamp)
         if list(self.forecast_data.keys())[0] < time < list(
                 self.forecast_data.keys())[-1]:
             return str(self.forecast_data[time]["visibility"])
         return None
 
-    def get_forecast_sun_duration(self, timestamp: datetime):
-        self.update()
+    def get_forecast_sun_duration(self, timestamp: datetime, shouldUpdate = True):
+        if (shouldUpdate):
+            self.update()
         time = self.strip_to_hour_str(timestamp)
         if list(self.forecast_data.keys())[0] < time < list(
                 self.forecast_data.keys())[-1]:
             return str(self.forecast_data[time]["sun_dur"])
         return None
 
-    def get_daily_condition(self, timestamp: datetime):
-        self.update()
+    def get_daily_condition(self, timestamp: datetime, shouldUpdate = True):
+        if (shouldUpdate):
+            self.update()
         if list(self.forecast_data.keys())[0] < self.strip_to_hour_str(
                 timestamp) < list(self.forecast_data.keys())[-1]:
             weather_data = self.get_day_values(timestamp)
@@ -176,8 +187,9 @@ class Weather:
             return str(condition_text)
         return None
 
-    def get_daily_temp_max(self, timestamp: datetime):
-        self.update()
+    def get_daily_temp_max(self, timestamp: datetime, shouldUpdate = True):
+        if (shouldUpdate):
+            self.update()
         if list(self.forecast_data.keys())[0] < self.strip_to_hour_str(
                 timestamp) < list(self.forecast_data.keys())[-1]:
             weather_data = self.get_day_values(timestamp)
@@ -189,8 +201,9 @@ class Weather:
             return str(temp)
         return None
 
-    def get_daily_temp_min(self, timestamp: datetime):
-        self.update()
+    def get_daily_temp_min(self, timestamp: datetime, shouldUpdate = True):
+        if (shouldUpdate):
+            self.update()
         if list(self.forecast_data.keys())[0] < self.strip_to_hour_str(
                 timestamp) < list(self.forecast_data.keys())[-1]:
             weather_data = self.get_day_values(timestamp)

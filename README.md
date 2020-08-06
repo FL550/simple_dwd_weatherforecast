@@ -41,38 +41,38 @@ temperature_tomorrow = dwd_weather.get_forecast_temperature(time_tomorrow)
 
 ### Available methods
 
-All methods return their values as string. The datetime value has to be in UTC. If no data is available for this datetime, None will be returned.
+All methods return their values as string. The datetime value has to be in UTC. If no data is available for this datetime, None will be returned. With the optional boolean `shouldUpdate` an automated check for new updates can be prevented by setting this parameter to `False`. Otherwise data is updated if new data is available with every function call.
 
 ```python
 dwdforecast.get_nearest_station_id(latitude, longitude) #Returns nearest Station-ID for the coordinates. latitude and longitude expect float values.
 
 get_station_name() #Return Station name
 
-get_forecast_condition(datetime) #Result is condition as text
+get_forecast_condition(datetime, optional bool shouldUpdate) #Result is condition as text
 
-get_forecast_temperature(datetime) #Result is in degrees Celcius
+get_forecast_temperature(datetime, optional bool shouldUpdate) #Result is in degrees Celcius
 
-get_forecast_pressure(datetime) #Result is in hPa
+get_forecast_pressure(datetime, optional bool shouldUpdate) #Result is in hPa
 
-get_forecast_wind_direction(datetime) #Result is in degrees magnetic
+get_forecast_wind_direction(datetime, optional bool shouldUpdate) #Result is in degrees magnetic
 
-get_forecast_wind_speed(datetime) #Result is in m/s
+get_forecast_wind_speed(datetime, optional bool shouldUpdate) #Result is in m/s
 
-get_forecast_precipitation(datetime) #Result is in kg/m2
+get_forecast_precipitation(datetime, optional bool shouldUpdate) #Result is in kg/m2
 
-get_forecast_precipitation_probability(datetime) #Result is in percent
+get_forecast_precipitation_probability(datetime, optional bool shouldUpdate) #Result is in percent
 
-get_forecast_cloud_coverage(datetime) #Result is in percent
+get_forecast_cloud_coverage(datetime, optional bool shouldUpdate) #Result is in percent
 
-get_forecast_visibility(datetime) #Result is in meters
+get_forecast_visibility(datetime, optional bool shouldUpdate) #Result is in meters
 
-get_forecast_sun_duration(datetime) #Result is in minutes of the last hour
+get_forecast_sun_duration(datetime, optional bool shouldUpdate) #Result is in minutes of the last hour
 
-get_daily_temp_max(datetime) #Result is in degrees Celcius
+get_daily_temp_max(datetime, optional bool shouldUpdate) #Result is in degrees Celcius
 
-get_daily_temp_min(datetime) #Result is in degrees Celcius
+get_daily_temp_min(datetime, optional bool shouldUpdate) #Result is in degrees Celcius
 
-get_daily_condition(datetime) #Result is worst condition at this day
+get_daily_condition(datetime, optional bool shouldUpdate) #Result is worst condition at this day
 ```
 
 ### Advanced Usage
