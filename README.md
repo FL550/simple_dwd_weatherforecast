@@ -44,6 +44,8 @@ temperature_tomorrow = dwd_weather.get_forecast_temperature(time_tomorrow)
 All methods return their values as string. The datetime value has to be in UTC. If no data is available for this datetime, None will be returned. With the optional boolean `shouldUpdate` an automated check for new updates can be prevented by setting this parameter to `False`. Otherwise data is updated if new data is available with every function call.
 
 ```python
+dwdforecast.is_valid_station_id(station_id) #Checks if given station_id is valid
+
 dwdforecast.get_nearest_station_id(latitude, longitude) #Returns nearest Station-ID for the coordinates. latitude and longitude expect float values.
 
 get_station_name(optional bool shouldUpdate) #Return Station name

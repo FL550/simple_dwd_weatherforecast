@@ -8,16 +8,18 @@ import math
 
 from .stations import stations
 
+def is_valid_station_id(station_id: str):
+    for line in stations.splitlines():
+        if (len(line) > 0 and line[0].isdigit()):
+            if line[12:18].strip() == station_id:
+                return True
+    return False
 
 def get_nearest_station_id(lat: float, lon: float):
     result = ""
     distance = 99999999
-
     for line in stations.splitlines():
-        if (line.startswith('1') or line.startswith('2') or line.startswith('3') \
-            or line.startswith('4') or line.startswith('5') or line.startswith('6') \
-                or line.startswith('7') or line.startswith('8') or line.startswith('9') \
-                    or line.startswith('0')):
+        if (len(line) > 0 and line[0].isdigit()):
             _lat = float(line[45:51].strip())
             _lon = float(line[52:59].strip())
             distance_temp = get_distance(lat, lon, _lat, _lon)
@@ -72,8 +74,11 @@ class Weather:
         "95": ("lightning-rainy", 1),
     }
 
-    def __init__(self, stationid):
-        self.station_id = stationid
+    def __init__(self, station_id):
+        if is_valid_station_id(station_id):
+            self.station_id = station_id
+        else:
+            raise ValueError("Not a valid station_id")
 
     def get_station_name(self, shouldUpdate=True):
         if self.station_name == '' and shouldUpdate:
