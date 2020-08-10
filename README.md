@@ -2,6 +2,8 @@
 
 DISCLAIMER: This project is a private open source project and doesn't have any connection with Deutscher Wetterdienst.
 
+# IMPORTANT: I will change the way to access the weather data shortly, to clean up the code and reduce the usage of reused code. The functionality will remain the same, but you have change a few function calls and some units of measurement change.
+
 This is a python package for simple access to hourly forecast data for the next 10 days. The data is updated every six hours and updated when needed.
 
 Available station-IDs can be found [here](simple_dwd_weatherforecast/stations.py) in the third column or you can use the method `dwdforecast.get_nearest_station_id(latitude, longitude)` which tries to find it for you.
