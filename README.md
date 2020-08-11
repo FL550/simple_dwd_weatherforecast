@@ -75,6 +75,8 @@ get_daily_max(weatherDataType: see WeatherDataType , datetime, optional bool sho
 
 get_daily_min(weatherDataType: see WeatherDataType , datetime, optional bool shouldUpdate) # Returns the minimum daily value
 
+get_daily_sum(weatherDataType: see WeatherDataType , datetime, optional bool shouldUpdate) # Returns the daily sum of that value
+
 get_forecast_condition(datetime, optional bool shouldUpdate) #Result is condition as text
 
 get_daily_condition(datetime, optional bool shouldUpdate) #Result is worst condition at this day
