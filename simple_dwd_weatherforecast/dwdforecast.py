@@ -200,12 +200,10 @@ class Weather:
             self.update()
         if self.is_in_timerange(timestamp):
             weather_data = self.get_day_values(timestamp)
-            value_sum = None
+            value_sum = 0.0
             for item in weather_data:
                 value = item[weatherDataType.value]
                 if (value):
-                    if not value_sum:
-                        value_sum = 0.0
                     value_sum += float(value)
             return round(value_sum, 2)
         return None
