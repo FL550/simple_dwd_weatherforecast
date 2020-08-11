@@ -2,7 +2,7 @@
 
 DISCLAIMER: This project is a private open source project and doesn't have any connection with Deutscher Wetterdienst.
 
-# IMPORTANT: I will change the way to access the weather data shortly, to clean up the code and reduce the usage of reused code. The functionality will remain the same, but you have change a few function calls and some units of measurement change.
+## IMPORTANT: v1 changes the methods to access the data
 
 This is a python package for simple access to hourly forecast data for the next 10 days. The data is updated every six hours and updated when needed.
 
@@ -36,9 +36,9 @@ from datetime import datetime, timedelta, timezone
 
 dwd_weather = dwdforecast.Weather("10385") # Station-ID For BERLIN-SCHOENEFELD
 time_now = datetime.now(timezone.utc)
-temperature_now = dwd_weather.get_forecast_temperature(time_now)
+temperature_now = dwd_weather.get_forecast_data(dwdforecast.WeatherDataType.TEMPERATURE, time_now)
 time_tomorrow = datetime.now(timezone.utc)+timedelta(days=1)
-temperature_tomorrow = dwd_weather.get_forecast_temperature(time_tomorrow)
+temperature_tomorrow = dwd_weather.get_forecast_data(dwdforecast.WeatherDataType.TEMPERATURE, time_tomorrow)
 ```
 
 ### Available methods
@@ -52,33 +52,30 @@ dwdforecast.get_nearest_station_id(latitude, longitude) #Returns nearest Station
 
 get_station_name(optional bool shouldUpdate) #Return Station name
 
+class WeatherDataType(Enum):
+    CONDITION = "condition"
+    TEMPERATURE = "TTT" # Unit: K
+    DEWPOINT = "Td" # Unit: K
+    PRESSURE = "PPPP" # Unit: Pa
+    WIND_SPEED = "FF" # Unit: m/s
+    WIND_DIRECTION = "DD" # Unit: Degrees
+    WIND_GUSTS = "FX1" # Unit: m/s
+    PRECIPITATION = "RR1c" # Unit: kg/m2
+    PRECIPITATION_PROBABILITY = "wwP" # Unit: % (0..100)
+    PRECIPITATION_DURATION = "DRR1" # Unit: s
+    CLOUD_COVERAGE = "N" # Unit: % (0..100)
+    VISIBILITY = "VV" # Unit: m
+    SUN_DURATION = "SunD1" # Unit: s
+    SUN_IRRADIANCE = "Rad1h" # Unit: kJ/m2
+    FOG_PROBABILITY = "wwM" # Unit: % (0..100)
+
+get_forecast_data(weatherDataType: see WeatherDataType , datetime, optional bool shouldUpdate) # Returns the requestes weather data
+
+get_daily_max(weatherDataType: see WeatherDataType , datetime, optional bool shouldUpdate) # Returns the maximum daily value
+
+get_daily_min(weatherDataType: see WeatherDataType , datetime, optional bool shouldUpdate) # Returns the minimum daily value
+
 get_forecast_condition(datetime, optional bool shouldUpdate) #Result is condition as text
-
-get_forecast_temperature(datetime, optional bool shouldUpdate) #Result is in degrees Celcius
-
-get_forecast_pressure(datetime, optional bool shouldUpdate) #Result is in hPa
-
-get_forecast_wind_direction(datetime, optional bool shouldUpdate) #Result is in degrees magnetic
-
-get_forecast_wind_speed(datetime, optional bool shouldUpdate) #Result is in m/s
-
-get_forecast_precipitation(datetime, optional bool shouldUpdate) #Result is in kg/m^2
-
-get_forecast_precipitation_probability(datetime, optional bool shouldUpdate) #Result is in percent
-
-get_forecast_cloud_coverage(datetime, optional bool shouldUpdate) #Result is in percent
-
-get_forecast_visibility(datetime, optional bool shouldUpdate) #Result is in meters
-
-get_forecast_sun_duration(datetime, optional bool shouldUpdate) #Result is in minutes of the last hour
-
-get_daily_temp_max(datetime, optional bool shouldUpdate) #Result is in degrees Celcius
-
-get_daily_temp_min(datetime, optional bool shouldUpdate) #Result is in degrees Celcius
-
-get_daily_precipitation(datetime, optional bool shouldUpdate) #Result is in kg/m^2
-
-get_daily_precipitation_probability(datetime, optional bool shouldUpdate) #Result is the largest probability in percent
 
 get_daily_condition(datetime, optional bool shouldUpdate) #Result is worst condition at this day
 ```
