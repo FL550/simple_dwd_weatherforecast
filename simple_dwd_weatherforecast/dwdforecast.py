@@ -210,7 +210,7 @@ class Weather:
 
     def get_day_values(self, timestamp: datetime):
         result = []
-        if timestamp.day != datetime.now().day:
+        if timestamp.day != datetime.now(timezone.utc).day:
             time = self.strip_to_day(timestamp)
             for _i in range(24):
                 result.append(self.forecast_data[self.strip_to_hour_str(time)])
