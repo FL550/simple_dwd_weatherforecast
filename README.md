@@ -1,5 +1,7 @@
 # Simple DWD weather forecast
 
+[![BuyMeCoffee][buymecoffeebadge]][buymecoffee]
+
 DISCLAIMER: This project is a private open source project and doesn't have any connection with Deutscher Wetterdienst.
 
 ## IMPORTANT: v1 changes the methods to access the data
@@ -103,3 +105,6 @@ Feel free to open an issue if you find one and I will do my best to help you. If
 ## Licenses
 
 This package uses public data from [DWD OpenData](https://www.dwd.de/DE/leistungen/opendata/opendata.html). The Copyright can be viewed [here](https://www.dwd.de/DE/service/copyright/copyright_node.html).
+
+[buymecoffee]: https://www.buymeacoffee.com/FL550
+[buymecoffeebadge]: https://img.shields.io/badge/buy%20me%20a%20coffee-donate-yellow?style=for-the-badge
