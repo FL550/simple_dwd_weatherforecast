@@ -219,7 +219,7 @@ class Weather:
             time = datetime(timestamp.year, timestamp.month, timestamp.day,
                             timestamp.hour)
             endtime = datetime(timestamp.year, timestamp.month,
-                               timestamp.day + 1) - timedelta(hours=-1)
+                               timestamp.day) + timedelta(days=1) - timedelta(hours=-1)
             timediff = endtime - time
             for _i in range(round(timediff.total_seconds() / 3600)):
                 result.append(self.forecast_data[self.strip_to_hour_str(time)])
