@@ -23,8 +23,10 @@ def get_nearest_station_id(lat: float, lon: float):
     distance = 99999999
     for line in stations.splitlines():
         if (len(line) > 0 and line[0].isdigit()):
-            _lat = float(line[45:51].strip())
-            _lon = float(line[52:59].strip())
+            _lat = line[45:51].strip().split('.')
+            _lat = round(float(_lat[0])+float(_lat[1])/60, 2)
+            _lon = line[52:59].strip().split('.')
+            _lon = round(float(_lon[0])+float(_lon[1])/60, 2)
             distance_temp = get_distance(lat, lon, _lat, _lon)
             if distance > distance_temp:
                 distance = distance_temp
