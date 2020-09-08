@@ -1124,7 +1124,7 @@ clu   CofX  id    ICAO name                 nb.    el.     elev  Hmod-H type
 99807   206 E298  ---- WENDISCH EVERN        53.13   10.28    62    -42 LAND
 99808   176 E335  ---- HUDE/OLDENBURG        53.07    8.25     4        LAND
 99809   176 E342  ---- OTTERSBERG-OTTERSTED  53.08    9.09    17        LAND
-99810   227 E355  ---- ROTENBURG (W�MME)     53.08    9.20    32     -4 LAND
+99810   227 E355  ---- ROTENBURG (WÜMME)     53.08    9.20    32     -4 LAND
 99811   176 E364  ---- HEESLINGEN-WIERSDORF  53.18    9.20    27        LAND
 99812   176 E387  ---- ZERNIEN               53.04   10.53    83        LAND
 99801   303 E402  ---- DOERPEN               52.57    7.19     8     -1 LAND
@@ -1187,7 +1187,7 @@ clu   CofX  id    ICAO name                 nb.    el.     elev  Hmod-H type
 99810   227 F105  ---- LENZEN/ELBE           53.06   11.29    20      1 LAND
 99811   176 F108  ---- KARSTAEDT/PRIGNITZ    53.10   11.45    32        LAND
 99812   176 F125  ---- KUHBIER               53.09   12.05    63        LAND
-99801   206 F143  ---- WITTSTOCK-ROTE M�HLE  53.11   12.29    66     11 LAND
+99801   206 F143  ---- WITTSTOCK-ROTE MÜHLE  53.11   12.29    66     11 LAND
 99802   206 F151  ---- MENZ                  53.06   13.02    77    -12 LAND
 99803   176 F172  ---- MITTENWALDE/UCKERMAR  53.11   13.39    72        LAND
 99804   176 F178  ---- NEURUPPIN-GUEHLEN GL  53.03   12.46    89        LAND
@@ -1275,7 +1275,7 @@ clu   CofX  id    ICAO name                 nb.    el.     elev  Hmod-H type
 99802    76 H573  ---- ARNSBERG-MUESCHEDE    51.25    8.01   278        LAND
 99803   206 H579  ---- ESLOHE                51.16    8.10   325    -30 LAND
 99804   176 H581  ---- WARSTEIN-HIRSCHBERG   51.26    8.16   331        LAND
-99805   227 H591  ---- BRILON-TH�LEN         51.25    8.39   457      5 LAND
+99805   227 H591  ---- BRILON-THÜLEN         51.25    8.39   457      5 LAND
 99806   206 H606  ---- HEINSBERG-SCHLEIDEN   51.02    6.06    57     14 LAND
 99807   227 H612  ---- REICHSHOF-ECKENHAGEN  50.59    7.41   348     19 LAND
 99808   176 H635  ---- DORMAGEN-ZONS         51.07    6.51    36        LAND
@@ -1294,10 +1294,10 @@ clu   CofX  id    ICAO name                 nb.    el.     elev  Hmod-H type
 99809   273 H768  ---- MOENCHENGLADBACH-HIL  51.08    6.22    77      5 LAND
 99810   176 H777  ---- WENDEN-DOERNSCHEID    50.56    7.51   418        LAND
 99811   176 H791  ---- BERLEBURG, BAD-ARFEL  51.01    8.26   436        LAND
-99812   206 H795  ---- BAD BERLEBURG-ST�NZE  50.59    8.22   610   -107 LAND
+99812   206 H795  ---- BAD BERLEBURG-STÜNZE  50.59    8.22   610   -107 LAND
 99801   206 H827  ---- NIDEGGEN-SCHMIDT      50.40    6.25   370     -5 LAND
 99802   227 H862  ---- NEUNKIRCHEN-SEELSCHE  50.50    7.22   195    -24 LAND
-99803   206 H883  ---- SIEGEN (KL�RANLAGE)   50.51    8.00   263     65 LAND
+99803   206 H883  ---- SIEGEN (KLÄRANLAGE)   50.51    8.00   263     65 LAND
 99804    97 H884  ---- BIRKELBACH            51.01    8.16   541        LAND
 99805   176 H889  ---- BURBACH-WUERGENDORF   50.46    8.08   413        LAND
 99806   176 H908  ---- MONSCHAU-KALTERHERBE  50.31    6.13   535        LAND
@@ -1341,7 +1341,7 @@ clu   CofX  id    ICAO name                 nb.    el.     elev  Hmod-H type
 99808   176 K354  ---- KAIL                  50.11    7.14   290        LAND
 99809   176 K380  ---- OBERBACHHEIM          50.15    7.44   328        LAND
 99810   176 K381  ---- SINGHOFEN (KLAERANLA  50.16    7.49   220        LAND
-99811   206 K386  ---- NAST�TTEN             50.12    7.52   268     35 LAND
+99811   206 K386  ---- NASTÄTTEN             50.12    7.52   268     35 LAND
 99812   206 K419  ---- OLSDORF               49.56    6.23   305     -1 LAND
 99801   176 K428  ---- BITBURG               49.59    6.32   359        LAND
 99802   176 K431  ---- MEISBURG              50.06    6.40   523        LAND
@@ -1429,11 +1429,11 @@ clu   CofX  id    ICAO name                 nb.    el.     elev  Hmod-H type
 99812   176 L631  ---- MUENZENBERG-GAMBACH   50.27    8.44   155        LAND
 99801   206 L635  ---- BAD NAUHEIM           50.22    8.46   142     -1 LAND
 99802   176 L652  ---- GEDERN-SCHOENHAUSEN   50.24    9.13   407        LAND
-99803   206 L678  ---- SCHL�CHTERN-HEROLZ    50.20    9.33   230     66 LAND
+99803   206 L678  ---- SCHLÜCHTERN-HEROLZ    50.20    9.33   230     66 LAND
 99804   176 L685  ---- GREBENSTEIN           51.27    9.25   190        LAND
 99805   176 L714  ---- HOHENSTEIN-BREITHARD  50.11    8.05   315        LAND
 99806   206 L722  ---- WALDEMS-REINBORN      50.16    8.22   380     -2 LAND
-99807   176 L732  ---- HOMBURG, BAD (FILTER  50.15    8.34   255        LAND
+99807   176 L732  ---- HOMBURG, BAD          50.15    8.34   255        LAND
 99808   176 L744  ---- VILBEL, BAD-DORTELWE  50.13    8.44   125        LAND
 99809   176 L751  ---- NIDDERAU-ERBSTADT     50.16    8.52   162        LAND
 99810   206 L771  ---- GRUENDAU-BREITENBORN  50.16    9.11   258      2 LAND
@@ -1458,7 +1458,7 @@ clu   CofX  id    ICAO name                 nb.    el.     elev  Hmod-H type
 99805   176 M031  ---- ELLRICH-WERNA         51.35   10.43   235        LAND
 99806   176 M056  ---- REINHOLTERODE         51.25   10.11   336        LAND
 99807   176 M146  ---- HELBEDUENDORF-KEULA   51.20   10.32   431        LAND
-99808   206 M225  ---- M�HLHAUSEN-G�RMAR     51.13   10.29   190     28 LAND
+99808   206 M225  ---- MÜHLHAUSEN-GÖRMAR     51.13   10.29   190     28 LAND
 99809   176 M259  ---- FREIENBESSINGEN       51.14   10.46   296        LAND
 99810   176 M281  ---- ETZLEBEN              51.16   11.11   134        LAND
 99811   206 M299  ---- OLBERSLEBEN           51.09   11.20   160      2 LAND
@@ -1933,7 +1933,7 @@ clu   CofX  id    ICAO name                 nb.    el.     elev  Hmod-H type
 99812   227 Q651  ---- HECHINGEN             48.23    8.59   522      8 LAND
 99801   176 Q655  ---- BURLADINGEN-HAUSEN    48.18    9.04   682        LAND
 99802   176 Q663  ---- HOHENSTEIN-BERNLOCH   48.22    9.20   740        LAND
-99803   303 Q671  ---- M�NSINGEN-APFELSTETT  48.23    9.29   750    -13 LAND
+99803   303 Q671  ---- MÜNSINGEN-APFELSTETT  48.23    9.29   750    -13 LAND
 99804   176 Q672  ---- BIRENBACH             48.44    9.39   348        LAND
 99805   176 Q679  ---- EHINGEN-KIRCHEN       48.17    9.38   594        LAND
 99806   206 Q702  ---- EMMENDINGEN-MUNDING.  48.08    7.50   203    -12 LAND
@@ -2296,16 +2296,16 @@ clu   CofX  id    ICAO name                 nb.    el.     elev  Hmod-H type
 99804       F9501 ---- BOCHUM UMSPWK.        51.28    7.11    82     26 LAND
 99805       F9502 ---- EISERFELD UMSPWK.     50.51    7.59   226    102 LAND
 99806       F9503 ---- GUNDELFINGEN UMSPWK.  48.31   10.23   436     12 LAND
-99807       F9504 ---- HANEKENF�HR UMSPWK.   52.29    7.18    27      6 LAND
+99807       F9504 ---- HANEKENFÄHR UMSPWK.   52.29    7.18    27      6 LAND
 99808       F9505 ---- HOHENECK UMSPWK.      48.55    9.12   275     -1 LAND
-99809       F9506 ---- K�HMOOS UMSPWK.       47.36    7.57   736    -24 LAND
+99809       F9506 ---- KÜHMOOS UMSPWK.       47.36    7.57   736    -24 LAND
 99810       F9507 ---- LEUPOLZ UMSPWK.       47.44   10.22   721     47 LAND
 99811       F9508 ---- MITTELBEXBACH UMSPWK  49.22    7.14   363      0 LAND
 99812       F9509 ---- NIEDERSTEDEM UMSPWK.  49.55    6.29   233     59 LAND
 99801       F9510 ---- RHEINAU UMSPWK.       49.26    8.33   106     -9 LAND
 99802       F9511 ---- ROMMERSKIRCHEN UMSPW  51.01    6.42    87     -5 LAND
 99803       F9512 ---- URBERACH UMSPWK.      49.59    8.46   177    -33 LAND
-99804       F9513 ---- WEI�ENTURM UMSPWK.    50.24    7.27   141     -4 LAND
+99804       F9513 ---- WEIßENTURM UMSPWK.    50.24    7.27   141     -4 LAND
 99805       F9514 ---- WESTERKAPPELN UMSPWK  52.17    7.53    80      2 LAND
 99806       K1060 ---- AURICH                53.27    7.28     4      1 LAND
 99807       K1083 ---- BORKUM                53.34    6.45     5     -4 KUES
@@ -2477,7 +2477,7 @@ clu   CofX  id    ICAO name                 nb.    el.     elev  Hmod-H type
 99805       K4546 ---- BAYRISCHZELL          47.41   12.01   805     18 LAND
 99806       K4570 ---- BROTJACKLRIEGEL       48.49   13.13  1016   -420 BERG
 99807       K9097 ---- DETMOLD               51.57    8.54   194     13 LAND
-99808       N0101 ---- BALDERSCHWANG         47.28   10.06  1050      2 BERG
+99808       N0101 ---- BALDERSCHWANG         47.28   10.06  1050    -85 BERG
 99809       N0113 ---- LINDAU                47.33    9.44   400     42 LAND
 99810       N0121 ---- MONSCHAU              50.32    6.15   542     17 LAND
 99811       N0122 ---- WANGEN/ALLGAEU        47.41    9.52   588     62 LAND
@@ -4248,7 +4248,7 @@ clu   CofX  id    ICAO name                 nb.    el.     elev  Hmod-H type
 99809       10619 ---- BAUMHOLDER            49.37    7.21   442    -44 LAND
 99810       11113 ---- NAUDERS               46.53   10.30  1330    568 LAND
 99809       F9600 ---- HEINERSCHEID          50.05    6.04   522    -64 LAND
-99810       N9610 ---- WEI�ENFELS            51.12   11.58   100     17 LAND
+99810       N9610 ---- WEIßENFELS            51.12   11.58   100     17 LAND
 99812       E273  ---- ROSENGARTEN-KLECKEN   53.22    9.57    82    -18 LAND
 99801       H176  ---- KALLETAL NIEDERMEIEN  52.04    8.57   310    -88 LAND
 99802       H250  ---- SENDENHORST_N         51.50    7.53    65      4 LAND
@@ -4270,25 +4270,25 @@ clu   CofX  id    ICAO name                 nb.    el.     elev  Hmod-H type
 99807       K242  ---- ADENAU                50.26    7.06   593    -94 LAND
 99807       K376  ---- GONDERSHAUSEN         50.10    7.30   388     -1 LAND
 99808       K399  ---- BERGHAUSEN            50.16    8.00   372      6 LAND
-99809       K418  ---- K�RPERICH-GAYTALPARK  49.56    6.15   290     14 LAND
+99809       K418  ---- KÖRPERICH-GAYTALPARK  49.56    6.15   290     14 LAND
 99810       K450  ---- NEEF                  50.05    7.08   133     86 LAND
 99811       K550  ---- ENTENPFUHL            49.54    7.35   610   -145 LAND
 99812       K552  ---- GAUCHSBERG            49.52    7.41   399      2 LAND
 99801       K626  ---- HERMESKEIL            49.42    7.02   650    -92 LAND
-99802       K748  ---- MARTINSH�HE           49.22    7.28   411     -1 LAND
+99802       K748  ---- MARTINSHÖHE           49.22    7.28   411     -1 LAND
 99804       K756  ---- FRANKELBACH           49.31    7.39   417     -7 LAND
 99804       K931  ---- HORTENKOPF            49.16    7.50   606   -233 LAND
 99807       K996  ---- SCHAIDT               49.03    8.05   136      1 LAND
 99807       L244  ---- GUDENSBERG            51.10    9.22   220    -14 LAND
 99807       L314  ---- ANGELBURG-FRECHENHAU  50.49    8.26   435    -52 LAND
 99808       L391  ---- BEBRA                 50.58    9.47   192    102 LAND
-99809       L543  ---- GR�NBERG              50.35    8.59   314     -9 LAND
+99809       L543  ---- GRÜNBERG              50.35    8.59   314     -9 LAND
 99811       L562  ---- FREIENSTEINAU         50.26    9.24   430     33 LAND
-99811       L595  ---- GERSFELD_(RH�N)-DALH  50.25    9.50   667    -50 LAND
-99801       L643  ---- NIDDA-KL�RANLAGE      50.24    8.59   132     56 LAND
+99811       L595  ---- GERSFELD_(RHÖN)-DALH  50.25    9.50   667    -50 LAND
+99801       L643  ---- NIDDA-KLÄRANLAGE      50.24    8.59   132     56 LAND
 99801       L731  ---- USINGEN               50.21    8.32   320     28 LAND
 99802       L769  ---- FREIGERICHT-HORBACH   50.08    9.10   198    -18 LAND
-99808       L918  ---- LORSCH-KL�RANLAGE     49.40    8.34    92     30 LAND
+99808       L918  ---- LORSCH-KLÄRANLAGE     49.40    8.34    92     30 LAND
 99808       Q824  ---- DACHSBERG-WOLPADINGE  47.42    8.07   880     21 LAND
 99807       F9515 ---- GRONAU WEST           51.19    7.17    36     72 LAND
 99808       F9516 ---- SOONWALD WEST 1       50.20    7.30   237    -29 LAND
@@ -4850,7 +4850,7 @@ clu   CofX  id    ICAO name                 nb.    el.     elev  Hmod-H type
 99703   266 68029 ---- KASANE               -17.49   25.09   968    -81 LAND
 99704   344 68032 FBMN MAUN                 -19.59   23.25   945    -17 LAND
 99701   324 68110 ---- WINDHUK              -22.34   17.06  1728     49 LAND
-99702   415 68112 FYWH WINDHUK STRIJDOM     -22.29   17.28  1715     15 LAND
+99702   415 68112 FYWH WINDHOEK HOSEA INTL. -22.29   17.28  1719     15 LAND
 99703   390 68174 FAPI PIETERSBURG          -23.50   29.25  1228     36 LAND
 99704   119 68212 ---- HARDAP               -24.32   17.56  1108     36 LAND
 99701   369 68240 FBSK GABORONE AIRPORT     -24.13   25.55  1005      4 LAND
@@ -5461,57 +5461,57 @@ clu   CofX  id    ICAO name                 nb.    el.     elev  Hmod-H type
 99701       82099 SBMQ MACAPA                 0.03  -51.04    17    -14 LAND
 99702       82191 ---- BELEM                 -1.27  -48.28    10     -6 KUES
 99703       82240 SWPI PARINTINS             -2.37  -56.44    29    -15 LAND
-99704       82244 SBSN SANTAR�M              -2.25  -54.48    72    -44 LAND
-99701       82280 SBSL S�O LUIZ              -2.32  -44.18    51    -46 KUES
-99702       82288 SBPB PARNA�BA              -2.54  -41.44     5     16 LAND
-99703       82317 SBTF TEF�                  -3.22  -64.42    47     -3 LAND
+99704       82244 SBSN SANTARÉM              -2.25  -54.48    72    -44 LAND
+99701       82280 SBSL SÃO LUIZ              -2.32  -44.18    51    -46 KUES
+99702       82288 SBPB PARNAÍBA              -2.54  -41.44     5     16 LAND
+99703       82317 SBTF TEFÉ                  -3.22  -64.42    47     -3 LAND
 99704       82353 SBHT ALTAMIRA              -3.13  -52.13    74    -21 LAND
 99701       82397 SBFZ FORTALEZA             -3.46  -38.36    26     15 KUES
 99702       82400 SBFN FERNANDO DE NORONHA   -3.51  -32.25    56    -56 KUES
 99703       82411 SBTT TABATINGA             -4.15  -69.56    85     -1 LAND
 99704       82425 SWKO COARI                 -4.05  -63.09    46    -13 LAND
 99701       82444 SBIH ITAITUBA              -4.15  -56.00    33      0 LAND
-99702       82562 SBMA MARAB�                -5.22  -49.08    95    -51 LAND
+99702       82562 SBMA MARABÁ                -5.22  -49.08    95    -51 LAND
 99703       82564 SBIZ IMPERATRIZ            -5.32  -47.29   123     -3 LAND
 99704       82567 SBCJ CARAJAS               -6.07  -50.00   621   -379 BERG
 99701       82598 SBSG NATAL                 -5.46  -35.12    45    -40 KUES
-99702       82610 SWEI EIRUNEP�              -6.40  -69.52   104     29 LAND
+99702       82610 SWEI EIRUNEPÉ              -6.40  -69.52   104     29 LAND
 99703       82640 SBEK JACAREACANGA          -6.14  -57.47    98     36 LAND
-99704       82659 SWGN ARAGUA�NA             -7.06  -48.12   229    -19 LAND
+99704       82659 SWGN ARAGUAÍNA             -7.06  -48.12   229    -19 LAND
 99701       82795 SBKG CAMPINA GRANDE        -7.14  -35.54   548   -124 BERG
-99702       82798 SBJP JO�O PESSOA           -7.06  -34.51     7      1 KUES
+99702       82798 SBJP JOÃO PESSOA           -7.06  -34.51     7      1 KUES
 99703       82900 ---- RECIFE CURADO         -8.03  -34.55     7     -5 KUES
 99704       82915 SBRB RIO BRANCO            -9.58  -67.48   143     24 LAND
 99701       82965 SBAT ALTA FLORESTA         -9.52  -56.06   288     -6 LAND
 99702       82984 SBPL PETROLINA             -9.22  -40.34   375      1 LAND
 99703       82986 SBUF PAULO AFONSO          -9.24  -38.13   253    -12 LAND
 99704       83065 SBPJ PALMAS               -10.17  -48.22   236    -36 LAND
-99701       83095 SBAR ARACAJ�              -10.59  -37.04     8     -6 KUES
+99701       83095 SBAR ARACAJÚ              -10.59  -37.04     8     -6 KUES
 99702       83208 SBVH VILHENA              -12.42  -60.06   612    -30 BERG
 99703       83221 SDIY FEIRA DE SANTANA     -12.12  -38.58   232    -36 LAND
-99704       83242 SBLE LEN��IS              -12.33  -41.23   439     83 BERG
-99701       83344 SBQV VIT�RIA DA CONQUISTA -14.53  -40.48   875     31 BERG
+99704       83242 SBLE LENÇÓIS              -12.33  -41.23   439     83 BERG
+99701       83344 SBQV VITÓRIA DA CONQUISTA -14.53  -40.48   875     31 BERG
 99702       83349 SBIL ILHEUS               -14.49  -39.02     4      4 KUES
-99703       83359 SBBW BARRA DO GAR�AS      -15.52  -52.23   350    -22 LAND
+99703       83359 SBBW BARRA DO GARÇAS      -15.52  -52.23   350    -22 LAND
 99704       83377 ---- BRASILIA             -15.47  -47.56  1158    -13 LAND
-99701       83410 SBRD RONDON�POLIS         -16.28  -54.35   284    -39 LAND
-99702       83424 SBGO GOI�NIA              -16.38  -49.13   747     52 BERG
+99701       83410 SBRD RONDONÓPOLIS         -16.28  -54.35   284    -39 LAND
+99702       83424 SBGO GOIÂNIA              -16.38  -49.13   747     52 BERG
 99703       83460 SBPS PORTO SEGURO         -16.26  -39.05    51    -42 KUES
 99704       83470 SWLC RIO VERDE            -17.55  -50.55   727    -42 BERG
-99701       83525 SBUL UBERL�NDIA           -18.53  -48.14   945   -264 BERG
+99701       83525 SBUL UBERLÂNDIA           -18.53  -48.14   945   -264 BERG
 99702       83531 SNPD PATOS DE MINAS       -18.31  -46.26   940    -30 BERG
 99703       83543 SBGV GOVERNADOR VALADARES -18.51  -41.56   263     35 LAND
-99704       83552 SBCR CORUMB�              -19.01  -57.40   130     49 LAND
+99704       83552 SBCR CORUMBÁ              -19.01  -57.40   130     49 LAND
 99701       83576 SBUR UBERABA              -19.46  -47.58   808    -95 BERG
 99702       83583 SBBH BELO HORIZONTE       -19.51  -43.57   785     91 LAND
 99703       83611 SBCG CAMPO GRANDE/INTL.   -20.27  -54.37   583    -19 LAND
-99704       83618 SBTG TR�S LAGOAS          -20.47  -51.42   313    -29 LAND
-99701       83635 SNDV DIVIN�POLIS          -20.10  -44.52   789     15 BERG
+99704       83618 SBTG TRÊS LAGOAS          -20.47  -51.42   313    -29 LAND
+99701       83635 SNDV DIVINÓPOLIS          -20.10  -44.52   789     15 BERG
 99702       83648 ---- VITORIA              -20.19  -40.20     8      8 KUES
-99703       83649 SBVT VIT�RIA              -20.15  -40.17     3     13 KUES
-99704       83652 SBRP RIBEIR�O PRETO       -21.08  -47.46   549     39 BERG
+99703       83649 SBVT VITÓRIA              -20.15  -40.17     3     13 KUES
+99704       83652 SBRP RIBEIRÃO PRETO       -21.08  -47.46   549     39 BERG
 99701       83659 SBDO DOURADOS             -22.14  -54.49   452    -63 LAND
-99702       83672 SBAU ARA�ATUBA            -21.12  -50.26   397      4 LAND
+99702       83672 SBAU ARAÇATUBA            -21.12  -50.26   397      4 LAND
 99703       83692 SBJF JUIZ DE FORA         -21.46  -43.22   939   -200 BERG
 99704       83716 SBDN PRESIDENTE PRUDENTE  -22.07  -51.23   436    -30 LAND
 99701       83719 SBCB CABO FRIO            -22.59  -42.02     7      2 KUES
@@ -5520,12 +5520,12 @@ clu   CofX  id    ICAO name                 nb.    el.     elev  Hmod-H type
 99704       83726 SDSC SAO CARLOS           -21.59  -47.53   856    -78 BERG
 99701       83743 ---- RIO DE JANEIRO       -22.55  -43.10     5     35 KUES
 99702       83755 SBRJ SANTOS DUMONT        -22.55  -43.10     3     37 KUES
-99703       83767 SBMG MARING�              -23.25  -51.57   542   -123 BERG
+99703       83767 SBMG MARINGÁ              -23.25  -51.57   542   -123 BERG
 99704       83768 SBLO LONDRINA             -23.20  -51.08   569    -20 BERG
 99701       83773 ---- AVARE                -23.06  -48.55   793     39 LAND
 99702       83779 SBGR SAO PAULO/INTL.      -23.26  -46.28   750    -23 LAND
 99703       83782 ---- SANTOS               -23.56  -46.20    14     -2 KUES
-99704       83809 SBSJ S�O JOS� DOS CAMPOS  -23.14  -45.52   646    -33 BERG
+99704       83809 SBSJ SÃO JOSÉ DOS CAMPOS  -23.14  -45.52   646    -33 BERG
 99701       83837 SSZW PONTA GROSSA         -25.06  -50.10   868     38 BERG
 99702       83840 SBCT CURITIBA             -25.32  -49.11   911      0 BERG
 99703       83842 ---- CURITIBA             -25.26  -49.16   923     -5 LAND
@@ -5548,7 +5548,7 @@ clu   CofX  id    ICAO name                 nb.    el.     elev  Hmod-H type
 99704       86626 SBSI SINOP                -11.59  -55.34   371    -69 KUES
 99701       86645 SBSO SORRISO              -12.33  -55.43   380    -83 LAND
 99702       86652 SNBR BARREIRAS            -12.07  -45.02   470    124 BERG
-99703       86676 SNVB VALEN�A              -13.21  -39.08   105    -37 LAND
+99703       86676 SNVB VALENÇA              -13.21  -39.08   105    -37 LAND
 99704       87480 SAAR ROSARIO              -32.55  -60.47    25    -12 LAND
 99701       87585 SABE BUENOS AIRES         -34.35  -58.29    24     -2 KUES
 99702       87839 ---- FARO PUNTA DELGADA   -42.46  -63.38    56    -12 KUES
@@ -5586,17 +5586,17 @@ clu   CofX  id    ICAO name                 nb.    el.     elev  Hmod-H type
 99704       99953 ---- LONGBOAT KEY          27.23  -82.38     8     -1 KUES
 99703       F9402 SBCA CASCAVEL             -25.00  -53.30   754    -61 LAND
 99704       F9403 SBCD CACADOR              -26.47  -50.56  1014     67 BERG
-99701       F9404 SBCM CRICI�MA             -28.44  -49.26    28      5 LAND
+99701       F9404 SBCM CRICIÚMA             -28.44  -49.26    28      5 LAND
 99702       F9405 SBCN CALDAS NOVAS         -17.44  -48.37   685      0 BERG
 99703       F9406 SBDB BONITO               -21.23  -56.46   360    -11 LAND
 99704       F9407 SBGU GUARAPUAVA           -25.23  -51.13  1065    -36 BERG
 99701       F9408 SBIP IPATINGA             -19.28  -42.29   239    -20 LAND
 99702       F9409 SBJA JAGUARUNA            -28.41  -48.04    37    -37 KUES
-99703       F9410 SBJI JI-PARAN�            -10.52  -61.51   182     16 LAND
+99703       F9410 SBJI JI-PARANÁ            -10.52  -61.51   182     16 LAND
 99704       F9411 SBJU JUAZEIRO DO NORTE     -7.13  -39.16   409     -4 LAND
 99701       F9412 SBML MARILIA              -22.12  -49.56   647    -93 BERG
-99702       F9413 SBNM SANTO �NGELO         -28.17  -54.10   322     -4 LAND
-99703       F9414 SBSR S�O JOS� D. R. PRETO -20.49  -49.24   544    -87 BERG
+99702       F9413 SBNM SANTO ÂNGELO         -28.17  -54.10   322     -4 LAND
+99703       F9414 SBSR SÃO JOSÉ D. R. PRETO -20.49  -49.24   544    -87 BERG
 99704       F9415 SBTB PORTO DE TROMBETAS    -1.29  -56.24    88      1 LAND
 99701       F9416 SBTC UNA                  -15.21  -39.00     6     -5 KUES
 99702       F9417 SBVG VAG                  -21.35  -45.28   923    -28 BERG
