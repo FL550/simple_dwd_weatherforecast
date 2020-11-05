@@ -12,7 +12,7 @@ from .stations import stations
 
 def is_valid_station_id(station_id: str):
     for line in stations.splitlines():
-        if (len(line) > 0 and line[0].isdigit()):
+        if len(line) > 0 and line[0].isdigit():
             if line[12:18].strip() == station_id:
                 return True
     return False
@@ -22,11 +22,11 @@ def get_nearest_station_id(lat: float, lon: float):
     result = ""
     distance = 99999999
     for line in stations.splitlines():
-        if (len(line) > 0 and line[0].isdigit()):
-            _lat = line[45:51].strip().split('.')
-            _lat = round(float(_lat[0])+float(_lat[1])/60, 2)
-            _lon = line[52:59].strip().split('.')
-            _lon = round(float(_lon[0])+float(_lon[1])/60, 2)
+        if len(line) > 0 and line[0].isdigit():
+            _lat = line[45:51].strip().split(".")
+            _lat = round(float(_lat[0]) + float(_lat[1]) / 60, 2)
+            _lon = line[52:59].strip().split(".")
+            _lon = round(float(_lon[0]) + float(_lon[1]) / 60, 2)
             distance_temp = get_distance(lat, lon, _lat, _lon)
             if distance > distance_temp:
                 distance = distance_temp
@@ -60,16 +60,15 @@ class WeatherDataType(Enum):
 
 class Weather:
     """A class for interacting with weather data from dwd.de"""
+
     station_id = ""
     station_name = ""
     issue_time = None
     forecast_data = None
 
     namespaces = {
-        'kml':
-            'http://www.opengis.net/kml/2.2',
-        'dwd':
-            'https://opendata.dwd.de/weather/lib/pointforecast_dwd_extension_V1_0.xsd'
+        "kml": "http://www.opengis.net/kml/2.2",
+        "dwd": "https://opendata.dwd.de/weather/lib/pointforecast_dwd_extension_V1_0.xsd",
     }
 
     weather_codes = {
@@ -110,57 +109,66 @@ class Weather:
         else:
             raise ValueError("Not a valid station_id")
 
-    def get_station_name(self, shouldUpdate=True):
-        if self.station_name == '' and shouldUpdate:
+    def get_station_name(self, shouldUpdate=False):
+        if self.station_name == "" or shouldUpdate:
             self.update()
         return self.station_name
 
     def is_in_timerange(self, timestamp: datetime):
-        return list(self.forecast_data.keys())[0] <= self.strip_to_hour_str(
-            timestamp) <= list(self.forecast_data.keys())[-1]
+        return (
+            list(self.forecast_data.keys())[0]
+            <= self.strip_to_hour_str(timestamp)
+            <= list(self.forecast_data.keys())[-1]
+        )
 
-    def get_forecast_data(self,
-                          weatherDataType: WeatherDataType,
-                          timestamp: datetime,
-                          shouldUpdate=True):
-        if (shouldUpdate):
+    def get_forecast_data(
+            self,
+            weatherDataType: WeatherDataType,
+            timestamp: datetime,
+            shouldUpdate=True):
+        if shouldUpdate:
             self.update()
         if self.is_in_timerange(timestamp):
             return self.forecast_data[self.strip_to_hour_str(timestamp)][
-                weatherDataType.value]
+                weatherDataType.value
+            ]
         return None
 
     def get_forecast_condition(self, timestamp: datetime, shouldUpdate=True):
-        if (shouldUpdate):
+        if shouldUpdate:
             self.update()
 
         if self.is_in_timerange(timestamp):
             return str(
-                self.weather_codes[self.forecast_data[self.strip_to_hour_str(
-                    timestamp)][WeatherDataType.CONDITION.value]][0])
+                self.weather_codes[
+                    self.forecast_data[self.strip_to_hour_str(timestamp)][
+                        WeatherDataType.CONDITION.value
+                    ]
+                ][0]
+            )
         return None
 
     def get_daily_condition(self, timestamp: datetime, shouldUpdate=True):
-        if (shouldUpdate):
+        if shouldUpdate:
             self.update()
         if self.is_in_timerange(timestamp):
             weather_data = self.get_day_values(timestamp)
             priority = 99
             condition_text = ""
             for item in weather_data:
-                condition = self.weather_codes[item[
-                    WeatherDataType.CONDITION.value]]
+                condition = self.weather_codes[item[WeatherDataType.CONDITION.value]]
                 if condition[1] < priority:
                     priority = condition[1]
                     condition_text = condition[0]
             return str(condition_text)
         return None
 
-    def get_daily_max(self,
-                      weatherDataType: WeatherDataType,
-                      timestamp: datetime,
-                      shouldUpdate=True):
-        if (shouldUpdate):
+    def get_daily_max(
+            self,
+            weatherDataType: WeatherDataType,
+            timestamp: datetime,
+            shouldUpdate=True):
+        if shouldUpdate:
             self.update()
         if self.is_in_timerange(timestamp):
             weather_data = self.get_day_values(timestamp)
@@ -175,11 +183,12 @@ class Weather:
             return round(value, 2)
         return None
 
-    def get_daily_min(self,
-                      weatherDataType: WeatherDataType,
-                      timestamp: datetime,
-                      shouldUpdate=True):
-        if (shouldUpdate):
+    def get_daily_min(
+            self,
+            weatherDataType: WeatherDataType,
+            timestamp: datetime,
+            shouldUpdate=True):
+        if shouldUpdate:
             self.update()
         if self.is_in_timerange(timestamp):
             weather_data = self.get_day_values(timestamp)
@@ -194,18 +203,19 @@ class Weather:
             return round(value, 2)
         return None
 
-    def get_daily_sum(self,
-                      weatherDataType: WeatherDataType,
-                      timestamp: datetime,
-                      shouldUpdate=True):
-        if (shouldUpdate):
+    def get_daily_sum(
+            self,
+            weatherDataType: WeatherDataType,
+            timestamp: datetime,
+            shouldUpdate=True):
+        if shouldUpdate:
             self.update()
         if self.is_in_timerange(timestamp):
             weather_data = self.get_day_values(timestamp)
             value_sum = 0.0
             for item in weather_data:
                 value = item[weatherDataType.value]
-                if (value):
+                if value:
                     value_sum += float(value)
             return round(value_sum, 2)
         return None
@@ -218,10 +228,14 @@ class Weather:
                 result.append(self.forecast_data[self.strip_to_hour_str(time)])
                 time += timedelta(hours=1)
         else:
-            time = datetime(timestamp.year, timestamp.month, timestamp.day,
-                            timestamp.hour)
-            endtime = datetime(timestamp.year, timestamp.month,
-                               timestamp.day) + timedelta(days=1) - timedelta(hours=-1)
+            time = datetime(
+                timestamp.year, timestamp.month, timestamp.day, timestamp.hour
+            )
+            endtime = (
+                datetime(timestamp.year, timestamp.month, timestamp.day)
+                + timedelta(days=1)
+                - timedelta(hours=-1)
+            )
             timediff = endtime - time
             for _i in range(round(timediff.total_seconds() / 3600)):
                 result.append(self.forecast_data[self.strip_to_hour_str(time)])
@@ -235,21 +249,21 @@ class Weather:
         return datetime(timestamp.year, timestamp.month, timestamp.day)
 
     def update(self):
-        if (self.issue_time is None) or (datetime.now(timezone.utc) -
-                                         self.issue_time > timedelta(hours=6)):
-            kml = self.download_latest_kml(self.station_id)
+        if (self.issue_time is None) or (
+            datetime.now(timezone.utc) - self.issue_time > timedelta(hours=6)
+        ):
+            kml = download_latest_kml(self.station_id)
             self.parse_kml(kml)
 
     def get_weather_type(self, kmlTree, weatherDataType: WeatherDataType):
         """ Parses the kml-File to the requested value anbd returns the items as array"""
 
         result = kmlTree.xpath(
-            '//kml:ExtendedData/dwd:Forecast[@dwd:elementName="{}"]/dwd:value'.
-            format(weatherDataType.value),
-            namespaces=self.namespaces)[0].text
+            '//kml:ExtendedData/dwd:Forecast[@dwd:elementName="{}"]/dwd:value'.format(
+                weatherDataType.value), namespaces=self.namespaces, )[0].text
         items = []
         for elem in result.split():
-            if (elem != "-"):
+            if elem != "-":
                 items.append(round(float(elem), 2))
             else:
                 items.append(None)
@@ -257,27 +271,31 @@ class Weather:
 
     def parse_kml(self, kml):
         tree = etree.parse(BytesIO(kml))
-        result = tree.xpath('//dwd:IssueTime',
-                            namespaces=self.namespaces)[0].text
+        result = tree.xpath(
+            "//dwd:IssueTime",
+            namespaces=self.namespaces)[0].text
         self.issue_time = datetime(
-            *(time.strptime(result, '%Y-%m-%dT%H:%M:%S.%fZ')[0:6]), 0,
-            timezone.utc)
+            *(time.strptime(result, "%Y-%m-%dT%H:%M:%S.%fZ")[0:6]), 0, timezone.utc
+        )
 
-        result = tree.xpath('//dwd:ForecastTimeSteps/dwd:TimeStep',
-                            namespaces=self.namespaces)
+        result = tree.xpath(
+            "//dwd:ForecastTimeSteps/dwd:TimeStep", namespaces=self.namespaces
+        )
         timesteps = []
         for elem in result:
             timesteps.append(elem.text)
 
-        self.station_name = tree.xpath('//kml:Placemark/kml:description',
-                                       namespaces=self.namespaces)[0].text
+        self.station_name = tree.xpath(
+            "//kml:Placemark/kml:description", namespaces=self.namespaces
+        )[0].text
 
         result = tree.xpath(
             '//kml:ExtendedData/dwd:Forecast[@dwd:elementName="ww"]/dwd:value',
-            namespaces=self.namespaces)[0].text
+            namespaces=self.namespaces,
+        )[0].text
         conditions = []
         for elem in result.split():
-            conditions.append(elem.split('.')[0])
+            conditions.append(elem.split(".")[0])
 
         temperatures = self.get_weather_type(tree, WeatherDataType.TEMPERATURE)
 
@@ -294,10 +312,11 @@ class Weather:
         prec_sum = self.get_weather_type(tree, WeatherDataType.PRECIPITATION)
 
         prec_prop = self.get_weather_type(
-            tree, WeatherDataType.PRECIPITATION_PROBABILITY)
+            tree, WeatherDataType.PRECIPITATION_PROBABILITY
+        )
 
-        prec_dur = self.get_weather_type(tree,
-                                         WeatherDataType.PRECIPITATION_DURATION)
+        prec_dur = self.get_weather_type(
+            tree, WeatherDataType.PRECIPITATION_DURATION)
 
         cloud_cov = self.get_weather_type(tree, WeatherDataType.CLOUD_COVERAGE)
 
@@ -326,16 +345,21 @@ class Weather:
                 WeatherDataType.VISIBILITY.value: visibility[i],
                 WeatherDataType.SUN_DURATION.value: sun_dur[i],
                 WeatherDataType.SUN_IRRADIANCE.value: sun_irr[i],
-                WeatherDataType.FOG_PROBABILITY.value: fog_prop[i]
+                WeatherDataType.FOG_PROBABILITY.value: fog_prop[i],
             }
             merged_list[timesteps[i]] = item
         self.forecast_data = merged_list
 
-    def download_latest_kml(self, stationid):
-        url = 'https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/' \
-            + stationid + '/kml/MOSMIX_L_LATEST_' + stationid + '.kmz'
-        request = requests.get(url)
-        file = BytesIO(request.content)
-        kmz = ZipFile(file, 'r')
-        kml = kmz.open(kmz.namelist()[0], 'r').read()
-        return kml
+
+def download_latest_kml(stationid):
+    url = (
+        "https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/" +
+        stationid +
+        "/kml/MOSMIX_L_LATEST_" +
+        stationid +
+        ".kmz")
+    request = requests.get(url)
+    file = BytesIO(request.content)
+    kmz = ZipFile(file, "r")
+    kml = kmz.open(kmz.namelist()[0], "r").read()
+    return kml
