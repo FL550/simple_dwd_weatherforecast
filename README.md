@@ -10,14 +10,15 @@ Available station-IDs can be found [here](simple_dwd_weatherforecast/stations.py
 
 Forecasted weather conditions are evaluated using this [table](https://www.dwd.de/DE/leistungen/opendata/help/schluessel_datenformate/kml/mosmix_element_weather_xls.xlsx?__blob=publicationFile&v=4) and then converted into these possible weather conditions:
 
-- sunny
-- partlycloudy
 - cloudy
-- rainy
-- snowy-rainy
-- snowy
-- pouring
+- fog
 - lightning-rainy
+- partlycloudy
+- pouring
+- rainy
+- snowy
+- snowy-rainy
+- sunny
 
 ## Installation
 
