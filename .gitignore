@@ -6,3 +6,4 @@ build
 init
 dist
 htmlcov
+__init__.pyc

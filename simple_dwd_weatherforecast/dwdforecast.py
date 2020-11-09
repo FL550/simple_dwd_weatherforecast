@@ -156,10 +156,11 @@ class Weather:
             priority = 99
             condition_text = ""
             for item in weather_data:
-                condition = self.weather_codes[item[WeatherDataType.CONDITION.value]]
-                if condition[1] < priority:
-                    priority = condition[1]
-                    condition_text = condition[0]
+                if item[WeatherDataType.CONDITION.value] != '-':
+                    condition = self.weather_codes[item[WeatherDataType.CONDITION.value]]
+                    if condition[1] < priority:
+                        priority = condition[1]
+                        condition_text = condition[0]
             return str(condition_text)
         return None
 
