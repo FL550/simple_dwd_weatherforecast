@@ -229,8 +229,10 @@ class Weather:
         if timestamp.day != first_entry_date.day:
             time = self.strip_to_day(timestamp)
             for _i in range(24):
-                result.append(self.forecast_data[self.strip_to_hour_str(time)])
-                time += timedelta(hours=1)
+                hour_str = self.strip_to_hour_str(time)
+                if hour_str in self.forecast_data:
+                    result.append(self.forecast_data[hour_str])
+                    time += timedelta(hours=1)
         else:
             time = datetime(
                 timestamp.year, timestamp.month, timestamp.day, timestamp.hour
