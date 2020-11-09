@@ -227,25 +227,35 @@ class Weather:
             *(time.strptime(next(iter(self.forecast_data)), "%Y-%m-%dT%H:%M:%S.%fZ")[0:6]), 0, timezone.utc
         )
         if timestamp.day != first_entry_date.day:
-            time = self.strip_to_day(timestamp)
+            time_step = self.strip_to_day(timestamp)
             for _i in range(24):
-                hour_str = self.strip_to_hour_str(time)
-                if hour_str in self.forecast_data:
-                    result.append(self.forecast_data[hour_str])
-                    time += timedelta(hours=1)
+                hour_str = self.strip_to_hour_str(time_step)
+                if hour_str not in self.forecast_data:
+                    break
+                result.append(self.forecast_data[hour_str])
+                time_step += timedelta(hours=1)
         else:
-            time = datetime(
-                timestamp.year, timestamp.month, timestamp.day, timestamp.hour
-            )
+            time_step = first_entry_date
             endtime = (
-                datetime(timestamp.year, timestamp.month, timestamp.day)
-                + timedelta(days=1)
-                - timedelta(hours=-1)
-            )
-            timediff = endtime - time
+                datetime(
+                    time_step.year,
+                    time_step.month,
+                    time_step.day,
+                    0,
+                    0,
+                    0,
+                    0,
+                    timezone.utc) +
+                timedelta(
+                    days=1) +
+                timedelta(
+                    hours=-
+                    1))
+            timediff = endtime - time_step
             for _i in range(round(timediff.total_seconds() / 3600)):
-                result.append(self.forecast_data[self.strip_to_hour_str(time)])
-                time += timedelta(hours=1)
+                result.append(
+                    self.forecast_data[self.strip_to_hour_str(time_step)])
+                time_step += timedelta(hours=1)
         return result
 
     def strip_to_hour_str(self, timestamp: datetime):
