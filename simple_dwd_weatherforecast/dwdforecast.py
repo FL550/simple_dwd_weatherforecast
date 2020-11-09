@@ -221,8 +221,12 @@ class Weather:
         return None
 
     def get_day_values(self, timestamp: datetime):
+        'timestamp has to be check prior to be in timerange'
         result = []
-        if timestamp.day != datetime.now(timezone.utc).day:
+        first_entry_date = datetime(
+            *(time.strptime(next(iter(self.forecast_data)), "%Y-%m-%dT%H:%M:%S.%fZ")[0:6]), 0, timezone.utc
+        )
+        if timestamp.day != first_entry_date.day:
             time = self.strip_to_day(timestamp)
             for _i in range(24):
                 result.append(self.forecast_data[self.strip_to_hour_str(time)])
@@ -256,7 +260,7 @@ class Weather:
             self.parse_kml(kml)
 
     def get_weather_type(self, kmlTree, weatherDataType: WeatherDataType):
-        """ Parses the kml-File to the requested value anbd returns the items as array"""
+        """ Parses the kml-File to the requested value and returns the items as array"""
 
         result = kmlTree.xpath(
             '//kml:ExtendedData/dwd:Forecast[@dwd:elementName="{}"]/dwd:value'.format(
