@@ -5,9 +5,9 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="simple_dwd_weatherforecast",
-    version="1.0.6",
+    version="1.0.7",
     author="Max Fermor",
-    description="A simple tool to retrieve weather forecast from DWD OpenData",
+    description="A simple tool to retrieve a weather forecast from DWD OpenData",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/FL550/simple_dwd_weatherforecast.git",
