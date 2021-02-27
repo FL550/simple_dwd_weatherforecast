@@ -151,41 +151,32 @@ class Weather:
             )
         return None
 
-    def get_timeframe_condition(self, timestamp: datetime, timeframe: int, shouldUpdate=True):
+    def get_timeframe_condition(
+        self, timestamp: datetime, timeframe: int, shouldUpdate=True
+    ):
         if shouldUpdate:
             self.update()
-            if self.is_valid_timeframe(timeframe) and self.is_in_timerange(timestamp):
-                weather_data = self.get_day_values(timestamp)
-                priority = 99
-                condition_text = ""
-                for item in weather_data:
-                    if item[WeatherDataType.CONDITION.value] != "-":
-                        condition = self.weather_codes[
-                            item[WeatherDataType.CONDITION.value]
-                        ]
-                        if condition[1] < priority:
-                            priority = condition[1]
-                            condition_text = condition[0]
-                    return str(condition_text)
+        if self.is_valid_timeframe(timeframe) and self.is_in_timerange(timestamp):
+            return self.get_condition(self.get_timeframe_values(timestamp, timeframe))
         return None
 
     def get_daily_condition(self, timestamp: datetime, shouldUpdate=True):
         if shouldUpdate:
             self.update()
         if self.is_in_timerange(timestamp):
-            weather_data = self.get_day_values(timestamp)
-            priority = 99
-            condition_text = ""
-            for item in weather_data:
-                if item[WeatherDataType.CONDITION.value] != "-":
-                    condition = self.weather_codes[
-                        item[WeatherDataType.CONDITION.value]
-                    ]
-                    if condition[1] < priority:
-                        priority = condition[1]
-                        condition_text = condition[0]
-            return str(condition_text)
+            return self.get_condition(self.get_day_values(timestamp))
         return None
+
+    def get_condition(self, weather_data):
+        priority = 99
+        condition_text = ""
+        for item in weather_data:
+            if item[WeatherDataType.CONDITION.value] != "-":
+                condition = self.weather_codes[item[WeatherDataType.CONDITION.value]]
+                if condition[1] < priority:
+                    priority = condition[1]
+                    condition_text = condition[0]
+        return str(condition_text)
 
     def get_timeframe_max(
         self,

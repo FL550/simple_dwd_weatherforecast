@@ -32,7 +32,7 @@ class Weather_get_timeframe_condition(unittest.TestCase):
         test_time = datetime(2020, 11, 6, 10, 0)
         self.assertEqual(
             self.dwd_weather.get_timeframe_condition(test_time, 3),
-            "partlycloudy",
+            "sunny",
         )
 
     @patch("simple_dwd_weatherforecast.dwdforecast.Weather.update", return_value=None)
@@ -40,7 +40,7 @@ class Weather_get_timeframe_condition(unittest.TestCase):
         test_time = datetime(2020, 11, 7, 10, 0)
         self.assertEqual(
             self.dwd_weather.get_timeframe_condition(test_time, 3),
-            "fog",
+            "sunny",
         )
 
     @patch("simple_dwd_weatherforecast.dwdforecast.Weather.update", return_value=None)
