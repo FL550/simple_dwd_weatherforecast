@@ -5,7 +5,6 @@ from test_data import parsed_data
 
 
 class Weather_get_station_name(unittest.TestCase):
-
     def setUp(self):
         self.dwd_weather = dwdforecast.Weather("H889")
         self.dwd_weather.forecast_data = parsed_data

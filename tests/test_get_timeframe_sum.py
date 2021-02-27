@@ -6,7 +6,7 @@ from simple_dwd_weatherforecast import dwdforecast
 from test_data import parsed_data
 
 
-class Weather_get_daily_sum(unittest.TestCase):
+class Weather_get_timeframe_sum(unittest.TestCase):
     def setUp(self):
         self.dwd_weather = dwdforecast.Weather("H889")
         self.dwd_weather.forecast_data = parsed_data
@@ -15,33 +15,33 @@ class Weather_get_daily_sum(unittest.TestCase):
     @patch("simple_dwd_weatherforecast.dwdforecast.Weather.update", return_value=None)
     def test_shouldupdate(self, mock_update):
         test_time = datetime(2020, 11, 7, 3, 30)
-        self.dwd_weather.get_daily_sum(WeatherDataType.PRECIPITATION, test_time, True)
+        self.dwd_weather.get_timeframe_sum(WeatherDataType.PRECIPITATION, test_time, 3, True)
         mock_update.assert_called()
 
     @patch("simple_dwd_weatherforecast.dwdforecast.Weather.update", return_value=None)
     def test_shouldupdate_not(self, mock_update):
         test_time = datetime(2020, 11, 7, 3, 30)
-        self.dwd_weather.get_daily_sum(WeatherDataType.PRECIPITATION, test_time, False)
+        self.dwd_weather.get_timeframe_sum(WeatherDataType.PRECIPITATION, test_time, 3, False)
         mock_update.assert_not_called()
 
     def test_not_in_timerange(self):
         test_time = datetime(2000, 11, 7, 3, 30)
         self.assertIsNone(
-            self.dwd_weather.get_daily_sum(WeatherDataType.PRECIPITATION, test_time)
+            self.dwd_weather.get_timeframe_sum(WeatherDataType.PRECIPITATION, test_time,3)
         )
 
     @patch("simple_dwd_weatherforecast.dwdforecast.Weather.update", return_value=None)
-    def test_precipitation(self, mock_update):
-        test_time = datetime(2020, 11, 6, 10, 0)
+    def test_precipitation(self, _):
+        test_time = datetime(2020, 11, 6, 4, 0)
         self.assertEqual(
-            self.dwd_weather.get_daily_sum(WeatherDataType.PRECIPITATION, test_time),
-            27.25,
+            self.dwd_weather.get_timeframe_sum(WeatherDataType.PRECIPITATION, test_time, 3),
+            1.36,
         )
 
     @patch("simple_dwd_weatherforecast.dwdforecast.Weather.update", return_value=None)
-    def test_temperature(self, mock_update):
-        test_time = datetime(2020, 11, 6, 10, 0)
+    def test_temperature(self, _):
+        test_time = datetime(2020, 11, 6, 4, 0)
         self.assertEqual(
-            self.dwd_weather.get_daily_sum(WeatherDataType.TEMPERATURE, test_time),
-            5286.25,
+            self.dwd_weather.get_timeframe_sum(WeatherDataType.TEMPERATURE, test_time, 3),
+            819.65,
         )

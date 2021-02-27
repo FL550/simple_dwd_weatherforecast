@@ -5,7 +5,6 @@ from test_data import parsed_data
 
 
 class Weather_is_in_timerange(unittest.TestCase):
-
     def setUp(self):
         self.dwd_weather = dwdforecast.Weather("H889")
         self.dwd_weather.forecast_data = parsed_data

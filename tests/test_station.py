@@ -1,11 +1,14 @@
 import unittest
 from simple_dwd_weatherforecast import dwdforecast
 
-class StationTestCase(unittest.TestCase):
 
+class StationTestCase(unittest.TestCase):
     def test_get_nearest_station_id(self):
-        self.assertEqual(dwdforecast.get_nearest_station_id(50.272388, 8.645408), "L732",
-                         'Wrong nearest station')
+        self.assertEqual(
+            dwdforecast.get_nearest_station_id(50.272388, 8.645408),
+            "L732",
+            "Wrong nearest station",
+        )
 
     def test_is_valid_station_id_true(self):
         self.assertTrue(dwdforecast.is_valid_station_id("EW024"))

@@ -70,17 +70,25 @@ class WeatherDataType(Enum):
     SUN_IRRADIANCE = "Rad1h" # Unit: kJ/m2
     FOG_PROBABILITY = "wwM" # Unit: % (0..100)
 
-get_forecast_data(weatherDataType: see WeatherDataType , datetime, optional bool shouldUpdate) # Returns the requestes weather data
+get_forecast_data(weatherDataType: see WeatherDataType, datetime, optional bool shouldUpdate) # Returns the requestes weather data
 
-get_daily_max(weatherDataType: see WeatherDataType , datetime, optional bool shouldUpdate) # Returns the maximum daily value
+get_daily_max(weatherDataType: see WeatherDataType, datetime, optional bool shouldUpdate) # Returns the maximum daily value
 
-get_daily_min(weatherDataType: see WeatherDataType , datetime, optional bool shouldUpdate) # Returns the minimum daily value
+get_timeframe_max(weatherDataType: see WeatherDataType, datetime, timeframe: hours after datetime as int, optional bool shouldUpdate) # Returns the maximum of that value within the time frame
 
-get_daily_sum(weatherDataType: see WeatherDataType , datetime, optional bool shouldUpdate) # Returns the daily sum of that value
+get_daily_min(weatherDataType: see WeatherDataType, datetime, optional bool shouldUpdate) # Returns the minimum daily value
+
+get_timeframe_min(weatherDataType: see WeatherDataType, datetime, timeframe: hours after datetime as int, optional bool shouldUpdate) # Returns the minimum of that value within the time frame
+
+get_daily_sum(weatherDataType: see WeatherDataType, datetime, optional bool shouldUpdate) # Returns the daily sum of that value
+
+get_timeframe_sum(weatherDataType: see WeatherDataType, datetime, timeframe: hours after datetime as int, optional bool shouldUpdate) # Returns the sum of that value within the time frame
 
 get_forecast_condition(datetime, optional bool shouldUpdate) #Result is condition as text
 
 get_daily_condition(datetime, optional bool shouldUpdate) #Result is worst condition at this day
+
+get_timeframe_condition(datetime, timeframe: hours after datetime as int, optional bool shouldUpdate) #Result is worst condition at this time frame
 ```
 
 ### Advanced Usage
@@ -92,7 +100,7 @@ from simple_dwd_weatherforecast import dwdforecast
 
 dwd_weather​ ​=​ ​dwdforecast​.​Weather​(​"10385"​) # Station-ID For BERLIN-SCHOENEFELD​
 dwd_weather.update() # This has to be done manually to fetch the data from the DWD server
-access_forecast_dict = dwd_weather.forecast_data # dwd_weather.forecast_data contians the forecast as a dict
+access_forecast_dict = dwd_weather.forecast_data # dwd_weather.forecast_data contains the forecast as a dict
 ```
 
 Keep in mind that the weather condition is stored as the original digit value as provided by DWD. So if you want to use them, you have to convert these yourself. You can use my simplified conversion from the source code in the variable `weather_codes` or the original conversion available [here](https://www.dwd.de/DE/leistungen/opendata/help/schluessel_datenformate/kml/mosmix_element_weather_xls.xlsx?__blob=publicationFile&v=4).

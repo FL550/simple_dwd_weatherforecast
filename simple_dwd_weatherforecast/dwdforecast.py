@@ -121,11 +121,14 @@ class Weather:
             <= list(self.forecast_data.keys())[-1]
         )
 
+    def is_valid_timeframe(_, timeframe: int) -> bool:
+        if 24 < timeframe or timeframe <= 0:
+            return False
+        return 24 % timeframe == 0
+
     def get_forecast_data(
-            self,
-            weatherDataType: WeatherDataType,
-            timestamp: datetime,
-            shouldUpdate=True):
+        self, weatherDataType: WeatherDataType, timestamp: datetime, shouldUpdate=True
+    ):
         if shouldUpdate:
             self.update()
         if self.is_in_timerange(timestamp):
@@ -148,6 +151,24 @@ class Weather:
             )
         return None
 
+    def get_timeframe_condition(self, timestamp: datetime, timeframe: int, shouldUpdate=True):
+        if shouldUpdate:
+            self.update()
+            if self.is_valid_timeframe(timeframe) and self.is_in_timerange(timestamp):
+                weather_data = self.get_day_values(timestamp)
+                priority = 99
+                condition_text = ""
+                for item in weather_data:
+                    if item[WeatherDataType.CONDITION.value] != "-":
+                        condition = self.weather_codes[
+                            item[WeatherDataType.CONDITION.value]
+                        ]
+                        if condition[1] < priority:
+                            priority = condition[1]
+                            condition_text = condition[0]
+                    return str(condition_text)
+        return None
+
     def get_daily_condition(self, timestamp: datetime, shouldUpdate=True):
         if shouldUpdate:
             self.update()
@@ -156,80 +177,150 @@ class Weather:
             priority = 99
             condition_text = ""
             for item in weather_data:
-                if item[WeatherDataType.CONDITION.value] != '-':
-                    condition = self.weather_codes[item[WeatherDataType.CONDITION.value]]
+                if item[WeatherDataType.CONDITION.value] != "-":
+                    condition = self.weather_codes[
+                        item[WeatherDataType.CONDITION.value]
+                    ]
                     if condition[1] < priority:
                         priority = condition[1]
                         condition_text = condition[0]
             return str(condition_text)
         return None
 
+    def get_timeframe_max(
+        self,
+        weatherDataType: WeatherDataType,
+        timestamp: datetime,
+        timeframe: int,
+        shouldUpdate=True,
+    ):
+        if shouldUpdate:
+            self.update()
+        if self.is_in_timerange(timestamp) and self.is_valid_timeframe(timeframe):
+            return self.get_max(
+                self.get_timeframe_values(timestamp, timeframe), weatherDataType
+            )
+        return None
+
     def get_daily_max(
-            self,
-            weatherDataType: WeatherDataType,
-            timestamp: datetime,
-            shouldUpdate=True):
+        self, weatherDataType: WeatherDataType, timestamp: datetime, shouldUpdate=True
+    ):
         if shouldUpdate:
             self.update()
         if self.is_in_timerange(timestamp):
-            weather_data = self.get_day_values(timestamp)
-            value = None
-            for item in weather_data:
-                value_new = item[weatherDataType.value]
-                if value_new:
-                    if not value:
-                        value = -9999999
-                    if value_new > value:
-                        value = value_new
+            return self.get_max(self.get_day_values(timestamp), weatherDataType)
+        return None
+
+    def get_max(_, weather_data, weatherDataType: WeatherDataType):
+        value = None
+        for item in weather_data:
+            value_new = item[weatherDataType.value]
+            if value_new:
+                if not value:
+                    value = -9999999
+                if value_new > value:
+                    value = value_new
+        if value:
             return round(value, 2)
+        return None
+
+    def get_timeframe_min(
+        self,
+        weatherDataType: WeatherDataType,
+        timestamp: datetime,
+        timeframe: int,
+        shouldUpdate=True,
+    ):
+        if shouldUpdate:
+            self.update()
+        if self.is_in_timerange(timestamp) and self.is_valid_timeframe(timeframe):
+            return self.get_min(
+                self.get_timeframe_values(timestamp, timeframe), weatherDataType
+            )
         return None
 
     def get_daily_min(
-            self,
-            weatherDataType: WeatherDataType,
-            timestamp: datetime,
-            shouldUpdate=True):
+        self, weatherDataType: WeatherDataType, timestamp: datetime, shouldUpdate=True
+    ):
         if shouldUpdate:
             self.update()
         if self.is_in_timerange(timestamp):
-            weather_data = self.get_day_values(timestamp)
-            value = None
-            for item in weather_data:
-                value_new = item[weatherDataType.value]
-                if value_new:
-                    if not value:
-                        value = 9999999
-                    if value_new < value:
-                        value = value_new
+            return self.get_min(self.get_day_values(timestamp), weatherDataType)
+        return None
+
+    def get_min(_, weather_data, weatherDataType: WeatherDataType):
+        value = None
+        for item in weather_data:
+            value_new = item[weatherDataType.value]
+            if value_new:
+                if not value:
+                    value = 9999999
+                if value_new < value:
+                    value = value_new
+
+        if value:
             return round(value, 2)
         return None
 
+    def get_timeframe_sum(
+        self,
+        weatherDataType: WeatherDataType,
+        timestamp: datetime,
+        timeframe: int,
+        shouldUpdate=True,
+    ):
+        if shouldUpdate:
+            self.update()
+        if self.is_valid_timeframe(timeframe) and self.is_in_timerange(timestamp):
+            return self.get_sum(
+                self.get_timeframe_values(timestamp, timeframe), weatherDataType
+            )
+        return None
+
     def get_daily_sum(
-            self,
-            weatherDataType: WeatherDataType,
-            timestamp: datetime,
-            shouldUpdate=True):
+        self, weatherDataType: WeatherDataType, timestamp: datetime, shouldUpdate=True
+    ):
         if shouldUpdate:
             self.update()
         if self.is_in_timerange(timestamp):
-            weather_data = self.get_day_values(timestamp)
-            value_sum = 0.0
-            for item in weather_data:
-                value = item[weatherDataType.value]
-                if value:
-                    value_sum += float(value)
-            return round(value_sum, 2)
+            return self.get_sum(self.get_day_values(timestamp), weatherDataType)
         return None
 
+    def get_sum(_, weather_data, weatherDataType):
+        value_sum = 0.0
+        for item in weather_data:
+            value = item[weatherDataType.value]
+            if value:
+                value_sum += float(value)
+        return round(value_sum, 2)
+
+    def get_timeframe_values(self, timestamp: datetime, timeframe: int):
+        "timestamp has to be checked prior to be in timerange"
+        result = []
+        time_step = self.strip_to_hour(timestamp)
+        for _ in range(timeframe):
+            hour_str = self.strip_to_hour_str(time_step)
+            time_step += timedelta(hours=1)
+            if hour_str not in self.forecast_data:
+                continue
+            result.append(self.forecast_data[hour_str])
+        return result
+
     def get_day_values(self, timestamp: datetime):
-        'timestamp has to be check prior to be in timerange'
+        "timestamp has to be checked prior to be in timerange"
         result = []
         first_entry_date = datetime(
-            *(time.strptime(next(iter(self.forecast_data)), "%Y-%m-%dT%H:%M:%S.%fZ")[0:6]), 0, timezone.utc
+            *(
+                time.strptime(next(iter(self.forecast_data)), "%Y-%m-%dT%H:%M:%S.%fZ")[
+                    0:6
+                ]
+            ),
+            0,
+            timezone.utc,
         )
         if timestamp.day != first_entry_date.day:
             time_step = self.strip_to_day(timestamp)
-            for _i in range(24):
+            for _ in range(24):
                 hour_str = self.strip_to_hour_str(time_step)
                 if hour_str not in self.forecast_data:
                     break
@@ -246,28 +337,29 @@ class Weather:
                     0,
                     0,
                     0,
-                    timezone.utc) +
-                timedelta(
-                    days=1) +
-                timedelta(
-                    hours=-
-                    1))
+                    timezone.utc,
+                )
+                + timedelta(days=1)
+                + timedelta(hours=-1)
+            )
             timediff = endtime - time_step
-            for _i in range(round(timediff.total_seconds() / 3600)):
-                result.append(
-                    self.forecast_data[self.strip_to_hour_str(time_step)])
+            for _ in range(round(timediff.total_seconds() / 3600)):
+                result.append(self.forecast_data[self.strip_to_hour_str(time_step)])
                 time_step += timedelta(hours=1)
         return result
 
-    def strip_to_hour_str(self, timestamp: datetime):
+    def strip_to_hour_str(_, timestamp: datetime):
         return timestamp.strftime("%Y-%m-%dT%H:00:00.000Z")
 
-    def strip_to_day(self, timestamp):
+    def strip_to_hour(_, timestamp: datetime):
+        return datetime(timestamp.year, timestamp.month, timestamp.day, timestamp.hour)
+
+    def strip_to_day(_, timestamp: datetime):
         return datetime(timestamp.year, timestamp.month, timestamp.day)
 
     def update(self):
         if (self.issue_time is None) or (
-            datetime.now(timezone.utc) - self.issue_time > timedelta(hours=6)
+            datetime.now(timezone.utc) - self.issue_time >= timedelta(hours=6)
         ):
             kml = download_latest_kml(self.station_id)
             self.parse_kml(kml)
@@ -277,7 +369,10 @@ class Weather:
 
         result = kmlTree.xpath(
             '//kml:ExtendedData/dwd:Forecast[@dwd:elementName="{}"]/dwd:value'.format(
-                weatherDataType.value), namespaces=self.namespaces, )[0].text
+                weatherDataType.value
+            ),
+            namespaces=self.namespaces,
+        )[0].text
         items = []
         for elem in result.split():
             if elem != "-":
@@ -288,12 +383,13 @@ class Weather:
 
     def parse_kml(self, kml):
         tree = etree.parse(BytesIO(kml))
-        result = tree.xpath(
-            "//dwd:IssueTime",
-            namespaces=self.namespaces)[0].text
-        self.issue_time = datetime(
+        result = tree.xpath("//dwd:IssueTime", namespaces=self.namespaces)[0].text
+        issue_time_new = datetime(
             *(time.strptime(result, "%Y-%m-%dT%H:%M:%S.%fZ")[0:6]), 0, timezone.utc
         )
+        # print(f"parsekml self.issue:{self.issue_time} new_issue:{issue_time_new}")
+        # if self.issue_time is None or issue_time_new > self.issue_time:
+        self.issue_time = issue_time_new
 
         result = tree.xpath(
             "//dwd:ForecastTimeSteps/dwd:TimeStep", namespaces=self.namespaces
@@ -301,7 +397,7 @@ class Weather:
         timesteps = []
         for elem in result:
             timesteps.append(elem.text)
-
+        # print(f"timesteps: {timesteps}")
         self.station_name = tree.xpath(
             "//kml:Placemark/kml:description", namespaces=self.namespaces
         )[0].text
@@ -332,8 +428,7 @@ class Weather:
             tree, WeatherDataType.PRECIPITATION_PROBABILITY
         )
 
-        prec_dur = self.get_weather_type(
-            tree, WeatherDataType.PRECIPITATION_DURATION)
+        prec_dur = self.get_weather_type(tree, WeatherDataType.PRECIPITATION_DURATION)
 
         cloud_cov = self.get_weather_type(tree, WeatherDataType.CLOUD_COVERAGE)
 
@@ -365,16 +460,18 @@ class Weather:
                 WeatherDataType.FOG_PROBABILITY.value: fog_prop[i],
             }
             merged_list[timesteps[i]] = item
+        # print(f"temperatures: {self.forecast_data}")
         self.forecast_data = merged_list
 
 
 def download_latest_kml(stationid):
     url = (
-        "https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/" +
-        stationid +
-        "/kml/MOSMIX_L_LATEST_" +
-        stationid +
-        ".kmz")
+        "https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/"
+        + stationid
+        + "/kml/MOSMIX_L_LATEST_"
+        + stationid
+        + ".kmz"
+    )
     request = requests.get(url)
     file = BytesIO(request.content)
     kmz = ZipFile(file, "r")
