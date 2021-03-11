@@ -28,6 +28,14 @@ class Weather_get_timeframe_condition(unittest.TestCase):
         self.assertIsNone(self.dwd_weather.get_timeframe_condition(test_time, 3))
 
     @patch("simple_dwd_weatherforecast.dwdforecast.Weather.update", return_value=None)
+    def test_part_in_timerange(self, _):
+        test_time = datetime(2020, 11, 6, 1, 0)
+        self.assertEqual(
+            self.dwd_weather.get_timeframe_condition(test_time, 6),
+            "cloudy",
+        )
+
+    @patch("simple_dwd_weatherforecast.dwdforecast.Weather.update", return_value=None)
     def test_49_max(self, _):
         test_time = datetime(2020, 11, 6, 10, 0)
         self.assertEqual(

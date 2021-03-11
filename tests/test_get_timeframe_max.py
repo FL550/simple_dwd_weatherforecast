@@ -31,7 +31,19 @@ class Weather_get_timeframe_max(unittest.TestCase):
     def test_not_in_timerange(self):
         test_time = datetime(2000, 11, 7, 3, 30)
         self.assertIsNone(
-            self.dwd_weather.get_timeframe_max(WeatherDataType.PRECIPITATION, test_time, 3)
+            self.dwd_weather.get_timeframe_max(
+                WeatherDataType.PRECIPITATION, test_time, 3
+            )
+        )
+
+    @patch("simple_dwd_weatherforecast.dwdforecast.Weather.update", return_value=None)
+    def test_part_in_timerange(self, _):
+        test_time = datetime(2020, 11, 6, 1, 0)
+        self.assertEqual(
+            self.dwd_weather.get_timeframe_max(
+                WeatherDataType.TEMPERATURE, test_time, 6
+            ),
+            273.65,
         )
 
     @patch("simple_dwd_weatherforecast.dwdforecast.Weather.update", return_value=None)
@@ -48,6 +60,8 @@ class Weather_get_timeframe_max(unittest.TestCase):
     def test_temperature(self, _):
         test_time = datetime(2020, 11, 6, 4, 0)
         self.assertEqual(
-            self.dwd_weather.get_timeframe_max(WeatherDataType.TEMPERATURE, test_time, 3),
+            self.dwd_weather.get_timeframe_max(
+                WeatherDataType.TEMPERATURE, test_time, 3
+            ),
             273.65,
         )

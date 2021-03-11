@@ -156,8 +156,10 @@ class Weather:
     ):
         if shouldUpdate:
             self.update()
-        if self.is_valid_timeframe(timeframe) and self.is_in_timerange(timestamp):
-            return self.get_condition(self.get_timeframe_values(timestamp, timeframe))
+        if self.is_valid_timeframe(timeframe):
+            result = self.get_condition(self.get_timeframe_values(timestamp, timeframe))
+            if result != "":
+                return result
         return None
 
     def get_daily_condition(self, timestamp: datetime, shouldUpdate=True):
@@ -187,7 +189,7 @@ class Weather:
     ):
         if shouldUpdate:
             self.update()
-        if self.is_in_timerange(timestamp) and self.is_valid_timeframe(timeframe):
+        if self.is_valid_timeframe(timeframe):
             return self.get_max(
                 self.get_timeframe_values(timestamp, timeframe), weatherDataType
             )
@@ -224,7 +226,7 @@ class Weather:
     ):
         if shouldUpdate:
             self.update()
-        if self.is_in_timerange(timestamp) and self.is_valid_timeframe(timeframe):
+        if self.is_valid_timeframe(timeframe):
             return self.get_min(
                 self.get_timeframe_values(timestamp, timeframe), weatherDataType
             )
@@ -262,7 +264,7 @@ class Weather:
     ):
         if shouldUpdate:
             self.update()
-        if self.is_valid_timeframe(timeframe) and self.is_in_timerange(timestamp):
+        if self.is_valid_timeframe(timeframe):
             return self.get_sum(
                 self.get_timeframe_values(timestamp, timeframe), weatherDataType
             )
