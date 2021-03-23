@@ -69,6 +69,7 @@ class WeatherDataType(Enum):
     SUN_DURATION = "SunD1" # Unit: s
     SUN_IRRADIANCE = "Rad1h" # Unit: kJ/m2
     FOG_PROBABILITY = "wwM" # Unit: % (0..100)
+    HUMIDITY = "humidity"  # Unit: %
 
 get_forecast_data(weatherDataType: see WeatherDataType, datetime, optional bool shouldUpdate) # Returns the requestes weather data
 

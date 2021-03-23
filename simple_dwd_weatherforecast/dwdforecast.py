@@ -56,6 +56,7 @@ class WeatherDataType(Enum):
     SUN_DURATION = "SunD1"  # Unit: s
     SUN_IRRADIANCE = "Rad1h"  # Unit: kJ/m2
     FOG_PROBABILITY = "wwM"  # Unit: % (0..100)
+    HUMIDITY = "humidity"  # Unit: %
 
 
 class Weather:
@@ -433,8 +434,14 @@ class Weather:
 
         fog_prop = self.get_weather_type(tree, WeatherDataType.FOG_PROBABILITY)
 
+        # Humidity
+        rh_c2 = 17.5043
+        rh_c3 = 241.2
         merged_list = {}
         for i in range(len(timesteps)):
+            T = temperatures[i] - 273.1
+            TD = dewpoints[i] - 273.1
+            RH = 100 * math.exp((rh_c2 * TD / (rh_c3 + TD)) - (rh_c2 * T / (rh_c3 + T)))
             item = {
                 WeatherDataType.TEMPERATURE.value: temperatures[i],
                 WeatherDataType.DEWPOINT.value: dewpoints[i],
@@ -451,6 +458,7 @@ class Weather:
                 WeatherDataType.SUN_DURATION.value: sun_dur[i],
                 WeatherDataType.SUN_IRRADIANCE.value: sun_irr[i],
                 WeatherDataType.FOG_PROBABILITY.value: fog_prop[i],
+                WeatherDataType.HUMIDITY.value: round(RH, 1),
             }
             merged_list[timesteps[i]] = item
         # print(f"temperatures: {self.forecast_data}")
