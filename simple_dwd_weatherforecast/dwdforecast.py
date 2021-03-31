@@ -439,9 +439,16 @@ class Weather:
         rh_c3 = 241.2
         merged_list = {}
         for i in range(len(timesteps)):
-            T = temperatures[i] - 273.1
-            TD = dewpoints[i] - 273.1
-            RH = 100 * math.exp((rh_c2 * TD / (rh_c3 + TD)) - (rh_c2 * T / (rh_c3 + T)))
+            if temperatures[i] is not None and dewpoints[i] is not None:
+                T = temperatures[i] - 273.1
+                TD = dewpoints[i] - 273.1
+                RH = round(
+                    100
+                    * math.exp((rh_c2 * TD / (rh_c3 + TD)) - (rh_c2 * T / (rh_c3 + T))),
+                    1,
+                )
+            else:
+                RH = None
             item = {
                 WeatherDataType.TEMPERATURE.value: temperatures[i],
                 WeatherDataType.DEWPOINT.value: dewpoints[i],
@@ -458,7 +465,7 @@ class Weather:
                 WeatherDataType.SUN_DURATION.value: sun_dur[i],
                 WeatherDataType.SUN_IRRADIANCE.value: sun_irr[i],
                 WeatherDataType.FOG_PROBABILITY.value: fog_prop[i],
-                WeatherDataType.HUMIDITY.value: round(RH, 1),
+                WeatherDataType.HUMIDITY.value: RH,
             }
             merged_list[timesteps[i]] = item
         # print(f"temperatures: {self.forecast_data}")
