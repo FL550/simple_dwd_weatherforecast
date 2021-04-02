@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime
 from simple_dwd_weatherforecast import dwdforecast
-from test_data import parsed_data
+from tests.dummy_data import parsed_data
 
 
 class Weather_get_day_values(unittest.TestCase):
