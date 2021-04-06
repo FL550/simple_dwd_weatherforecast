@@ -5,10 +5,10 @@ from tests.dummy_data import parsed_data
 
 class KMLParseTestCase(unittest.TestCase):
     def setUp(self):
-        self.dwd_weather = dwdforecast.Weather("H889")
+        self.dwd_weather = dwdforecast.Weather("N4333")
 
     def test_parse_kml(self):
-        in_file = open("TEST_N4333.kml", "rb")
+        in_file = open("development/TEST_N4333.kml", "rb")
         data = in_file.read()
         in_file.close()
         self.dwd_weather.parse_kml(data)

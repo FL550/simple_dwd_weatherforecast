@@ -29,6 +29,7 @@ class Weather_get_timeframe_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 2.0,
+                "humidity": 90.4,
             },
             {
                 "TTT": 274.35,
@@ -46,6 +47,7 @@ class Weather_get_timeframe_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 3.0,
+                "humidity": 91.7,
             },
             {
                 "TTT": 274.35,
@@ -63,6 +65,7 @@ class Weather_get_timeframe_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 5.0,
+                "humidity": 92.4,
             },
             {
                 "TTT": 274.35,
@@ -80,6 +83,7 @@ class Weather_get_timeframe_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 6.0,
+                "humidity": 93.0,
             },
             {
                 "TTT": 274.55,
@@ -97,6 +101,7 @@ class Weather_get_timeframe_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 6.0,
+                "humidity": 92.4,
             },
             {
                 "TTT": 274.85,
@@ -114,6 +119,7 @@ class Weather_get_timeframe_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 6.0,
+                "humidity": 91.1,
             },
         ]
 
@@ -141,6 +147,7 @@ class Weather_get_timeframe_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 5.0,
+                "humidity": 92.4,
             },
             {
                 "TTT": 274.35,
@@ -158,6 +165,7 @@ class Weather_get_timeframe_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 6.0,
+                "humidity": 93.0,
             },
             {
                 "TTT": 274.55,
@@ -175,6 +183,7 @@ class Weather_get_timeframe_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 6.0,
+                "humidity": 92.4,
             },
         ]
 
@@ -211,6 +220,7 @@ class Weather_get_timeframe_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 8.0,
+                "humidity": 97.8,
             },
             {
                 "TTT": 273.05,
@@ -228,6 +238,7 @@ class Weather_get_timeframe_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 9.0,
+                "humidity": 95.7,
             },
         ]
 

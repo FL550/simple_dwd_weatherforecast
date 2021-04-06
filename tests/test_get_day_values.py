@@ -29,6 +29,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 2.0,
+                "humidity": 87.9,
             },
             {
                 "TTT": 274.55,
@@ -46,6 +47,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 2.0,
+                "humidity": 90.4,
             },
             {
                 "TTT": 274.35,
@@ -63,6 +65,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 3.0,
+                "humidity": 91.7,
             },
             {
                 "TTT": 274.35,
@@ -80,6 +83,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 5.0,
+                "humidity": 92.4,
             },
             {
                 "TTT": 274.35,
@@ -97,6 +101,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 6.0,
+                "humidity": 93.0,
             },
             {
                 "TTT": 274.55,
@@ -114,6 +119,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 6.0,
+                "humidity": 92.4,
             },
             {
                 "TTT": 274.85,
@@ -131,6 +137,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 6.0,
+                "humidity": 91.1,
             },
             {
                 "TTT": 275.75,
@@ -148,6 +155,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 660.0,
                 "Rad1h": None,
                 "wwM": 7.0,
+                "humidity": 87.3,
             },
             {
                 "TTT": 276.95,
@@ -165,6 +173,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 1260.0,
                 "Rad1h": None,
                 "wwM": 7.0,
+                "humidity": 83.1,
             },
             {
                 "TTT": 278.05,
@@ -182,6 +191,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 1920.0,
                 "Rad1h": None,
                 "wwM": 7.0,
+                "humidity": 79.2,
             },
             {
                 "TTT": 279.25,
@@ -199,6 +209,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 2340.0,
                 "Rad1h": None,
                 "wwM": 5.0,
+                "humidity": 75.0,
             },
             {
                 "TTT": 280.55,
@@ -216,6 +227,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 2580.0,
                 "Rad1h": None,
                 "wwM": 3.0,
+                "humidity": 69.6,
             },
             {
                 "TTT": 281.65,
@@ -233,6 +245,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 2880.0,
                 "Rad1h": None,
                 "wwM": 1.0,
+                "humidity": 66.9,
             },
             {
                 "TTT": 282.45,
@@ -250,6 +263,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 2880.0,
                 "Rad1h": None,
                 "wwM": 1.0,
+                "humidity": 63.8,
             },
             {
                 "TTT": 282.95,
@@ -267,6 +281,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 2760.0,
                 "Rad1h": None,
                 "wwM": 0.0,
+                "humidity": 62.6,
             },
             {
                 "TTT": 282.25,
@@ -284,6 +299,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 2220.0,
                 "Rad1h": None,
                 "wwM": 0.0,
+                "humidity": 66.1,
             },
             {
                 "TTT": 281.65,
@@ -301,6 +317,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 1500.0,
                 "Rad1h": None,
                 "wwM": 1.0,
+                "humidity": 70.3,
             },
             {
                 "TTT": 280.65,
@@ -318,6 +335,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 480.0,
                 "Rad1h": None,
                 "wwM": 1.0,
+                "humidity": 75.2,
             },
             {
                 "TTT": 279.35,
@@ -335,6 +353,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 1.0,
+                "humidity": 84.0,
             },
             {
                 "TTT": 278.35,
@@ -352,6 +371,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 2.0,
+                "humidity": 88.8,
             },
             {
                 "TTT": 277.75,
@@ -369,6 +389,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 2.0,
+                "humidity": 92.6,
             },
             {
                 "TTT": 277.35,
@@ -386,6 +407,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 2.0,
+                "humidity": 92.5,
             },
             {
                 "TTT": 276.85,
@@ -403,6 +425,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 2.0,
+                "humidity": 93.2,
             },
             {
                 "TTT": 276.65,
@@ -420,6 +443,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 3.0,
+                "humidity": 93.8,
             },
         ]
 
@@ -447,6 +471,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 2.0,
+                "humidity": 92.0,
             },
             {
                 "TTT": 278.95,
@@ -464,6 +489,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 2.0,
+                "humidity": 92.6,
             },
             {
                 "TTT": 278.85,
@@ -481,6 +507,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 3.0,
+                "humidity": 92.6,
             },
             {
                 "TTT": 278.75,
@@ -498,6 +525,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 6.0,
+                "humidity": 93.3,
             },
             {
                 "TTT": 278.75,
@@ -515,6 +543,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 6.0,
+                "humidity": 94.6,
             },
             {
                 "TTT": 277.75,
@@ -532,6 +561,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 5.0,
+                "humidity": 91.9,
             },
             {
                 "TTT": 277.85,
@@ -549,6 +579,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 5.0,
+                "humidity": 91.9,
             },
             {
                 "TTT": 277.95,
@@ -566,6 +597,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 60.0,
                 "Rad1h": None,
                 "wwM": 7.0,
+                "humidity": 91.3,
             },
             {
                 "TTT": 278.25,
@@ -583,6 +615,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 240.0,
                 "Rad1h": None,
                 "wwM": 6.0,
+                "humidity": 90.7,
             },
             {
                 "TTT": 278.85,
@@ -600,6 +633,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 480.0,
                 "Rad1h": None,
                 "wwM": 5.0,
+                "humidity": 88.2,
             },
             {
                 "TTT": 279.45,
@@ -617,6 +651,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 600.0,
                 "Rad1h": None,
                 "wwM": 4.0,
+                "humidity": 85.8,
             },
         ]
         self.assertEqual(
@@ -643,6 +678,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 8.0,
+                "humidity": 97.8,
             },
             {
                 "TTT": 273.05,
@@ -660,6 +696,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 9.0,
+                "humidity": 95.7,
             },
             {
                 "TTT": 273.65,
@@ -677,6 +714,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 10.0,
+                "humidity": 92.3,
             },
             {
                 "TTT": 274.55,
@@ -694,6 +732,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 780.0,
                 "Rad1h": None,
                 "wwM": 9.0,
+                "humidity": 88.4,
             },
             {
                 "TTT": 275.95,
@@ -711,6 +750,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 1500.0,
                 "Rad1h": None,
                 "wwM": 8.0,
+                "humidity": 84.2,
             },
             {
                 "TTT": 277.65,
@@ -728,6 +768,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 2160.0,
                 "Rad1h": None,
                 "wwM": 7.0,
+                "humidity": 76.4,
             },
             {
                 "TTT": 279.15,
@@ -745,6 +786,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 2700.0,
                 "Rad1h": None,
                 "wwM": 5.0,
+                "humidity": 68.8,
             },
             {
                 "TTT": 280.85,
@@ -762,6 +804,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 3120.0,
                 "Rad1h": None,
                 "wwM": 3.0,
+                "humidity": 59.9,
             },
             {
                 "TTT": 281.85,
@@ -779,6 +822,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 3180.0,
                 "Rad1h": None,
                 "wwM": 2.0,
+                "humidity": 55.2,
             },
             {
                 "TTT": 282.65,
@@ -796,6 +840,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 3180.0,
                 "Rad1h": None,
                 "wwM": 1.0,
+                "humidity": 51.9,
             },
             {
                 "TTT": 283.05,
@@ -813,6 +858,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 3120.0,
                 "Rad1h": None,
                 "wwM": 0.0,
+                "humidity": 50.9,
             },
             {
                 "TTT": 282.35,
@@ -830,6 +876,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 2640.0,
                 "Rad1h": None,
                 "wwM": 0.0,
+                "humidity": 53.3,
             },
             {
                 "TTT": 281.35,
@@ -847,6 +894,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 1740.0,
                 "Rad1h": None,
                 "wwM": 1.0,
+                "humidity": 56.7,
             },
             {
                 "TTT": 280.25,
@@ -864,6 +912,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 540.0,
                 "Rad1h": None,
                 "wwM": 1.0,
+                "humidity": 60.6,
             },
             {
                 "TTT": 278.95,
@@ -881,6 +930,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 2.0,
+                "humidity": 68.8,
             },
             {
                 "TTT": 277.85,
@@ -898,6 +948,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 2.0,
+                "humidity": 73.7,
             },
             {
                 "TTT": 277.15,
@@ -915,6 +966,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 2.0,
+                "humidity": 77.4,
             },
             {
                 "TTT": 276.75,
@@ -932,6 +984,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 3.0,
+                "humidity": 80.2,
             },
             {
                 "TTT": 276.25,
@@ -949,6 +1002,7 @@ class Weather_get_day_values(unittest.TestCase):
                 "SunD1": 0.0,
                 "Rad1h": None,
                 "wwM": 3.0,
+                "humidity": 81.3,
             },
         ]
         self.assertEqual(
