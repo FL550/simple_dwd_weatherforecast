@@ -40,6 +40,17 @@ def get_distance(lat, lon, _lat, _lon):
     return math.sqrt(math.pow(lat_diff, 2) + math.pow(lon_diff, 2))
 
 
+def get_region(station_id: str):
+    for line in stations.splitlines()[4:]:
+        if len(line) > 1:
+            if line[:6].strip() == station_id:
+                region = line[53:]
+                if region != "":
+                    return region
+                return None
+    return None
+
+
 class WeatherDataType(Enum):
     CONDITION = "condition"
     TEMPERATURE = "TTT"  # Unit: K
@@ -104,9 +115,28 @@ class Weather:
         "95": ("lightning-rainy", 1),
     }
 
+    region_codes = {
+        "Nordrhein-Westfalen": "dweh",
+        "Niedersachsen": "dwhg",
+        "Bremen": "dwhg",
+        "Schleswig-Holstein": "dwhh",
+        "Hamburg": "dwhh",
+        "Sachsen": "dwlg",
+        "Sachsen-Anhalt": "dwlh",
+        "Thüringen": "dwli",
+        "Bayern": "dwmg",
+        "Baden-Württemberg": "dwsg",
+        "Hessen": "dwoh",
+        "Rheinland-Pfalz": "dwoi",
+        "Brandenburg": "dwpg",
+        "Berlin": "dwpg",
+        "Mecklenburg-Vorpommern": "dwph",
+    }
+
     def __init__(self, station_id):
         if is_valid_station_id(station_id):
             self.station_id = station_id
+            self.region = get_region(station_id)
         else:
             raise ValueError("Not a valid station_id")
 
