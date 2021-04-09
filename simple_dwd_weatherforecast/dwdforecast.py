@@ -11,9 +11,9 @@ from .stations import stations
 
 
 def is_valid_station_id(station_id: str):
-    for line in stations.splitlines():
-        if len(line) > 0 and line[0].isdigit():
-            if line[12:18].strip() == station_id:
+    for line in stations.splitlines()[4:]:
+        if len(line) > 1:
+            if line[:6].strip() == station_id:
                 return True
     return False
 
@@ -21,16 +21,16 @@ def is_valid_station_id(station_id: str):
 def get_nearest_station_id(lat: float, lon: float):
     result = ""
     distance = 99999999
-    for line in stations.splitlines():
-        if len(line) > 0 and line[0].isdigit():
-            _lat = line[45:51].strip().split(".")
+    for line in stations.splitlines()[4:]:
+        if len(line) > 1:
+            _lat = line[33:39].strip().split(".")
             _lat = round(float(_lat[0]) + float(_lat[1]) / 60, 2)
-            _lon = line[52:59].strip().split(".")
+            _lon = line[41:47].strip().split(".")
             _lon = round(float(_lon[0]) + float(_lon[1]) / 60, 2)
             distance_temp = get_distance(lat, lon, _lat, _lon)
             if distance > distance_temp:
                 distance = distance_temp
-                result = line[12:18].strip()
+                result = line[:6].strip()
     return result
 
 
