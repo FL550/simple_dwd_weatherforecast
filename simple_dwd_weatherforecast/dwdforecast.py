@@ -501,15 +501,23 @@ class Weather:
         # print(f"temperatures: {self.forecast_data}")
         self.forecast_data = merged_list
 
+    def get_weather_report(self):
+        if self.region is not None:
+            return download_weather_report(self.region_codes[self.region])
+        return None
+
+
+def download_weather_report(region_code):
+    url = f"https://www.dwd.de/DWD/wetter/wv_allg/deutschland/text/vhdl13_{region_code}.html"
+    headers = {
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.116 Safari/537.36"
+    }
+    request = requests.get(url, headers=headers)
+    return request.text
+
 
 def download_latest_kml(stationid):
-    url = (
-        "https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/"
-        + stationid
-        + "/kml/MOSMIX_L_LATEST_"
-        + stationid
-        + ".kmz"
-    )
+    url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/{stationid}/kml/MOSMIX_L_LATEST_{stationid}.kmz"
     request = requests.get(url)
     file = BytesIO(request.content)
     kmz = ZipFile(file, "r")
