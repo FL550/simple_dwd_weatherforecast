@@ -20,6 +20,8 @@ Forecasted weather conditions are evaluated using this [table](https://www.dwd.d
 - snowy-rainy
 - sunny
 
+The weather report for the region which is available on the DWD homepage (see an example [here](https://www.dwd.de/DWD/wetter/wv_allg/deutschland/text/vhdl13_dwoh.html)) can also be retrieved via a method which maps the station to the relevant region.
+
 ## Installation
 
 ```python
@@ -47,11 +49,9 @@ temperature_tomorrow = dwd_weather.get_forecast_data(dwdforecast.WeatherDataType
 All methods return their values as string. The datetime value has to be in UTC. If no data is available for this datetime, None will be returned. With the optional boolean `shouldUpdate` an automated check for new updates can be prevented by setting this parameter to `False`. Otherwise data is updated if new data is available with every function call.
 
 ```python
-dwdforecast.is_valid_station_id(station_id) #Checks if given station_id is valid
+is_valid_station_id(station_id) #Checks if given station_id is valid
 
-dwdforecast.get_nearest_station_id(latitude, longitude) #Returns nearest Station-ID for the coordinates. latitude and longitude expect float values.
-
-get_station_name(optional bool shouldUpdate) #Return Station name
+get_nearest_station_id(latitude, longitude) #Returns nearest Station-ID for the coordinates. latitude and longitude expect float values.
 
 class WeatherDataType(Enum):
     CONDITION = "condition"
@@ -71,25 +71,32 @@ class WeatherDataType(Enum):
     FOG_PROBABILITY = "wwM" # Unit: % (0..100)
     HUMIDITY = "humidity"  # Unit: %
 
-get_forecast_data(weatherDataType: see WeatherDataType, datetime, optional bool shouldUpdate) # Returns the requestes weather data
+class Weather:
 
-get_daily_max(weatherDataType: see WeatherDataType, datetime, optional bool shouldUpdate) # Returns the maximum daily value
+    get_station_name(optional bool shouldUpdate) # Return Station name
 
-get_timeframe_max(weatherDataType: see WeatherDataType, datetime, timeframe: hours after datetime as int, optional bool shouldUpdate) # Returns the maximum of that value within the time frame
+    get_forecast_data(weatherDataType: see WeatherDataType, datetime, optional bool shouldUpdate) # Returns the requestes weather data
 
-get_daily_min(weatherDataType: see WeatherDataType, datetime, optional bool shouldUpdate) # Returns the minimum daily value
+    get_daily_max(weatherDataType: see WeatherDataType, datetime, optional bool shouldUpdate) # Returns the maximum daily value
 
-get_timeframe_min(weatherDataType: see WeatherDataType, datetime, timeframe: hours after datetime as int, optional bool shouldUpdate) # Returns the minimum of that value within the time frame
+    get_timeframe_max(weatherDataType: see WeatherDataType, datetime, timeframe: hours after datetime as int, optional bool shouldUpdate) # Returns the maximum of that value within the time frame
 
-get_daily_sum(weatherDataType: see WeatherDataType, datetime, optional bool shouldUpdate) # Returns the daily sum of that value
+    get_daily_min(weatherDataType: see WeatherDataType, datetime, optional bool shouldUpdate) # Returns the minimum daily value
 
-get_timeframe_sum(weatherDataType: see WeatherDataType, datetime, timeframe: hours after datetime as int, optional bool shouldUpdate) # Returns the sum of that value within the time frame
+    get_timeframe_min(weatherDataType: see WeatherDataType, datetime, timeframe: hours after datetime as int, optional bool shouldUpdate) # Returns the minimum of that value within the time frame
 
-get_forecast_condition(datetime, optional bool shouldUpdate) #Result is condition as text
+    get_daily_sum(weatherDataType: see WeatherDataType, datetime, optional bool shouldUpdate) # Returns the daily sum of that value
 
-get_daily_condition(datetime, optional bool shouldUpdate) #Result is worst condition at this day
+    get_timeframe_sum(weatherDataType: see WeatherDataType, datetime, timeframe: hours after datetime as int, optional bool shouldUpdate) # Returns the sum of that value within the time frame
 
-get_timeframe_condition(datetime, timeframe: hours after datetime as int, optional bool shouldUpdate) #Result is worst condition at this time frame
+    get_forecast_condition(datetime, optional bool shouldUpdate) # Result is condition as text
+
+    get_daily_condition(datetime, optional bool shouldUpdate) # Result is worst condition at this day
+
+    get_timeframe_condition(datetime, timeframe: hours after datetime as int, optional bool shouldUpdate) # Result is worst condition at this time frame
+
+    get_weather_report(optional bool shouldUpdate) # Returns the weather report for the geographical region of the station as HTML
+
 ```
 
 ### Advanced Usage

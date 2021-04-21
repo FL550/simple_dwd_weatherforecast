@@ -501,7 +501,9 @@ class Weather:
         # print(f"temperatures: {self.forecast_data}")
         self.forecast_data = merged_list
 
-    def get_weather_report(self):
+    def get_weather_report(self, shouldUpdate=False):
+        if shouldUpdate:
+            self.update()
         if self.region is not None:
             return download_weather_report(self.region_codes[self.region])
         return None

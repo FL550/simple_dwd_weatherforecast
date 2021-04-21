@@ -7,3 +7,4 @@ init
 dist
 htmlcov
 __init__.pyc
+development/secret.py
