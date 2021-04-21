@@ -77,6 +77,7 @@ class Weather:
     station_name = ""
     issue_time = None
     forecast_data = None
+    weather_report = None
 
     namespaces = {
         "kml": "http://www.opengis.net/kml/2.2",
@@ -387,6 +388,10 @@ class Weather:
         ):
             kml = download_latest_kml(self.station_id)
             self.parse_kml(kml)
+        if self.region is not None:
+            self.weather_report = download_weather_report(
+                self.region_codes[self.region]
+            )
 
     def get_weather_type(self, kmlTree, weatherDataType: WeatherDataType):
         """ Parses the kml-File to the requested value and returns the items as array"""
@@ -504,9 +509,7 @@ class Weather:
     def get_weather_report(self, shouldUpdate=False):
         if shouldUpdate:
             self.update()
-        if self.region is not None:
-            return download_weather_report(self.region_codes[self.region])
-        return None
+        return self.weather_report
 
 
 def download_weather_report(region_code):
