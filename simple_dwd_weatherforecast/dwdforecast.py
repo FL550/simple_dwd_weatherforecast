@@ -389,9 +389,11 @@ class Weather:
             kml = download_latest_kml(self.station_id)
             self.parse_kml(kml)
         if self.region is not None:
-            self.weather_report = download_weather_report(
-                self.region_codes[self.region]
-            )
+            weather_report = download_weather_report(self.region_codes[self.region])
+            a = weather_report.find(">")
+            if a != -1:
+                weather_report = weather_report[a + 1 :]
+            self.weather_report = weather_report
 
     def get_weather_type(self, kmlTree, weatherDataType: WeatherDataType):
         """ Parses the kml-File to the requested value and returns the items as array"""
