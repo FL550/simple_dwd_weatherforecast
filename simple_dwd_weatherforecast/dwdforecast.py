@@ -129,6 +129,7 @@ class Weather:
         "Baden-Württemberg": "dwsg",
         "Hessen": "dwoh",
         "Rheinland-Pfalz": "dwoi",
+        "Saarland": "dwoi",
         "Brandenburg": "dwpg",
         "Berlin": "dwpg",
         "Mecklenburg-Vorpommern": "dwph",
