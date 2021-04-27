@@ -20,3 +20,6 @@ class StationTestCase(unittest.TestCase):
 
     def test_get_region_not_valid(self):
         self.assertIsNone(dwdforecast.get_region("10"))
+
+    def test_region_not_in_germany(self):
+        self.assertIsNone(dwdforecast.get_region("06240"))

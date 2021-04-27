@@ -45,7 +45,7 @@ def get_region(station_id: str):
         if len(line) > 1:
             if line[:6].strip() == station_id:
                 region = line[53:]
-                if region != "":
+                if region != "" and region in Weather.region_codes:
                     return region
                 return None
     return None
