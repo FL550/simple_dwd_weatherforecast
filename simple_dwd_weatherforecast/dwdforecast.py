@@ -203,14 +203,61 @@ class Weather:
         return None
 
     def get_condition(self, weather_data):
+
+        if len(weather_data) == 0:
+            return None
         priority = 99
         condition_text = ""
+        sunny_counter = 1
+        cloudy_counter = 1
+        rainy_counter = 1
+        snowy_counter = 1
+        thunder_counter = 1
+        fog_counter = 1
+
         for item in weather_data:
             if item[WeatherDataType.CONDITION.value] != "-":
                 condition = self.weather_codes[item[WeatherDataType.CONDITION.value]]
+                if condition[0] == "sunny":
+                    sunny_counter += 1
+                if condition[0] == "cloudy":
+                    cloudy_counter += 1
+                if condition[0] == "fog":
+                    fog_counter += 1
+                if condition[0] == "rainy":
+                    rainy_counter += 1
+                if condition[0] == "snowy":
+                    snowy_counter += 1
+                if condition[0] == "lightning-rainy":
+                    thunder_counter += 1
+
                 if condition[1] < priority:
                     priority = condition[1]
                     condition_text = condition[0]
+
+        if cloudy_counter / sunny_counter > 0.7:
+            condition_text = "cloudy"
+        elif cloudy_counter / sunny_counter > 0.2:
+            condition_text = "partlycloudy"
+        else:
+            condition_text = "sunny"
+        if fog_counter / len(weather_data) > 0.5:
+            condition_text = "fog"
+
+        print(snowy_counter / len(weather_data))
+        if snowy_counter / len(weather_data) > 0.2:
+            condition_text = "snowy"
+
+        print(rainy_counter / len(weather_data))
+        if rainy_counter / len(weather_data) > 0.2:
+            if condition_text == "snowy":
+                condition_text = "snowy-rainy"
+            else:
+                condition_text = "rainy"
+
+        if thunder_counter > 1:
+            condition_text = "lightning-rainy"
+
         return str(condition_text)
 
     def get_timeframe_max(
