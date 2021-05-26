@@ -210,10 +210,10 @@ class Weather:
         condition_text = ""
         sunny_counter = 1
         cloudy_counter = 1
-        rainy_counter = 1
-        snowy_counter = 1
-        thunder_counter = 1
-        fog_counter = 1
+        rainy_counter = 0
+        snowy_counter = 0
+        thunder_counter = 0
+        fog_counter = 0
 
         for item in weather_data:
             if item[WeatherDataType.CONDITION.value] != "-":
@@ -243,7 +243,6 @@ class Weather:
             condition_text = "sunny"
         if fog_counter / len(weather_data) > 0.5:
             condition_text = "fog"
-
         print(snowy_counter / len(weather_data))
         if snowy_counter / len(weather_data) > 0.2:
             condition_text = "snowy"
@@ -255,7 +254,7 @@ class Weather:
             else:
                 condition_text = "rainy"
 
-        if thunder_counter > 1:
+        if thunder_counter > 0:
             condition_text = "lightning-rainy"
 
         return str(condition_text)

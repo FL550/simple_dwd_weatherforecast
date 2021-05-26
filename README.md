@@ -75,7 +75,7 @@ class Weather:
 
     get_station_name(optional bool shouldUpdate) # Return Station name
 
-    get_forecast_data(weatherDataType: see WeatherDataType, datetime, optional bool shouldUpdate) # Returns the requestes weather data
+    get_forecast_data(weatherDataType: see WeatherDataType, datetime, optional bool shouldUpdate) # Returns the requested weather data
 
     get_daily_max(weatherDataType: see WeatherDataType, datetime, optional bool shouldUpdate) # Returns the maximum daily value
 
@@ -91,9 +91,9 @@ class Weather:
 
     get_forecast_condition(datetime, optional bool shouldUpdate) # Result is condition as text
 
-    get_daily_condition(datetime, optional bool shouldUpdate) # Result is worst condition at this day
+    get_daily_condition(datetime, optional bool shouldUpdate) # Result is an approximate "feeled" condition at this day
 
-    get_timeframe_condition(datetime, timeframe: hours after datetime as int, optional bool shouldUpdate) # Result is worst condition at this time frame
+    get_timeframe_condition(datetime, timeframe: hours after datetime as int, optional bool shouldUpdate) # Result is an approximate "feeled" condition at this time frame
 
     get_weather_report(optional bool shouldUpdate) # Returns the weather report for the geographical region of the station as HTML
 
