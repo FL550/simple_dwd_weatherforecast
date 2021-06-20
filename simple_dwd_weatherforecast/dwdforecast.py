@@ -206,6 +206,11 @@ class Weather:
 
         if len(weather_data) == 0:
             return None
+        if len(weather_data) == 1:
+            return self.weather_codes[weather_data[0][WeatherDataType.CONDITION.value]][
+                0
+            ]
+
         priority = 99
         condition_text = ""
         sunny_counter = 1

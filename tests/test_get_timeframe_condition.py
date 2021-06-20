@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch
-from datetime import datetime
+from datetime import datetime, timedelta
 from simple_dwd_weatherforecast import dwdforecast
 from tests.dummy_data import parsed_data
 
@@ -57,4 +57,27 @@ class Weather_get_timeframe_condition(unittest.TestCase):
         self.assertEqual(
             self.dwd_weather.get_timeframe_condition(test_time, 3),
             "cloudy",
+        )
+
+    @patch("simple_dwd_weatherforecast.dwdforecast.Weather.update", return_value=None)
+    def test_hourly_timeframe(self, _):
+        test_time = datetime(2020, 11, 6, 4, 0)
+        self.assertEqual(
+            self.dwd_weather.get_timeframe_condition(test_time, 1),
+            "partlycloudy",
+        )
+        test_time = test_time + timedelta(hours=1)
+        self.assertEqual(
+            self.dwd_weather.get_timeframe_condition(test_time, 1),
+            "cloudy",
+        )
+        test_time = test_time + timedelta(hours=1)
+        self.assertEqual(
+            self.dwd_weather.get_timeframe_condition(test_time, 1),
+            "sunny",
+        )
+        test_time = test_time + timedelta(hours=1)
+        self.assertEqual(
+            self.dwd_weather.get_timeframe_condition(test_time, 1),
+            "fog",
         )
