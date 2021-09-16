@@ -67,7 +67,7 @@ class WeatherDataType(Enum):
     CLOUD_COVERAGE = "N" # Unit: % (0..100)
     VISIBILITY = "VV" # Unit: m
     SUN_DURATION = "SunD1" # Unit: s
-    SUN_IRRADIANCE = "Rad1h" # Unit: kJ/m2
+    SUN_IRRADIANCE = "Rad1h" # Unit: W/m2
     FOG_PROBABILITY = "wwM" # Unit: % (0..100)
     HUMIDITY = "humidity"  # Unit: %
 
