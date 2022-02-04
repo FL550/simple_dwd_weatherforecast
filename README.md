@@ -89,6 +89,8 @@ class Weather:
 
     get_timeframe_sum(weatherDataType: see WeatherDataType, datetime, timeframe: hours after datetime as int, optional bool shouldUpdate) # Returns the sum of that value within the time frame
 
+    get_timeframe_avg(weatherDataType: see WeatherDataType, datetime, timeframe: hours after datetime as int, optional bool shouldUpdate) # Returns the average of that value within the time frame
+
     get_forecast_condition(datetime, optional bool shouldUpdate) # Result is condition as text
 
     get_daily_condition(datetime, optional bool shouldUpdate) # Result is an approximate "feeled" condition at this day

@@ -371,6 +371,33 @@ class Weather:
                 value_sum += float(value)
         return round(value_sum, 2)
 
+    def get_timeframe_avg(
+        self,
+        weatherDataType: WeatherDataType,
+        timestamp: datetime,
+        timeframe: int,
+        shouldUpdate=True,
+    ):
+        if shouldUpdate:
+            self.update()
+        if self.is_valid_timeframe(timeframe):
+            return self.get_avg(
+                self.get_timeframe_values(timestamp, timeframe), weatherDataType
+            )
+        return None
+
+    def get_avg(_, weather_data, weatherDataType):
+        value_sum = 0.0
+        count = len(weather_data)
+        if count != 0:
+            for item in weather_data:
+                value = item[weatherDataType.value]
+                if value:
+                    value_sum += float(value)
+            return round(value_sum/len(weather_data), 2)
+        else:
+            return None
+
     def get_timeframe_values(self, timestamp: datetime, timeframe: int):
         "timestamp has to be checked prior to be in timerange"
         result = []
