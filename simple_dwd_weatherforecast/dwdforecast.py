@@ -603,7 +603,7 @@ def download_weather_report(region_code):
 
 
 def download_latest_kml(stationid):
-    url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/{stationid}/kml/MOSMIX_L_LATEST_{stationid}.kmz"
+    url = f"http://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/{stationid}/kml/MOSMIX_L_LATEST_{stationid}.kmz"
     request = requests.get(url)
     file = BytesIO(request.content)
     kmz = ZipFile(file, "r")
