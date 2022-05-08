@@ -81,7 +81,7 @@ class Weather:
 
     namespaces = {
         "kml": "http://www.opengis.net/kml/2.2",
-        "dwd": "https://opendata.dwd.de/weather/lib/pointforecast_dwd_extension_V1_0.xsd",
+        "dwd": "http://opendata.dwd.de/weather/lib/pointforecast_dwd_extension_V1_0.xsd",
     }
 
     weather_codes = {
