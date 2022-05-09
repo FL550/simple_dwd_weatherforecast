@@ -81,7 +81,7 @@ class Weather:
 
     namespaces = {
         "kml": "http://www.opengis.net/kml/2.2",
-        "dwd": "http://opendata.dwd.de/weather/lib/pointforecast_dwd_extension_V1_0.xsd",
+        "dwd": "https://opendata.dwd.de/weather/lib/pointforecast_dwd_extension_V1_0.xsd",
     }
 
     weather_codes = {
@@ -603,7 +603,7 @@ def download_weather_report(region_code):
 
 
 def download_latest_kml(stationid):
-    url = f"http://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/{stationid}/kml/MOSMIX_L_LATEST_{stationid}.kmz"
+    url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/{stationid}/kml/MOSMIX_L_LATEST_{stationid}.kmz"
     request = requests.get(url)
     file = BytesIO(request.content)
     kmz = ZipFile(file, "r")
