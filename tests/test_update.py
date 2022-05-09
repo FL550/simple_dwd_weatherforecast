@@ -12,6 +12,10 @@ class WeatherUpdate(unittest.TestCase):
         self.dwd_weather.forecast_data = parsed_data
         self.dwd_weather.station_name = "BAD HOMBURG"
 
+    def test_download(self):
+        self.dwd_weather.update()
+        self.assertIsNotNone(self.dwd_weather.forecast_data)
+
     @patch(
         "simple_dwd_weatherforecast.dwdforecast.download_latest_kml", return_value=None
     )
