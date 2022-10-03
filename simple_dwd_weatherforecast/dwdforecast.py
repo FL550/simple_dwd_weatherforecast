@@ -461,12 +461,12 @@ class Weather:
     def strip_to_day(_, timestamp: datetime):
         return datetime(timestamp.year, timestamp.month, timestamp.day)
 
-    def update(self):
+    def update(self, force_hourly = False):
         if (self.issue_time is None) or (
             datetime.now(timezone.utc) - self.issue_time >= timedelta(hours=6)
         ):
-            kml = download_latest_kml(self.station_id)
-            self.parse_kml(kml)
+            kml = download_latest_kml(self.station_id, force_hourly)
+            self.parse_kml(kml, force_hourly)
         if self.region is not None:
             weather_report = download_weather_report(self.region_codes[self.region])
             a = weather_report.find(">")
@@ -491,8 +491,9 @@ class Weather:
                 items.append(None)
         return items
 
-    def parse_kml(self, kml):
-        tree = etree.parse(BytesIO(kml))
+    def parse_kml(self, kml, force_hourly = False):
+        p = etree.XMLParser(huge_tree=force_hourly)
+        tree = etree.parse(BytesIO(kml), parser=p)
         result = tree.xpath("//dwd:IssueTime", namespaces=self.namespaces)[0].text
         issue_time_new = datetime(
             *(time.strptime(result, "%Y-%m-%dT%H:%M:%S.%fZ")[0:6]), 0, timezone.utc
@@ -508,9 +509,17 @@ class Weather:
         for elem in result:
             timesteps.append(elem.text)
         # print(f"timesteps: {timesteps}")
+        TODO find
+        <kml:Placemark>
+            <kml:name>H889</kml:name>
+
+        if force_hourly:
+
+        else:
         self.station_name = tree.xpath(
             "//kml:Placemark/kml:description", namespaces=self.namespaces
         )[0].text
+        print(self.station_name)
 
         result = tree.xpath(
             '//kml:ExtendedData/dwd:Forecast[@dwd:elementName="ww"]/dwd:value',
@@ -602,8 +611,11 @@ def download_weather_report(region_code):
     return request.text
 
 
-def download_latest_kml(stationid):
-    url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/{stationid}/kml/MOSMIX_L_LATEST_{stationid}.kmz"
+def download_latest_kml(stationid, force_hourly = False):
+    if force_hourly:
+        url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_S/all_stations/kml/MOSMIX_S_LATEST_240.kmz"
+    else:
+        url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/{stationid}/kml/MOSMIX_L_LATEST_{stationid}.kmz"
     request = requests.get(url)
     file = BytesIO(request.content)
     kmz = ZipFile(file, "r")
