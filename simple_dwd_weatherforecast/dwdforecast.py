@@ -19,8 +19,10 @@ def is_valid_station_id(station_id: str):
 
 
 def get_nearest_station_id(lat: float, lon: float):
-    result = ""
-    distance = 99999999
+    return get_stations_sorted_by_distance(lat, lon)[0][0]
+
+def get_stations_sorted_by_distance(lat: float, lon: float):
+    result = []
     for line in stations.splitlines()[4:]:
         if len(line) > 1:
             _lat = line[33:39].strip().split(".")
@@ -28,9 +30,8 @@ def get_nearest_station_id(lat: float, lon: float):
             _lon = line[41:47].strip().split(".")
             _lon = round(float(_lon[0]) + float(_lon[1]) / 60, 2)
             distance_temp = get_distance(lat, lon, _lat, _lon)
-            if distance > distance_temp:
-                distance = distance_temp
-                result = line[:6].strip()
+            result.append([line[:6].strip(), distance_temp])
+    result.sort(key=lambda x: x[1])
     return result
 
 
