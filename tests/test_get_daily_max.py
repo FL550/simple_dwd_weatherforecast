@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch
 from datetime import datetime
 from simple_dwd_weatherforecast import dwdforecast
-from tests.dummy_data import parsed_data
+from dummy_data import parsed_data
 
 
 class Weather_get_daily_max(unittest.TestCase):

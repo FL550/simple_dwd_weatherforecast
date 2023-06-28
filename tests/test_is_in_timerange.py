@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime
 from simple_dwd_weatherforecast import dwdforecast
-from tests.dummy_data import parsed_data
+from dummy_data import parsed_data
 
 
 class Weather_is_in_timerange(unittest.TestCase):
