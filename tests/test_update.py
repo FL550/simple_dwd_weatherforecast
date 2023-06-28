@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 from simple_dwd_weatherforecast import dwdforecast
-from tests.dummy_data import parsed_data
+from dummy_data import parsed_data
 from datetime import datetime, timezone
 import time
 
