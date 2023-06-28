@@ -4,6 +4,8 @@
 
 DISCLAIMER: This project is a private open source project and doesn't have any connection with Deutscher Wetterdienst.
 
+## Weather data
+
 This is a python package for simple access to hourly forecast data for the next 10 days. The data is updated every six hours and updated when needed.
 
 Available station-IDs can be found [here](simple_dwd_weatherforecast/stations.py) in the third column or you can use the method `dwdforecast.get_nearest_station_id(latitude, longitude)` which tries to find it for you.
@@ -22,6 +24,10 @@ Forecasted weather conditions are evaluated using this [table](https://www.dwd.d
 
 The weather report for the region which is available on the DWD homepage (see an example [here](https://www.dwd.de/DWD/wetter/wv_allg/deutschland/text/vhdl13_dwoh.html)) can also be retrieved via a method which maps the station to the relevant region.
 
+## Weather maps
+
+You can also retrieve weather maps from the DWD GeoServer with this package.
+
 ## Installation
 
 ```python
@@ -30,6 +36,9 @@ python3 -m pip install simple_dwd_weatherforecast
 
 ## Usage
 
+### Weather data
+
+#### Usage example
 ```python
 from simple_dwd_weatherforecast import dwdforecast
 from datetime import datetime, timedelta, timezone
@@ -44,7 +53,7 @@ time_tomorrow = datetime.now(timezone.utc)+timedelta(days=1)
 temperature_tomorrow = dwd_weather.get_forecast_data(dwdforecast.WeatherDataType.TEMPERATURE, time_tomorrow)
 ```
 
-### Available methods
+#### Available methods
 
 All methods return their values as string. The datetime value has to be in UTC. If no data is available for this datetime, None will be returned. With the optional boolean `shouldUpdate` an automated check for new updates can be prevented by setting this parameter to `False`. Otherwise data is updated if new data is available with every function call.
 
@@ -106,10 +115,9 @@ class Weather:
     get_timeframe_condition(datetime, timeframe: hours after datetime as int, optional bool shouldUpdate) # Result is an approximate "feeled" condition at this time frame
 
     get_weather_report(optional bool shouldUpdate) # Returns the weather report for the geographical region of the station as HTML
-
 ```
 
-### Advanced Usage
+#### Advanced Usage
 
 If you want to access the forecast data for the next 10 days directly for further processing, you can do so. All data is stored in dictonary and can be accessed like this:
 
@@ -122,6 +130,49 @@ access_forecast_dict = dwd_weather.forecast_data # dwd_weather.forecast_data con
 ```
 
 Keep in mind that the weather condition is stored as the original digit value as provided by DWD. So if you want to use them, you have to convert these yourself. You can use my simplified conversion from the source code in the variable `weather_codes` or the original conversion available [here](https://www.dwd.de/DE/leistungen/opendata/help/schluessel_datenformate/kml/mosmix_element_weather_xls.xlsx?__blob=publicationFile&v=4).
+
+## Weather maps
+
+You can download weather maps from the DWD GeoServer with this package. There are different options for the displayed foreground and background data. See below for further information.
+
+![example picture of a map produced with this package](/map_example.png?raw=true "Example picture of a map produced with this package")
+
+#### Usage example
+```python
+from simple_dwd_weatherforecast import dwdmap
+
+dwdmap.get_from_location(51.272, 8.84, radius_km=100, map_type=dwdmap.WeatherMapType.NIEDERSCHLAGSRADAR, background_type=dwdmap.WeatherBackgroundMapType.BUNDESLAENDER, file_name="map.png")
+
+dwdmap.get_germany(map_type=dwdmap.WeatherMapType.UVINDEX, width=520, height=580, filename="germany.png")
+```
+
+#### Available methods
+
+```python
+
+class WeatherMapType(Enum):
+    NIEDERSCHLAGSRADAR = "dwd:Niederschlagsradar"
+    MAXTEMP = "dwd:GefuehlteTempMax"
+    UVINDEX = "dwd:UVI_CS"
+    POLLENFLUG = "dwd:Pollenflug"
+    SATELLITE_RGB = "dwd:Satellite_meteosat_1km_euat_rgb_day_hrv_and_night_ir108_3h"
+    SATELLITE_IR = "dwd:Satellite_worldmosaic_3km_world_ir108_3h"
+    WARNUNGEN_GEMEINDEN = "dwd:Warnungen_Gemeinden"
+    WARNUNGEN_KREISE = "dwd:Warnungen_Landkreise"
+
+class WeatherBackgroundMapType(Enum):
+    LAENDER = "dwd:Laender"
+    BUNDESLAENDER = "dwd:Warngebiete_Bundeslaender"
+    KREISE = "dwd:Warngebiete_Kreise"
+    GEMEINDEN = "dwd:Warngebiete_Gemeinden"
+    SATELLIT = "dwd:bluemarble"
+
+def get_from_location(longitude, latitude, radius_km, map_type: WeatherMapType, background_type: WeatherBackgroundMapType, optional integer image_width, optional integer image_height, optional string filename (default:"map.png")) #Saves map with given radius from coordinates
+
+get_germany(map_type: WeatherMapType, optional integer image_width, optional integer image_height, optional string filename (default:"map.png")) #Saves map of whole germany
+
+get_map(minx,miny,maxx,maxy, map_type: WeatherMapType, background_type: WeatherBackgroundMapType, optional integer image_width, optional integer image_height, optional string filename (default:"map.png")) #Map retrieval
+```
 
 ## Help and Contribution
 
