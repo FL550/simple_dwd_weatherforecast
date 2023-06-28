@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 from simple_dwd_weatherforecast import dwdforecast
-from tests.dummy_data import parsed_data
+from dummy_data import parsed_data
 from datetime import datetime, timezone
 import time
 
@@ -13,7 +13,7 @@ class WeatherUpdate(unittest.TestCase):
         self.dwd_weather.station_name = "BAD HOMBURG"
 
     def test_download(self):
-        self.dwd_weather.update(True)
+        self.dwd_weather.update(force_hourly=True)
         self.assertIsNotNone(self.dwd_weather.forecast_data)
 
     @patch(

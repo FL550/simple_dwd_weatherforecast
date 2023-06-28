@@ -48,10 +48,18 @@ temperature_tomorrow = dwd_weather.get_forecast_data(dwdforecast.WeatherDataType
 
 All methods return their values as string. The datetime value has to be in UTC. If no data is available for this datetime, None will be returned. With the optional boolean `shouldUpdate` an automated check for new updates can be prevented by setting this parameter to `False`. Otherwise data is updated if new data is available with every function call.
 
+There is also data available which is updated every hour by DWD. Be careful though, as this will download each time roughly 37MB of data. Furthermore, some elements are missing from this data:
+- PRECIPITATION_PROBABILITY
+- PRECIPITATION_DURATION
+
+You can use this data by using the optional parameter `force_hourly=True`.
+
 ```python
 is_valid_station_id(station_id) #Checks if given station_id is valid
 
 get_nearest_station_id(latitude, longitude) #Returns nearest Station-ID for the coordinates. latitude and longitude expect float values.
+
+update(optional bool force_hourly) #Force fetch of new data from the DWD server. With this parameter set to True, there will be missing the precipitation forecast. See above.
 
 class WeatherDataType(Enum):
     CONDITION = "condition"

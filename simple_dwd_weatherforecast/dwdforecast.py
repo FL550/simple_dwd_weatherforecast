@@ -477,13 +477,18 @@ class Weather:
     def get_weather_type(self, kmlTree, weatherDataType: WeatherDataType):
         """ Parses the kml-File to the requested value and returns the items as array"""
 
+        items = []
         result = kmlTree.xpath(
-            '//kml:ExtendedData/dwd:Forecast[@dwd:elementName="{}"]/dwd:value'.format(
+            './kml:ExtendedData/dwd:Forecast[@dwd:elementName="{}"]/dwd:value'.format(
                 weatherDataType.value
             ),
             namespaces=self.namespaces,
-        )[0].text
-        items = []
+        )
+        if len(result) == 0:
+            return items
+
+        result = result[0].text
+
         for elem in result.split():
             if elem != "-":
                 items.append(round(float(elem), 2))
@@ -509,20 +514,18 @@ class Weather:
         for elem in result:
             timesteps.append(elem.text)
         # print(f"timesteps: {timesteps}")
-        TODO find
-        <kml:Placemark>
-            <kml:name>H889</kml:name>
 
-        if force_hourly:
-
-        else:
+        for placemark in tree.findall("//kml:Placemark", namespaces=self.namespaces):
+            item = placemark.find("./kml:name", namespaces=self.namespaces)
+            if item.text == self.station_id:
+                tree = placemark
+                break
         self.station_name = tree.xpath(
-            "//kml:Placemark/kml:description", namespaces=self.namespaces
+            "./kml:description", namespaces=self.namespaces
         )[0].text
-        print(self.station_name)
 
         result = tree.xpath(
-            '//kml:ExtendedData/dwd:Forecast[@dwd:elementName="ww"]/dwd:value',
+            './kml:ExtendedData/dwd:Forecast[@dwd:elementName="ww"]/dwd:value',
             namespaces=self.namespaces,
         )[0].text
         conditions = []
@@ -583,8 +586,8 @@ class Weather:
                 WeatherDataType.WIND_SPEED.value: wind_speed[i],
                 WeatherDataType.WIND_GUSTS.value: wind_gusts[i],
                 WeatherDataType.PRECIPITATION.value: prec_sum[i],
-                WeatherDataType.PRECIPITATION_PROBABILITY.value: prec_prop[i],
-                WeatherDataType.PRECIPITATION_DURATION.value: prec_dur[i],
+                WeatherDataType.PRECIPITATION_PROBABILITY.value: None if len(prec_prop) == 0 else prec_prop[i],
+                WeatherDataType.PRECIPITATION_DURATION.value: None if len(prec_dur) == 0 else prec_dur[i],
                 WeatherDataType.CLOUD_COVERAGE.value: cloud_cov[i],
                 WeatherDataType.VISIBILITY.value: visibility[i],
                 WeatherDataType.SUN_DURATION.value: sun_dur[i],
