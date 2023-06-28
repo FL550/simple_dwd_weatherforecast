@@ -10,6 +10,14 @@ class StationTestCase(unittest.TestCase):
             "Wrong nearest station",
         )
 
+    def test_stations_ordered_by_distance(self):
+        list = dwdforecast.get_stations_sorted_by_distance(51.272388, 8.645408)
+        self.assertGreater(
+            list[1][1],
+            list[0][1],
+            "List not ordered by distance",
+        )
+
     def test_is_valid_station_id_true(self):
         self.assertTrue(dwdforecast.is_valid_station_id("EW024"))
         self.assertTrue(dwdforecast.is_valid_station_id("17600"))
