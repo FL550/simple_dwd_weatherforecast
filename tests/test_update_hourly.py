@@ -17,22 +17,16 @@ class WeatherUpdate(unittest.TestCase):
         self.assertIsNotNone(self.dwd_weather.forecast_data)
 
     @patch(
-        "simple_dwd_weatherforecast.dwdforecast.download_latest_kml", return_value=None
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_kml", return_value=None
     )
-    @patch(
-        "simple_dwd_weatherforecast.dwdforecast.Weather.parse_kml", return_value=None
-    )
-    def test_issue_time_none(self, mock_function, _):
+    def test_issue_time_none(self, mock_function):
         self.dwd_weather.update()
         mock_function.assert_called()
 
     @patch(
-        "simple_dwd_weatherforecast.dwdforecast.download_latest_kml", return_value=None
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_kml", return_value=None
     )
-    @patch(
-        "simple_dwd_weatherforecast.dwdforecast.Weather.parse_kml", return_value=None
-    )
-    def test_issue_time_old(self, mock_function, _):
+    def test_issue_time_old(self, mock_function):
         self.dwd_weather.issue_time = datetime(
             *(time.strptime("2020-11-06T03:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ")[0:6]),
             0,
@@ -42,7 +36,7 @@ class WeatherUpdate(unittest.TestCase):
         mock_function.assert_called()
 
     @patch(
-        "simple_dwd_weatherforecast.dwdforecast.download_latest_kml", return_value=None
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_kml", return_value=None
     )
     @patch(
         "simple_dwd_weatherforecast.dwdforecast.Weather.parse_kml", return_value=None

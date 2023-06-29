@@ -6,31 +6,36 @@ from lxml import etree
 from datetime import datetime, timedelta, timezone
 import time
 import math
+import json
 
-from .stations import stations
+# from .stations import stations
+with open("stations.json", encoding="utf-8") as f:
+    stations = json.load(f)
 
 
 def is_valid_station_id(station_id: str):
-    for line in stations.splitlines()[4:]:
-        if len(line) > 1:
-            if line[:6].strip() == station_id:
-                return True
-    return False
+    return station_id in stations
 
 
 def get_nearest_station_id(lat: float, lon: float):
     return get_stations_sorted_by_distance(lat, lon)[0][0]
 
+
 def get_stations_sorted_by_distance(lat: float, lon: float):
     result = []
-    for line in stations.splitlines()[4:]:
-        if len(line) > 1:
-            _lat = line[33:39].strip().split(".")
+    for station in stations.items():
+        _lat = station[1]["lat"].split(".")
+        if len(_lat) == 2:
             _lat = round(float(_lat[0]) + float(_lat[1]) / 60, 2)
-            _lon = line[41:47].strip().split(".")
+        else:
+            _lat = float(_lat[0])
+        _lon = station[1]["lon"].split(".")
+        if len(_lon) == 2:
             _lon = round(float(_lon[0]) + float(_lon[1]) / 60, 2)
-            distance_temp = get_distance(lat, lon, _lat, _lon)
-            result.append([line[:6].strip(), distance_temp])
+        else:
+            _lon = float(_lon[0])
+        distance_temp = get_distance(lat, lon, _lat, _lon)
+        result.append([station[0], distance_temp])
     result.sort(key=lambda x: x[1])
     return result
 
@@ -42,13 +47,11 @@ def get_distance(lat, lon, _lat, _lon):
 
 
 def get_region(station_id: str):
-    for line in stations.splitlines()[4:]:
-        if len(line) > 1:
-            if line[:6].strip() == station_id:
-                region = line[53:]
-                if region != "" and region in Weather.region_codes:
-                    return region
-                return None
+    if (
+        station_id in stations.keys()
+        and stations[station_id]["bundesland"] in Weather.region_codes.keys()
+    ):
+        return stations[station_id]["bundesland"]
     return None
 
 
@@ -79,6 +82,7 @@ class Weather:
     issue_time = None
     forecast_data = None
     weather_report = None
+    etags = {}
 
     namespaces = {
         "kml": "http://www.opengis.net/kml/2.2",
@@ -118,22 +122,22 @@ class Weather:
     }
 
     region_codes = {
-        "Nordrhein-Westfalen": "dweh",
-        "Niedersachsen": "dwhg",
-        "Bremen": "dwhg",
-        "Schleswig-Holstein": "dwhh",
-        "Hamburg": "dwhh",
-        "Sachsen": "dwlg",
-        "Sachsen-Anhalt": "dwlh",
-        "Thüringen": "dwli",
-        "Bayern": "dwmg",
-        "Baden-Württemberg": "dwsg",
-        "Hessen": "dwoh",
-        "Rheinland-Pfalz": "dwoi",
-        "Saarland": "dwoi",
-        "Brandenburg": "dwpg",
-        "Berlin": "dwpg",
-        "Mecklenburg-Vorpommern": "dwph",
+        "NW": "dweh",
+        "NI": "dwhg",
+        "HB": "dwhg",
+        "SH": "dwhh",
+        "HH": "dwhh",
+        "SN": "dwlg",
+        "ST": "dwlh",
+        "TH": "dwli",
+        "BY": "dwmg",
+        "DW": "dwsg",
+        "HE": "dwoh",
+        "RP": "dwoi",
+        "SL": "dwoi",
+        "BB": "dwpg",
+        "BE": "dwpg",
+        "MV": "dwph",
     }
 
     def __init__(self, station_id):
@@ -204,7 +208,6 @@ class Weather:
         return None
 
     def get_condition(self, weather_data):
-
         if len(weather_data) == 0:
             return None
         if len(weather_data) == 1:
@@ -395,7 +398,7 @@ class Weather:
                 value = item[weatherDataType.value]
                 if value:
                     value_sum += float(value)
-            return round(value_sum/len(weather_data), 2)
+            return round(value_sum / len(weather_data), 2)
         else:
             return None
 
@@ -462,21 +465,19 @@ class Weather:
     def strip_to_day(_, timestamp: datetime):
         return datetime(timestamp.year, timestamp.month, timestamp.day)
 
-    def update(self, force_hourly = False):
-        if (self.issue_time is None) or (
-            datetime.now(timezone.utc) - self.issue_time >= timedelta(hours=6)
+    def update(self, force_hourly=False):
+        if (
+            (self.issue_time is None)
+            or (datetime.now(timezone.utc) - self.issue_time >= timedelta(hours=6))
+            or force_hourly
         ):
-            kml = download_latest_kml(self.station_id, force_hourly)
-            self.parse_kml(kml, force_hourly)
+            self.download_latest_kml(self.station_id, force_hourly)
+
         if self.region is not None:
-            weather_report = download_weather_report(self.region_codes[self.region])
-            a = weather_report.find(">")
-            if a != -1:
-                weather_report = weather_report[a + 1 :]
-            self.weather_report = weather_report
+            self.download_weather_report(self.region_codes[self.region])
 
     def get_weather_type(self, kmlTree, weatherDataType: WeatherDataType):
-        """ Parses the kml-File to the requested value and returns the items as array"""
+        """Parses the kml-File to the requested value and returns the items as array"""
 
         items = []
         result = kmlTree.xpath(
@@ -497,7 +498,7 @@ class Weather:
                 items.append(None)
         return items
 
-    def parse_kml(self, kml, force_hourly = False):
+    def parse_kml(self, kml, force_hourly=False):
         p = etree.XMLParser(huge_tree=force_hourly)
         tree = etree.parse(BytesIO(kml), parser=p)
         result = tree.xpath("//dwd:IssueTime", namespaces=self.namespaces)[0].text
@@ -521,9 +522,9 @@ class Weather:
             if item.text == self.station_id:
                 tree = placemark
                 break
-        self.station_name = tree.xpath(
-            "./kml:description", namespaces=self.namespaces
-        )[0].text
+        self.station_name = tree.xpath("./kml:description", namespaces=self.namespaces)[
+            0
+        ].text
 
         result = tree.xpath(
             './kml:ExtendedData/dwd:Forecast[@dwd:elementName="ww"]/dwd:value',
@@ -587,8 +588,12 @@ class Weather:
                 WeatherDataType.WIND_SPEED.value: wind_speed[i],
                 WeatherDataType.WIND_GUSTS.value: wind_gusts[i],
                 WeatherDataType.PRECIPITATION.value: prec_sum[i],
-                WeatherDataType.PRECIPITATION_PROBABILITY.value: None if len(prec_prop) == 0 else prec_prop[i],
-                WeatherDataType.PRECIPITATION_DURATION.value: None if len(prec_dur) == 0 else prec_dur[i],
+                WeatherDataType.PRECIPITATION_PROBABILITY.value: None
+                if len(prec_prop) == 0
+                else prec_prop[i],
+                WeatherDataType.PRECIPITATION_DURATION.value: None
+                if len(prec_dur) == 0
+                else prec_dur[i],
                 WeatherDataType.CLOUD_COVERAGE.value: cloud_cov[i],
                 WeatherDataType.VISIBILITY.value: visibility[i],
                 WeatherDataType.SUN_DURATION.value: sun_dur[i],
@@ -605,23 +610,37 @@ class Weather:
             self.update()
         return self.weather_report
 
+    def download_weather_report(self, region_code):
+        url = f"https://www.dwd.de/DWD/wetter/wv_allg/deutschland/text/vhdl13_{region_code}.html"
+        headers = {
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.116 Safari/537.36"
+        }
+        headers["If-None-Match"] = self.etags[url] if url in self.etags else ""
+        request = requests.get(url, headers=headers)
+        # If resource has not been modified, return
+        if request.status_code == 304:
+            return
+        self.etags[url] = request.headers["ETag"]
+        weather_report = request.text
+        a = weather_report.find(">")
+        if a != -1:
+            weather_report = weather_report[a + 1 :]
+        self.weather_report = weather_report
 
-def download_weather_report(region_code):
-    url = f"https://www.dwd.de/DWD/wetter/wv_allg/deutschland/text/vhdl13_{region_code}.html"
-    headers = {
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.116 Safari/537.36"
-    }
-    request = requests.get(url, headers=headers)
-    return request.text
-
-
-def download_latest_kml(stationid, force_hourly = False):
-    if force_hourly:
-        url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_S/all_stations/kml/MOSMIX_S_LATEST_240.kmz"
-    else:
-        url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/{stationid}/kml/MOSMIX_L_LATEST_{stationid}.kmz"
-    request = requests.get(url)
-    file = BytesIO(request.content)
-    kmz = ZipFile(file, "r")
-    kml = kmz.open(kmz.namelist()[0], "r").read()
-    return kml
+    def download_latest_kml(self, stationid, force_hourly=False):
+        if force_hourly:
+            url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_S/all_stations/kml/MOSMIX_S_LATEST_240.kmz"
+        else:
+            url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/{stationid}/kml/MOSMIX_L_LATEST_{stationid}.kmz"
+        headers = {}
+        headers["If-None-Match"] = self.etags[url] if url in self.etags else ""
+        request = requests.get(url, headers=headers)
+        print(request.status_code)
+        # If resource has not been modified, return
+        if request.status_code == 304:
+            return
+        self.etags[url] = request.headers["ETag"]
+        file = BytesIO(request.content)
+        kmz = ZipFile(file, "r")
+        kml = kmz.open(kmz.namelist()[0], "r").read()
+        self.parse_kml(kml, force_hourly)
