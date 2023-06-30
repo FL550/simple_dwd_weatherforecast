@@ -8,10 +8,12 @@ import time
 import math
 import json
 import csv
+import importlib.resources
 
-# from .stations import stations
-with open("stations.json", encoding="utf-8") as f:
-    stations = json.load(f)
+with importlib.resources.open_text(
+    "simple_dwd_weatherforecast", "stations.json"
+) as file:
+    stations = json.load(file)
 
 
 def load_station_id(station_id: str):
