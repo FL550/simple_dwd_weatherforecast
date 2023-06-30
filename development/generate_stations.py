@@ -106,7 +106,7 @@ for i in range_iter:
     stations[groups.group("id")] = {
         "name": stations_list[groups.group("id")]["name"]
         if is_in_stations_list
-        else groups.group("name"),
+        else groups.group("name").title(),
         "icao": groups.group("icao"),
         "lat": stations_list[groups.group("id")]["lat"]
         if is_in_stations_list
