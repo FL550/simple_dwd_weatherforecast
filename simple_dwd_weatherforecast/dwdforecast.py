@@ -14,8 +14,10 @@ with open("stations.json", encoding="utf-8") as f:
     stations = json.load(f)
 
 
-def is_valid_station_id(station_id: str):
-    return station_id in stations
+def load_station_id(station_id: str):
+    if station_id in stations:
+        return stations[station_id]
+    return None
 
 
 def get_nearest_station_id(lat: float, lon: float):
@@ -193,15 +195,15 @@ class Weather:
     }
 
     def __init__(self, station_id):
-        if is_valid_station_id(station_id):
+        station = load_station_id(station_id)
+        if station:
             self.station_id = station_id
+            self.station_name = station["name"]
             self.region = get_region(station_id)
         else:
             raise ValueError("Not a valid station_id")
 
-    def get_station_name(self, shouldUpdate=False):
-        if self.station_name == "" or shouldUpdate:
-            self.update()
+    def get_station_name(self):
         return self.station_name
 
     def is_in_timerange(self, timestamp: datetime):
@@ -217,7 +219,7 @@ class Weather:
         return 24 % timeframe == 0
 
     def has_report(self, station_id):
-        if is_valid_station_id(station_id):
+        if load_station_id(station_id):
             return stations[station_id]["report_available"] == 1
         return False
 
@@ -593,9 +595,9 @@ class Weather:
             if item.text == self.station_id:
                 tree = placemark
                 break
-        self.station_name = tree.xpath("./kml:description", namespaces=self.namespaces)[
-            0
-        ].text
+        self.loaded_station_name = tree.xpath(
+            "./kml:description", namespaces=self.namespaces
+        )[0].text
 
         result = tree.xpath(
             './kml:ExtendedData/dwd:Forecast[@dwd:elementName="ww"]/dwd:value',
