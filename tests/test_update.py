@@ -12,21 +12,38 @@ class WeatherUpdate(unittest.TestCase):
         self.dwd_weather.forecast_data = parsed_data
         self.dwd_weather.station_name = "BAD HOMBURG"
 
-    def test_download(self):
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_report", return_value=None
+    )
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_weather_report", return_value=None,
+    )
+    def test_download(self, _1, _2):
         self.dwd_weather.update()
         self.assertIsNotNone(self.dwd_weather.forecast_data)
 
     @patch(
-        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_kml", return_value=None
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_report", return_value=None
     )
-    def test_issue_time_none(self, mock_function):
-        self.dwd_weather.update()
-        mock_function.assert_called()
-
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_weather_report", return_value=None,
+    )
     @patch(
         "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_kml", return_value=None
     )
-    def test_issue_time_old(self, mock_function):
+    def test_issue_time_none(self, mock_function, _1, _2):
+        self.dwd_weather.update()
+        mock_function.assert_called()
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_report", return_value=None
+    )
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_weather_report", return_value=None,
+    )
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_kml", return_value=None
+    )
+    def test_issue_time_old(self, mock_function, _1, _2):
         self.dwd_weather.issue_time = datetime(
             *(time.strptime("2020-11-06T03:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ")[0:6]),
             0,
@@ -36,15 +53,21 @@ class WeatherUpdate(unittest.TestCase):
         mock_function.assert_called()
 
     @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_report", return_value=None
+    )
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_weather_report", return_value=None,
+    )
+    @patch(
         "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_kml", return_value=None
     )
     @patch(
         "simple_dwd_weatherforecast.dwdforecast.Weather.parse_kml", return_value=None
     )
-    def test_issue_time_actual(self, mock_function, _):
+    def test_issue_time_actual(self, mock_parse_kml, _1, _2, _3):
         self.dwd_weather.issue_time = datetime.now(timezone.utc)
         self.dwd_weather.update()
-        mock_function.assert_not_called()
+        mock_parse_kml.assert_not_called()
 
 
 class WeatherDownload(unittest.TestCase):
@@ -79,3 +102,73 @@ class WeatherDownload(unittest.TestCase):
         self.dwd_weather.etags = {}
         self.dwd_weather.download_latest_kml(stationid)
         mock_function.assert_called()
+
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_report", return_value=None
+    )
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_weather_report", return_value=None,
+    )
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_kml", return_value=None
+    )
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.parse_kml", return_value=None
+    )
+    def test_report_not_called(self, _1, _2, _3, mock_download_latest_report):
+        self.dwd_weather = dwdforecast.Weather("H889")
+        self.dwd_weather.update()
+        mock_download_latest_report.assert_not_called()
+
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_report", return_value=None
+    )
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_weather_report", return_value=None,
+    )
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_kml", return_value=None
+    )
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.parse_kml", return_value=None
+    )
+    def test_report_called(self, _1, _2, _3, mock_download_latest_report):
+        self.dwd_weather = dwdforecast.Weather("01008")
+        self.dwd_weather.update()
+        mock_download_latest_report.assert_called()
+
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_report", return_value=None
+    )
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_weather_report", return_value=None,
+    )
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_kml", return_value=None
+    )
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.parse_kml", return_value=None
+    )
+    def test_weather_report_called(self, _1, _2, mock_download_weather_report, _3):
+        self.dwd_weather = dwdforecast.Weather("01008")
+        self.dwd_weather.region = "HH"
+        self.dwd_weather.update()
+        mock_download_weather_report.assert_called()
+
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_report", return_value=None
+    )
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_weather_report", return_value=None,
+    )
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_kml", return_value=None
+    )
+    @patch(
+        "simple_dwd_weatherforecast.dwdforecast.Weather.parse_kml", return_value=None
+    )
+    def test_weather_report_not_called(self, _1, _2, mock_download_weather_report, _3):
+        self.dwd_weather = dwdforecast.Weather("01008")
+        self.dwd_weather.region = None
+        self.dwd_weather.update()
+        mock_download_weather_report.assert_not_called()

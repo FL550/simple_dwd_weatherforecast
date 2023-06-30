@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 import time
 import math
 import json
+import csv
 
 # from .stations import stations
 with open("stations.json", encoding="utf-8") as f:
@@ -22,6 +23,16 @@ def get_nearest_station_id(lat: float, lon: float):
 
 
 def get_stations_sorted_by_distance(lat: float, lon: float):
+    """
+    Given a latitude and longitude, this function returns a list of stations sorted by their distance from the provided location.
+
+    Parameters:
+        lat (float): The latitude of the location.
+        lon (float): The longitude of the location.
+
+    Returns:
+        list: A list of stations sorted by distance, where each element is a list containing the station ID and its distance from the location.
+    """
     result = []
     for station in stations.items():
         _lat = station[1]["lat"].split(".")
@@ -56,22 +67,28 @@ def get_region(station_id: str):
 
 
 class WeatherDataType(Enum):
-    CONDITION = "condition"
-    TEMPERATURE = "TTT"  # Unit: K
-    DEWPOINT = "Td"  # Unit: K
-    PRESSURE = "PPPP"  # Unit: Pa
-    WIND_SPEED = "FF"  # Unit: m/s
-    WIND_DIRECTION = "DD"  # Unit: Degrees
-    WIND_GUSTS = "FX1"  # Unit: m/s
-    PRECIPITATION = "RR1c"  # Unit: kg/m2
-    PRECIPITATION_PROBABILITY = "wwP"  # Unit: % (0..100)
-    PRECIPITATION_DURATION = "DRR1"  # Unit: s
-    CLOUD_COVERAGE = "N"  # Unit: % (0..100)
-    VISIBILITY = "VV"  # Unit: m
-    SUN_DURATION = "SunD1"  # Unit: s
-    SUN_IRRADIANCE = "Rad1h"  # Unit: kJ/m2
-    FOG_PROBABILITY = "wwM"  # Unit: % (0..100)
-    HUMIDITY = "humidity"  # Unit: %
+    CONDITION = ["condition", "present_weather"]
+    TEMPERATURE = ["TTT", "dry_bulb_temperature_at_2_meter_above_ground"]  # Unit: K
+    DEWPOINT = ["Td", "dew_point_temperature_at_2_meter_above_ground"]  # Unit: K
+    PRESSURE = ["PPPP", "pressure_reduced_to_mean_sea_level"]  # Unit: Pa
+    WIND_SPEED = [
+        "FF",
+        "maximum_wind_speed_as_10_minutes_mean_during_last_hour",
+    ]  # Unit: m/s
+    WIND_DIRECTION = [
+        "DD",
+        "mean_wind_direction_during_last_10 min_at_10_meters_above_ground",
+    ]  # Unit: Degrees
+    WIND_GUSTS = ["FX1", "maximum_wind_speed_last_hour"]  # Unit: m/s
+    PRECIPITATION = ["RR1c", "precipitation_amount_last_hour"]  # Unit: kg/m2
+    PRECIPITATION_PROBABILITY = ["wwP", ""]  # Unit: % (0..100)
+    PRECIPITATION_DURATION = ["DRR1", ""]  # Unit: s
+    CLOUD_COVERAGE = ["N", "cloud_cover_total"]  # Unit: % (0..100)
+    VISIBILITY = ["VV", "horizontal_visibility"]  # Unit: m
+    SUN_DURATION = ["SunD1", ""]  # Unit: s
+    SUN_IRRADIANCE = ["Rad1h", "diffuse_solar_radiation_last_hour"]  # Unit: kJ/m2
+    FOG_PROBABILITY = ["wwM", ""]  # Unit: % (0..100)
+    HUMIDITY = ["humidity", "relative_humidity"]  # Unit: %
 
 
 class Weather:
@@ -81,6 +98,7 @@ class Weather:
     station_name = ""
     issue_time = None
     forecast_data = None
+    report_data = None
     weather_report = None
     etags = {}
 
@@ -119,6 +137,40 @@ class Weather:
         "85": ("snowy-rainy", 7),
         "86": ("snowy-rainy", 6),
         "95": ("lightning-rainy", 1),
+    }
+
+    actual_report_codes = {
+        1: "wolkenlos",
+        2: "heiter",
+        3: "bewoelkt",
+        4: "bedeckt",
+        5: "Nebel",
+        6: "gefrierender Nebel",
+        7: "leichter Regen",
+        8: "Regen",
+        9: "kraeftiger Regen",
+        10: "gefrierender Regen",
+        11: "kraeftiger gefrierender Regen",
+        12: "Schneeregen",
+        13: "kraeftiger Schneeregen",
+        14: "leichter Schneefall",
+        15: "Schneefall",
+        16: "kraeftiger Schneefall",
+        17: "Eiskoerner",
+        18: "Regenschauer",
+        19: "kraeftiger Regenschauer",
+        20: "Schneeregenschauer",
+        21: "kraeftiger Schneeregenschauer",
+        22: "Schneeschauer",
+        23: "kraeftiger Schneeschauer",
+        24: "Graupelschauer",
+        25: "kraeftiger Graupelschauer",
+        26: "Gewitter ohne Niederschlag",
+        27: "Gewitter",
+        28: "kraeftiges Gewitter",
+        29: "Gewitter mit Hagel",
+        30: "kraeftiges Gewitter mit Hagel",
+        31: "Sturm",
     }
 
     region_codes = {
@@ -164,6 +216,11 @@ class Weather:
             return False
         return 24 % timeframe == 0
 
+    def has_report(self, station_id):
+        if is_valid_station_id(station_id):
+            return stations[station_id]["report_available"] == 1
+        return False
+
     def get_forecast_data(
         self, weatherDataType: WeatherDataType, timestamp: datetime, shouldUpdate=True
     ):
@@ -171,7 +228,7 @@ class Weather:
             self.update()
         if self.is_in_timerange(timestamp):
             return self.forecast_data[self.strip_to_hour_str(timestamp)][
-                weatherDataType.value
+                weatherDataType.value[0]
             ]
         return None
 
@@ -183,7 +240,7 @@ class Weather:
             return str(
                 self.weather_codes[
                     self.forecast_data[self.strip_to_hour_str(timestamp)][
-                        WeatherDataType.CONDITION.value
+                        WeatherDataType.CONDITION.value[0]
                     ]
                 ][0]
             )
@@ -211,9 +268,9 @@ class Weather:
         if len(weather_data) == 0:
             return None
         if len(weather_data) == 1:
-            return self.weather_codes[weather_data[0][WeatherDataType.CONDITION.value]][
-                0
-            ]
+            return self.weather_codes[
+                weather_data[0][WeatherDataType.CONDITION.value[0]]
+            ][0]
 
         priority = 99
         condition_text = ""
@@ -225,8 +282,8 @@ class Weather:
         fog_counter = 0
 
         for item in weather_data:
-            if item[WeatherDataType.CONDITION.value] != "-":
-                condition = self.weather_codes[item[WeatherDataType.CONDITION.value]]
+            if item[WeatherDataType.CONDITION.value[0]] != "-":
+                condition = self.weather_codes[item[WeatherDataType.CONDITION.value[0]]]
                 if condition[0] == "sunny":
                     sunny_counter += 1
                 if condition[0] == "cloudy":
@@ -252,11 +309,9 @@ class Weather:
             condition_text = "sunny"
         if fog_counter / len(weather_data) > 0.5:
             condition_text = "fog"
-        print(snowy_counter / len(weather_data))
         if snowy_counter / len(weather_data) > 0.2:
             condition_text = "snowy"
 
-        print(rainy_counter / len(weather_data))
         if rainy_counter / len(weather_data) > 0.2:
             if condition_text == "snowy":
                 condition_text = "snowy-rainy"
@@ -267,6 +322,19 @@ class Weather:
             condition_text = "lightning-rainy"
 
         return str(condition_text)
+
+    def get_reported_weather(self, weatherDataType: WeatherDataType, shouldUpdate=True):
+        if not self.has_report(self.station_id):
+            print("no report for this station available")
+            return None
+        if shouldUpdate:
+            self.update()
+        if weatherDataType == WeatherDataType.CONDITION:
+            return self.actual_report_codes[
+                self.report_data[WeatherDataType.CONDITION.value[0]]
+            ]
+        else:
+            return self.report_data[weatherDataType.value[0]]
 
     def get_timeframe_max(
         self,
@@ -295,7 +363,7 @@ class Weather:
     def get_max(_, weather_data, weatherDataType: WeatherDataType):
         value = None
         for item in weather_data:
-            value_new = item[weatherDataType.value]
+            value_new = item[weatherDataType.value[0]]
             if value_new:
                 if not value:
                     value = -9999999
@@ -332,7 +400,7 @@ class Weather:
     def get_min(_, weather_data, weatherDataType: WeatherDataType):
         value = None
         for item in weather_data:
-            value_new = item[weatherDataType.value]
+            value_new = item[weatherDataType.value[0]]
             if value_new:
                 if not value:
                     value = 9999999
@@ -370,7 +438,7 @@ class Weather:
     def get_sum(_, weather_data, weatherDataType):
         value_sum = 0.0
         for item in weather_data:
-            value = item[weatherDataType.value]
+            value = item[weatherDataType.value[0]]
             if value:
                 value_sum += float(value)
         return round(value_sum, 2)
@@ -395,7 +463,7 @@ class Weather:
         count = len(weather_data)
         if count != 0:
             for item in weather_data:
-                value = item[weatherDataType.value]
+                value = item[weatherDataType.value[0]]
                 if value:
                     value_sum += float(value)
             return round(value_sum / len(weather_data), 2)
@@ -466,6 +534,12 @@ class Weather:
         return datetime(timestamp.year, timestamp.month, timestamp.day)
 
     def update(self, force_hourly=False):
+        if self.has_report(self.station_id):
+            self.download_latest_report()
+
+        if self.region is not None:
+            self.download_weather_report(self.region_codes[self.region])
+
         if (
             (self.issue_time is None)
             or (datetime.now(timezone.utc) - self.issue_time >= timedelta(hours=6))
@@ -473,16 +547,13 @@ class Weather:
         ):
             self.download_latest_kml(self.station_id, force_hourly)
 
-        if self.region is not None:
-            self.download_weather_report(self.region_codes[self.region])
-
     def get_weather_type(self, kmlTree, weatherDataType: WeatherDataType):
         """Parses the kml-File to the requested value and returns the items as array"""
 
         items = []
         result = kmlTree.xpath(
             './kml:ExtendedData/dwd:Forecast[@dwd:elementName="{}"]/dwd:value'.format(
-                weatherDataType.value
+                weatherDataType.value[0]
             ),
             namespaces=self.namespaces,
         )
@@ -580,30 +651,106 @@ class Weather:
             else:
                 RH = None
             item = {
-                WeatherDataType.TEMPERATURE.value: temperatures[i],
-                WeatherDataType.DEWPOINT.value: dewpoints[i],
-                WeatherDataType.CONDITION.value: conditions[i],
-                WeatherDataType.PRESSURE.value: pressure[i],
-                WeatherDataType.WIND_DIRECTION.value: wind_dir[i],
-                WeatherDataType.WIND_SPEED.value: wind_speed[i],
-                WeatherDataType.WIND_GUSTS.value: wind_gusts[i],
-                WeatherDataType.PRECIPITATION.value: prec_sum[i],
-                WeatherDataType.PRECIPITATION_PROBABILITY.value: None
+                WeatherDataType.TEMPERATURE.value[0]: temperatures[i],
+                WeatherDataType.DEWPOINT.value[0]: dewpoints[i],
+                WeatherDataType.CONDITION.value[0]: conditions[i],
+                WeatherDataType.PRESSURE.value[0]: pressure[i],
+                WeatherDataType.WIND_DIRECTION.value[0]: wind_dir[i],
+                WeatherDataType.WIND_SPEED.value[0]: wind_speed[i],
+                WeatherDataType.WIND_GUSTS.value[0]: wind_gusts[i],
+                WeatherDataType.PRECIPITATION.value[0]: prec_sum[i],
+                WeatherDataType.PRECIPITATION_PROBABILITY.value[0]: None
                 if len(prec_prop) == 0
                 else prec_prop[i],
-                WeatherDataType.PRECIPITATION_DURATION.value: None
+                WeatherDataType.PRECIPITATION_DURATION.value[0]: None
                 if len(prec_dur) == 0
                 else prec_dur[i],
-                WeatherDataType.CLOUD_COVERAGE.value: cloud_cov[i],
-                WeatherDataType.VISIBILITY.value: visibility[i],
-                WeatherDataType.SUN_DURATION.value: sun_dur[i],
-                WeatherDataType.SUN_IRRADIANCE.value: sun_irr[i],
-                WeatherDataType.FOG_PROBABILITY.value: fog_prop[i],
-                WeatherDataType.HUMIDITY.value: RH,
+                WeatherDataType.CLOUD_COVERAGE.value[0]: cloud_cov[i],
+                WeatherDataType.VISIBILITY.value[0]: visibility[i],
+                WeatherDataType.SUN_DURATION.value[0]: sun_dur[i],
+                WeatherDataType.SUN_IRRADIANCE.value[0]: sun_irr[i],
+                WeatherDataType.FOG_PROBABILITY.value[0]: fog_prop[i],
+                WeatherDataType.HUMIDITY.value[0]: RH,
             }
             merged_list[timesteps[i]] = item
         # print(f"temperatures: {self.forecast_data}")
         self.forecast_data = merged_list
+
+    def parse_csv_row(self, row: dict):
+        self.report_data = {
+            "time": row["Parameter description"],
+            "date": row["surface observations"],
+            WeatherDataType.CONDITION.value[0]: int(
+                row[WeatherDataType.CONDITION.value[1]]
+            )
+            if row[WeatherDataType.CONDITION.value[1]] != "---"
+            else None,
+            WeatherDataType.TEMPERATURE.value[0]: round(
+                float(
+                    row[WeatherDataType.TEMPERATURE.value[1]]
+                    .replace("---", "0.0")
+                    .replace(",", ".")
+                )
+                + 273.1,
+                1,
+            )
+            if row[WeatherDataType.TEMPERATURE.value[1]] != "---"
+            else None,
+            WeatherDataType.DEWPOINT.value[0]: round(
+                float(row[WeatherDataType.DEWPOINT.value[1]].replace(",", ".")) + 273.1,
+                1,
+            )
+            if row[WeatherDataType.DEWPOINT.value[1]] != "---"
+            else None,
+            WeatherDataType.PRESSURE.value[0]: float(
+                row[WeatherDataType.PRESSURE.value[1]].replace(",", ".")
+            )
+            * 100
+            if row[WeatherDataType.PRESSURE.value[1]] != "---"
+            else None,
+            WeatherDataType.WIND_SPEED.value[0]: round(
+                float(row[WeatherDataType.WIND_SPEED.value[1]].replace(",", ".")) / 3.6,
+                1,
+            )
+            if row[WeatherDataType.WIND_SPEED.value[1]] != "---"
+            else None,
+            WeatherDataType.WIND_DIRECTION.value[0]: int(
+                row[WeatherDataType.WIND_DIRECTION.value[1]]
+            )
+            if row[WeatherDataType.WIND_DIRECTION.value[1]] != "---"
+            else None,
+            WeatherDataType.WIND_GUSTS.value[0]: round(
+                float(row[WeatherDataType.WIND_GUSTS.value[1]].replace(",", ".")) / 3.6,
+                1,
+            )
+            if row[WeatherDataType.WIND_GUSTS.value[1]] != "---"
+            else None,
+            WeatherDataType.PRECIPITATION.value[0]: float(
+                row[WeatherDataType.PRECIPITATION.value[1]].replace(",", ".")
+            )
+            if row[WeatherDataType.PRECIPITATION.value[1]] != "---"
+            else None,
+            WeatherDataType.CLOUD_COVERAGE.value[0]: float(
+                row[WeatherDataType.CLOUD_COVERAGE.value[1]].replace(",", ".")
+            )
+            if row[WeatherDataType.CLOUD_COVERAGE.value[1]] != "---"
+            else None,
+            WeatherDataType.VISIBILITY.value[0]: float(
+                row[WeatherDataType.VISIBILITY.value[1]].replace(",", ".")
+            )
+            if row[WeatherDataType.VISIBILITY.value[1]] != "---"
+            else None,
+            WeatherDataType.SUN_IRRADIANCE.value[0]: float(
+                row[WeatherDataType.SUN_IRRADIANCE.value[1]].replace(",", ".")
+            )
+            if row[WeatherDataType.SUN_IRRADIANCE.value[1]] != "---"
+            else None,
+            WeatherDataType.HUMIDITY.value[0]: float(
+                row[WeatherDataType.HUMIDITY.value[1]].replace(",", ".")
+            )
+            if row[WeatherDataType.HUMIDITY.value[1]] != "---"
+            else None,
+        }
 
     def get_weather_report(self, shouldUpdate=False):
         if shouldUpdate:
@@ -632,10 +779,8 @@ class Weather:
             url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_S/all_stations/kml/MOSMIX_S_LATEST_240.kmz"
         else:
             url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/{stationid}/kml/MOSMIX_L_LATEST_{stationid}.kmz"
-        headers = {}
-        headers["If-None-Match"] = self.etags[url] if url in self.etags else ""
+        headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}
         request = requests.get(url, headers=headers)
-        print(request.status_code)
         # If resource has not been modified, return
         if request.status_code == 304:
             return
@@ -644,3 +789,42 @@ class Weather:
         kmz = ZipFile(file, "r")
         kml = kmz.open(kmz.namelist()[0], "r").read()
         self.parse_kml(kml, force_hourly)
+
+    def download_latest_report(self):
+        url = f"https://opendata.dwd.de/weather/weather_reports/poi/{self.station_id}-BEOB.csv"
+        headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            content = response.content
+            reader = csv.DictReader(content.decode("utf-8").splitlines(), delimiter=";")
+            is_first_run = True
+            backuprows = []
+            for row in reader:
+                if is_first_run:
+                    is_first_run = False
+                    reader.__next__()
+                    continue
+                backuprows.append(reader.__next__())
+                backuprows.append(reader.__next__())
+                backuprows.append(reader.__next__())
+
+                # Some items are only reported each hour
+                for backuprow in backuprows:
+                    if row["cloud_cover_total"] == "---":
+                        row["cloud_cover_total"] = backuprow["cloud_cover_total"]
+                    if row["horizontal_visibility"] == "---":
+                        row["horizontal_visibility"] = backuprow[
+                            "horizontal_visibility"
+                        ]
+                    if row["present_weather"] == "---":
+                        row["present_weather"] = backuprow["present_weather"]
+                self.parse_csv_row(row)
+                # We only want the latest report
+                break
+
+        elif response.status_code == 304:
+            # The report is already up to date
+            print("Report is already up to date")
+        else:
+            # Handle other status codes
+            print(f"Failed to download report. Status code: {response.status_code}")

@@ -6,9 +6,9 @@ DISCLAIMER: This project is a private open source project and doesn't have any c
 
 ## Weather data
 
-This is a python package for simple access to hourly forecast data for the next 10 days. The data is updated every six hours and updated when needed.
+This is a python package for simple access to hourly forecast data for the next 10 days. The data is updated every six hours and updated when needed. Some stations also have actual reported weather, which you can also retrieve.
 
-Available station-IDs can be found [here](simple_dwd_weatherforecast/stations.py) in the third column or you can use the method `dwdforecast.get_nearest_station_id(latitude, longitude)` which tries to find it for you.
+Available station-IDs can be found [here](simple_dwd_weatherforecast/stations.json) or you can use the method `dwdforecast.get_nearest_station_id(latitude, longitude)` which tries to find it for you.
 
 Forecasted weather conditions are evaluated using this [table](https://www.dwd.de/DE/leistungen/opendata/help/schluessel_datenformate/kml/mosmix_element_weather_xls.xlsx?__blob=publicationFile&v=4) and then converted into these possible weather conditions:
 
@@ -21,6 +21,8 @@ Forecasted weather conditions are evaluated using this [table](https://www.dwd.d
 - snowy
 - snowy-rainy
 - sunny
+
+The reported weather is delayed (roughly one hour), so have a close look at the time within the presented data.
 
 The weather report for the region which is available on the DWD homepage (see an example [here](https://www.dwd.de/DWD/wetter/wv_allg/deutschland/text/vhdl13_dwoh.html)) can also be retrieved via a method which maps the station to the relevant region.
 
@@ -93,6 +95,8 @@ class Weather:
     get_station_name(optional bool shouldUpdate) # Return Station name
 
     get_forecast_data(weatherDataType: see WeatherDataType, datetime, optional bool shouldUpdate) # Returns the requested weather data
+
+    get_get_reported_weather(weatherDataType: see WeatherDataType, optional bool shouldUpdate) # Returns the latest actual reported value if available for this station
 
     get_daily_max(weatherDataType: see WeatherDataType, datetime, optional bool shouldUpdate) # Returns the maximum daily value
 
