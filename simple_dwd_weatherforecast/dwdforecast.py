@@ -56,9 +56,13 @@ def get_stations_sorted_by_distance(lat: float, lon: float):
 
 
 def get_distance(lat, lon, _lat, _lon):
-    lat_diff = lat - _lat
-    lon_diff = lon - _lon
-    return math.sqrt(math.pow(lat_diff, 2) + math.pow(lon_diff, 2))
+    """Calculate the distance between two points. Result is returned in km."""
+
+    lon_diff = 111.3 * math.cos((lat + _lat) / 2 * 0.01745) * (lon - _lon)
+
+    lat_diff = 111.3 * (lat - _lat)
+
+    return round(math.sqrt(math.pow(lon_diff, 2) + math.pow(lat_diff, 2)), 1)
 
 
 def get_region(station_id: str):
