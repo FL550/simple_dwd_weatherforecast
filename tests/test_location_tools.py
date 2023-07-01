@@ -5,13 +5,18 @@ from simple_dwd_weatherforecast import dwdforecast
 class LocationToolsTestCase(unittest.TestCase):
     def test_get_nearest_station_id(self):
         self.assertEqual(
-            dwdforecast.get_nearest_station_id(50.272388, 8.645408),
-            "N4333",
+            dwdforecast.get_nearest_station_id(50.291472, 8.607336),
+            "L732",
+            "Wrong nearest station",
+        )
+        self.assertEqual(
+            dwdforecast.get_nearest_station_id(50.357, 8.751),
+            "L635",
             "Wrong nearest station",
         )
 
     def test_stations_ordered_by_distance(self):
-        list = dwdforecast.get_stations_sorted_by_distance(51.272388, 8.645408)
+        list = dwdforecast.get_stations_sorted_by_distance(51.291472, 8.607336)
         self.assertGreater(
             list[1][1],
             list[0][1],

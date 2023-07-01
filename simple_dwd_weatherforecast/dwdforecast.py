@@ -39,16 +39,18 @@ def get_stations_sorted_by_distance(lat: float, lon: float):
     """
     result = []
     for station in stations.items():
-        _lat = station[1]["lat"].split(".")
-        if len(_lat) == 2:
-            _lat = round(float(_lat[0]) + float(_lat[1]) / 60, 2)
-        else:
-            _lat = float(_lat[0])
-        _lon = station[1]["lon"].split(".")
-        if len(_lon) == 2:
-            _lon = round(float(_lon[0]) + float(_lon[1]) / 60, 2)
-        else:
-            _lon = float(_lon[0])
+        _lat = float(station[1]["lat"])
+        _lon = float(station[1]["lon"])
+        # _lat = station[1]["lat"].split(".")
+        # if len(_lat) == 2:
+        #     _lat = round(float(_lat[0]) + float(_lat[1]) / 60, 2)
+        # else:
+        #     _lat = float(_lat[0])
+        # _lon = station[1]["lon"].split(".")
+        # if len(_lon) == 2:
+        #     _lon = round(float(_lon[0]) + float(_lon[1]) / 60, 2)
+        # else:
+        #     _lon = float(_lon[0])
         distance_temp = get_distance(lat, lon, _lat, _lon)
         result.append([station[0], distance_temp])
     result.sort(key=lambda x: x[1])
