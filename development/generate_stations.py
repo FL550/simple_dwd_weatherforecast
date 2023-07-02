@@ -8,6 +8,7 @@ import re
 request = requests.get(
     "https://www.dwd.de/DE/leistungen/met_verfahren_mosmix/mosmix_stationskatalog.cfg?view=nasPublication"
 )
+request.encoding = request.apparent_encoding
 data = request.text.split("\n")
 
 request = requests.get("https://opendata.dwd.de/weather/weather_reports/poi/")
