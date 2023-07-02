@@ -226,7 +226,7 @@ class Weather:
             return False
         return 24 % timeframe == 0
 
-    def has_report(self, station_id):
+    def has_measurement(self, station_id):
         if load_station_id(station_id):
             return stations[station_id]["report_available"] == 1
         return False
@@ -334,11 +334,11 @@ class Weather:
         return str(condition_text)
 
     def get_reported_weather(self, weatherDataType: WeatherDataType, shouldUpdate=True):
-        if not self.has_report(self.station_id):
+        if not self.has_measurement(self.station_id):
             print("no report for this station available")
             return None
-        if shouldUpdate:
-            self.update()
+        if shouldUpdate or self.report_data is None:
+            self.update(with_measurements=True)
         if weatherDataType == WeatherDataType.CONDITION:
             return self.actual_report_codes[
                 self.report_data[WeatherDataType.CONDITION.value[0]]
@@ -543,14 +543,20 @@ class Weather:
     def strip_to_day(_, timestamp: datetime):
         return datetime(timestamp.year, timestamp.month, timestamp.day)
 
-    def update(self, force_hourly=False):
-        if self.has_report(self.station_id):
+    def update(
+        self,
+        force_hourly=False,
+        with_forecast=True,
+        with_measurements=False,
+        with_report=False,
+    ):
+        if with_measurements and self.has_measurement(self.station_id):
             self.download_latest_report()
 
-        if self.region is not None:
+        if with_report and self.region is not None:
             self.download_weather_report(self.region_codes[self.region])
 
-        if (
+        if with_forecast and (
             (self.issue_time is None)
             or (datetime.now(timezone.utc) - self.issue_time >= timedelta(hours=6))
             or force_hourly
@@ -763,8 +769,8 @@ class Weather:
         }
 
     def get_weather_report(self, shouldUpdate=False):
-        if shouldUpdate:
-            self.update()
+        if shouldUpdate or self.weather_report is None:
+            self.update(with_report=True)
         return self.weather_report
 
     def download_weather_report(self, region_code):

@@ -10,12 +10,12 @@ class ReportedWeatherTestCase(unittest.TestCase):
 
     def test_has_report_true(self):
         dwdweather = dwdforecast.Weather("01008")
-        self.assertTrue(dwdweather.has_report("01008"))
+        self.assertTrue(dwdweather.has_measurement("01008"))
 
     def test_has_report_false(self):
         dwdweather = dwdforecast.Weather("X472")
-        self.assertFalse(dwdweather.has_report("X472"))
+        self.assertFalse(dwdweather.has_measurement("X472"))
 
     def test_has_report_invalid_station(self):
         dwdweather = dwdforecast.Weather("01008")
-        self.assertFalse(dwdweather.has_report("01"))
+        self.assertFalse(dwdweather.has_measurement("01"))

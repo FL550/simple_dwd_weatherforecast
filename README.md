@@ -119,6 +119,8 @@ class Weather:
     get_timeframe_condition(datetime, timeframe: hours after datetime as int, optional bool shouldUpdate) # Result is an approximate "feeled" condition at this time frame
 
     get_weather_report(optional bool shouldUpdate) # Returns the weather report for the geographical region of the station as HTML
+
+    update(self, optional bool force_hourly (default: False), optional bool with_forecast (default: True), optional bool with_measurements (default: False), optional bool with_report (default: False)) # Updates the weather data
 ```
 
 #### Advanced Usage
