@@ -811,7 +811,10 @@ class Weather:
         self.parse_kml(kml, force_hourly)
 
     def download_latest_report(self):
-        url = f"https://opendata.dwd.de/weather/weather_reports/poi/{self.station_id}-BEOB.csv"
+        station_id = self.station_id
+        if len(station_id) == 4:
+            station_id = station_id + '_'
+        url = f"https://opendata.dwd.de/weather/weather_reports/poi/{station_id}-BEOB.csv"
         headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
