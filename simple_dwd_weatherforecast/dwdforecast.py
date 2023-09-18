@@ -110,7 +110,7 @@ class Weather:
     forecast_data = None
     report_data = None
     weather_report = None
-    etags = {}
+    etags = None
 
     namespaces = {
         "kml": "http://www.opengis.net/kml/2.2",
@@ -203,6 +203,7 @@ class Weather:
     }
 
     def __init__(self, station_id):
+        self.etags = {}
         station = load_station_id(station_id)
         if station:
             self.station_id = station_id
