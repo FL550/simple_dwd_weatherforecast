@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import requests
 from io import BytesIO
 from zipfile import ZipFile
@@ -694,7 +695,7 @@ class Weather:
             }
             merged_list[timesteps[i]] = item
         # print(f"temperatures: {self.forecast_data}")
-        self.forecast_data = merged_list
+        self.forecast_data = OrderedDict(merged_list)
 
     def parse_csv_row(self, row: dict):
         self.report_data = {
