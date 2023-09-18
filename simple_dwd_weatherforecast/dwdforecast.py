@@ -338,14 +338,17 @@ class Weather:
         if not self.has_measurement(self.station_id):
             print("no report for this station available")
             return None
-        if shouldUpdate or self.report_data is None:
+        if shouldUpdate:
             self.update(with_measurements=True)
-        if weatherDataType == WeatherDataType.CONDITION:
-            return self.actual_report_codes[
-                self.report_data[WeatherDataType.CONDITION.value[0]]
-            ]
+        if self.report_data is not None:
+            if weatherDataType == WeatherDataType.CONDITION:
+                return self.actual_report_codes[
+                    self.report_data[WeatherDataType.CONDITION.value[0]]
+                ]
+            else:
+                return self.report_data[weatherDataType.value[0]]
         else:
-            return self.report_data[weatherDataType.value[0]]
+            print("no report for this station available. Have you updated first?")
 
     def get_timeframe_max(
         self,
