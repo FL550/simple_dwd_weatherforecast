@@ -1,5 +1,4 @@
 import datetime
-from secret import API_KEY
 import requests
 from requests.exceptions import Timeout
 from bs4 import BeautifulSoup
@@ -87,7 +86,8 @@ for i in range_iter:
         _lon = round(float(_lon[0]) + float(_lon[1]) / 60, 2)
         url = f"https://maps.googleapis.com/maps/api/geocode/json?latlng={_lat},{_lon}&location_type=APPROXIMATE&result_type=administrative_area_level_1&language=de&key={API_KEY}"
         try:
-            request = requests.get(url, timeout=10)
+# not allowed
+            #request = requests.get(url, timeout=10)
         except Timeout:
             print("Timeout")
         else:
