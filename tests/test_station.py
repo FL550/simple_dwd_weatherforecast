@@ -4,7 +4,6 @@ from simple_dwd_weatherforecast import dwdforecast
 
 class StationTestCase(unittest.TestCase):
     def test_is_valid_station_id_true(self):
-        self.assertTrue(dwdforecast.load_station_id("EW024"))
         self.assertTrue(dwdforecast.load_station_id("17600"))
         self.assertTrue(dwdforecast.load_station_id("H889"))
         self.assertTrue(dwdforecast.load_station_id("F9509"))
