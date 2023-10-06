@@ -570,7 +570,14 @@ class Weather:
             or (datetime.now(timezone.utc) - self.issue_time >= timedelta(hours=6))
             or force_hourly
         ):
+            if force_hourly:
+                self.download_latest_kml(self.station_id)
+                temp_forecast_data = self.forecast_data
             self.download_latest_kml(self.station_id, force_hourly)
+            if force_hourly:
+                for item in self.forecast_data:
+                    self.forecast_data[item]["wwP"] = temp_forecast_data[item]["wwP"]
+                    self.forecast_data[item]["DRR1"] = temp_forecast_data[item]["DRR1"]
 
     def get_weather_type(self, kmlTree, weatherDataType: WeatherDataType):
         """Parses the kml-File to the requested value and returns the items as array"""

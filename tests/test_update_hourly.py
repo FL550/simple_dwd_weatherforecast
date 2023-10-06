@@ -17,14 +17,16 @@ class WeatherUpdate(unittest.TestCase):
         self.assertIsNotNone(self.dwd_weather.forecast_data)
 
     @patch(
-        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_kml", return_value=None
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_kml",
+        return_value=None,
     )
     def test_issue_time_none(self, mock_function):
         self.dwd_weather.update()
         mock_function.assert_called()
 
     @patch(
-        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_kml", return_value=None
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_kml",
+        return_value=None,
     )
     def test_issue_time_old(self, mock_function):
         self.dwd_weather.issue_time = datetime(
@@ -36,7 +38,8 @@ class WeatherUpdate(unittest.TestCase):
         mock_function.assert_called()
 
     @patch(
-        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_kml", return_value=None
+        "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_kml",
+        return_value=None,
     )
     @patch(
         "simple_dwd_weatherforecast.dwdforecast.Weather.parse_kml", return_value=None
@@ -45,3 +48,17 @@ class WeatherUpdate(unittest.TestCase):
         self.dwd_weather.issue_time = datetime.now(timezone.utc)
         self.dwd_weather.update()
         mock_function.assert_not_called()
+
+    def test_replace_of_prec_probability_duration(self):
+        timestamp = datetime.now(timezone.utc)
+        self.dwd_weather.update(force_hourly=True)
+        self.assertIsNotNone(
+            self.dwd_weather.get_forecast_data(
+                dwdforecast.WeatherDataType.PRECIPITATION_PROBABILITY, timestamp
+            )
+        )
+        self.assertIsNotNone(
+            self.dwd_weather.get_forecast_data(
+                dwdforecast.WeatherDataType.PRECIPITATION_DURATION, timestamp
+            )
+        )
