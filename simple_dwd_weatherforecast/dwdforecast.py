@@ -10,6 +10,7 @@ import math
 import json
 import csv
 import importlib
+import tracemalloc
 
 with importlib.resources.files("simple_dwd_weatherforecast").joinpath(
     "stations.json"
@@ -596,12 +597,16 @@ class Weather:
 
     def parse_kml(self, kml, force_hourly=False):
         p = etree.XMLParser(huge_tree=force_hourly)
-        tree = etree.parse(BytesIO(kml), parser=p)
+        tree1 = etree.iterparse(BytesIO(kml))
+        # Needed for later access of the elements
+        for action, elem in tree1:
+            pass
+        tree = tree1.root
         result = tree.xpath("//dwd:IssueTime", namespaces=self.namespaces)[0].text
         issue_time_new = datetime(
             *(time.strptime(result, "%Y-%m-%dT%H:%M:%S.%fZ")[0:6]), 0, timezone.utc
         )
-        # print(f"parsekml self.issue:{self.issue_time} new_issue:{issue_time_new}")
+        print(f"parsekml self.issue:{self.issue_time} new_issue:{issue_time_new}")
         # if self.issue_time is None or issue_time_new > self.issue_time:
         self.issue_time = issue_time_new
 
@@ -613,8 +618,9 @@ class Weather:
             timesteps.append(elem.text)
         # print(f"timesteps: {timesteps}")
 
-        for placemark in tree.findall("//kml:Placemark", namespaces=self.namespaces):
-            item = placemark.find("./kml:name", namespaces=self.namespaces)
+        for placemark in tree.findall(".//kml:Placemark", namespaces=self.namespaces):
+            item = placemark.find(".//kml:name", namespaces=self.namespaces)
+
             if item.text == self.station_id:
                 tree = placemark
                 break
@@ -805,15 +811,41 @@ class Weather:
         else:
             url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/{stationid}/kml/MOSMIX_L_LATEST_{stationid}.kmz"
         headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}
+        snapshot1 = tracemalloc.take_snapshot()
         request = requests.get(url, headers=headers)
+        snapshot2 = tracemalloc.take_snapshot()
         # If resource has not been modified, return
         if request.status_code == 304:
             return
         self.etags[url] = request.headers["ETag"]
         file = BytesIO(request.content)
         kmz = ZipFile(file, "r")
-        kml = kmz.open(kmz.namelist()[0], "r").read()
+        snapshot3 = tracemalloc.take_snapshot()
+        # large RAM allocation
+        kml = kmz.open(kmz.namelist()[0], "r")
+        snapshot4 = tracemalloc.take_snapshot()
         self.parse_kml(kml, force_hourly)
+        snapshot5 = tracemalloc.take_snapshot()
+
+        top_stats = snapshot2.compare_to(snapshot1, 'lineno')
+        print("[ Top 3 differences after download ]")
+        for stat in top_stats[:3]:
+            print(stat)
+
+        top_stats = snapshot3.compare_to(snapshot2, 'lineno')
+        print("[ Top 3 differences after zip read ]")
+        for stat in top_stats[:3]:
+            print(stat)
+
+        top_stats = snapshot4.compare_to(snapshot3, 'lineno')
+        print("[ Top 3 differences  after kmz read ]")
+        for stat in top_stats[:3]:
+            print(stat)
+
+        top_stats = snapshot5.compare_to(snapshot4, 'lineno')
+        print("[ Top 3 differences after parse_kml ]")
+        for stat in top_stats[:3]:
+            print(stat)
 
     def download_latest_report(self):
         station_id = self.station_id
