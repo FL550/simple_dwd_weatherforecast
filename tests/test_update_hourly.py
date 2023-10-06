@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 from simple_dwd_weatherforecast import dwdforecast
 from dummy_data import parsed_data
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import time
 
 
@@ -50,15 +50,15 @@ class WeatherUpdate(unittest.TestCase):
         mock_function.assert_not_called()
 
     def test_replace_of_prec_probability_duration(self):
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(timezone.utc) + timedelta(hours=1)
         self.dwd_weather.update(force_hourly=True)
         self.assertIsNotNone(
             self.dwd_weather.get_forecast_data(
-                dwdforecast.WeatherDataType.PRECIPITATION_PROBABILITY, timestamp
+                dwdforecast.WeatherDataType.PRECIPITATION_PROBABILITY, timestamp, shouldUpdate=False
             )
         )
         self.assertIsNotNone(
             self.dwd_weather.get_forecast_data(
-                dwdforecast.WeatherDataType.PRECIPITATION_DURATION, timestamp
+                dwdforecast.WeatherDataType.PRECIPITATION_DURATION, timestamp, shouldUpdate=False
             )
         )
