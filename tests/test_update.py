@@ -132,9 +132,9 @@ class WeatherDownload(unittest.TestCase):
     @patch(
         "simple_dwd_weatherforecast.dwdforecast.Weather.parse_kml", return_value=None
     )
-    def test_report_called(self, _1, _2, _3, mock_download_latest_report):
-        self.dwd_weather = dwdforecast.Weather("01008")
-        self.dwd_weather.update()
+    def test_measurements_called(self, _1, _2, _3, mock_download_latest_report):
+        self.dwd_weather = dwdforecast.Weather("10130")
+        self.dwd_weather.update(with_measurements=True)
         mock_download_latest_report.assert_called()
 
     @patch(
@@ -152,7 +152,7 @@ class WeatherDownload(unittest.TestCase):
     def test_weather_report_called(self, _1, _2, mock_download_weather_report, _3):
         self.dwd_weather = dwdforecast.Weather("01008")
         self.dwd_weather.region = "HH"
-        self.dwd_weather.update()
+        self.dwd_weather.update(with_report=True)
         mock_download_weather_report.assert_called()
 
     @patch(
