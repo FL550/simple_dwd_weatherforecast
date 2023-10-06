@@ -293,20 +293,23 @@ class Weather:
         thunder_counter = 0
         fog_counter = 0
 
+        # Count the different condition codes
         for item in weather_data:
             if item[WeatherDataType.CONDITION.value[0]] != "-":
                 condition = self.weather_codes[item[WeatherDataType.CONDITION.value[0]]]
                 if condition[0] == "sunny":
                     sunny_counter += 1
-                if condition[0] == "cloudy":
+                elif condition[0] == "cloudy":
                     cloudy_counter += 1
-                if condition[0] == "fog":
+                elif condition[0] == "partlycloudy":
+                    cloudy_counter += 0.5
+                elif condition[0] == "fog":
                     fog_counter += 1
-                if condition[0] == "rainy":
+                elif condition[0] == "rainy":
                     rainy_counter += 1
-                if condition[0] == "snowy":
+                elif condition[0] == "snowy":
                     snowy_counter += 1
-                if condition[0] == "lightning-rainy":
+                elif condition[0] == "lightning-rainy":
                     thunder_counter += 1
 
                 if condition[1] < priority:
@@ -319,17 +322,18 @@ class Weather:
             condition_text = "partlycloudy"
         else:
             condition_text = "sunny"
+        # Check for special weather
         if fog_counter / len(weather_data) > 0.5:
             condition_text = "fog"
         if snowy_counter / len(weather_data) > 0.2:
             condition_text = "snowy"
-
+        # Check for rain
         if rainy_counter / len(weather_data) > 0.2:
             if condition_text == "snowy":
                 condition_text = "snowy-rainy"
             else:
                 condition_text = "rainy"
-
+        # Check for thunder
         if thunder_counter > 0:
             condition_text = "lightning-rainy"
 
@@ -814,8 +818,10 @@ class Weather:
     def download_latest_report(self):
         station_id = self.station_id
         if len(station_id) == 4:
-            station_id = station_id + '_'
-        url = f"https://opendata.dwd.de/weather/weather_reports/poi/{station_id}-BEOB.csv"
+            station_id = station_id + "_"
+        url = (
+            f"https://opendata.dwd.de/weather/weather_reports/poi/{station_id}-BEOB.csv"
+        )
         headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
