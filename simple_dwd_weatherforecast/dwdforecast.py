@@ -105,6 +105,7 @@ class WeatherDataType(Enum):
 
 class Weather:
     """A class for interacting with weather data from dwd.de"""
+    NOT_AVAILABLE = "---"
 
     station_id = ""
     station_name = ""
@@ -596,8 +597,7 @@ class Weather:
         return items
 
     def parse_kml(self, kml, force_hourly=False):
-        p = etree.XMLParser(huge_tree=force_hourly)
-        tree1 = etree.iterparse(BytesIO(kml))
+        tree1 = etree.iterparse(kml)
         # Needed for later access of the elements
         for action, elem in tree1:
             pass
@@ -607,16 +607,13 @@ class Weather:
             *(time.strptime(result, "%Y-%m-%dT%H:%M:%S.%fZ")[0:6]), 0, timezone.utc
         )
         print(f"parsekml self.issue:{self.issue_time} new_issue:{issue_time_new}")
-        # if self.issue_time is None or issue_time_new > self.issue_time:
+
         self.issue_time = issue_time_new
 
         result = tree.xpath(
             "//dwd:ForecastTimeSteps/dwd:TimeStep", namespaces=self.namespaces
         )
-        timesteps = []
-        for elem in result:
-            timesteps.append(elem.text)
-        # print(f"timesteps: {timesteps}")
+        timesteps = [elem.text for elem in result]
 
         for placemark in tree.findall(".//kml:Placemark", namespaces=self.namespaces):
             item = placemark.find(".//kml:name", namespaces=self.namespaces)
@@ -632,80 +629,51 @@ class Weather:
             './kml:ExtendedData/dwd:Forecast[@dwd:elementName="ww"]/dwd:value',
             namespaces=self.namespaces,
         )[0].text
-        conditions = []
-        for elem in result.split():
-            conditions.append(elem.split(".")[0])
+        condition = [elem.split(".")[0] for elem in result.split()]
+        
+        value = lambda wdt: self.get_weather_type(tree, wdt)
+        get = lambda l: l[i] if len(l) else None
+        
+        forecast_data = OrderedDict()
+        for (i, timestep) in enumerate(timesteps):
+            item = dict(
+                (wdt.value[0], get(value(wdt))) for wdt in (
+                WeatherDataType.TEMPERATURE,
+                WeatherDataType.DEWPOINT,
+                WeatherDataType.PRESSURE,
+                WeatherDataType.WIND_DIRECTION,
+                WeatherDataType.WIND_SPEED,
+                WeatherDataType.WIND_GUSTS,
+                WeatherDataType.PRECIPITATION,
+                WeatherDataType.PRECIPITATION_PROBABILITY,
+                WeatherDataType.PRECIPITATION_DURATION,
+                WeatherDataType.CLOUD_COVERAGE,
+                WeatherDataType.VISIBILITY,
+                WeatherDataType.SUN_DURATION,
+                WeatherDataType.SUN_IRRADIANCE,
+                WeatherDataType.FOG_PROBABILITY)
+            )
+            item[WeatherDataType.CONDITION.value[0]] = get(condition)
+            item[WeatherDataType.HUMIDITY.value[0]] = self.get_relative_humidity(get(value(WeatherDataType.TEMPERATURE)), get(value(WeatherDataType.DEWPOINT)))
+            forecast_data[timestep] = item
 
-        temperatures = self.get_weather_type(tree, WeatherDataType.TEMPERATURE)
+        self.forecast_data = forecast_data
 
-        dewpoints = self.get_weather_type(tree, WeatherDataType.DEWPOINT)
-
-        pressure = self.get_weather_type(tree, WeatherDataType.PRESSURE)
-
-        wind_dir = self.get_weather_type(tree, WeatherDataType.WIND_DIRECTION)
-
-        wind_speed = self.get_weather_type(tree, WeatherDataType.WIND_SPEED)
-
-        wind_gusts = self.get_weather_type(tree, WeatherDataType.WIND_GUSTS)
-
-        prec_sum = self.get_weather_type(tree, WeatherDataType.PRECIPITATION)
-
-        prec_prop = self.get_weather_type(
-            tree, WeatherDataType.PRECIPITATION_PROBABILITY
-        )
-
-        prec_dur = self.get_weather_type(tree, WeatherDataType.PRECIPITATION_DURATION)
-
-        cloud_cov = self.get_weather_type(tree, WeatherDataType.CLOUD_COVERAGE)
-
-        visibility = self.get_weather_type(tree, WeatherDataType.VISIBILITY)
-
-        sun_dur = self.get_weather_type(tree, WeatherDataType.SUN_DURATION)
-
-        sun_irr = self.get_weather_type(tree, WeatherDataType.SUN_IRRADIANCE)
-
-        fog_prop = self.get_weather_type(tree, WeatherDataType.FOG_PROBABILITY)
-
-        # Humidity
+    def get_relative_humidity(self, temperature, dewpoint):
+        if None in (temperature, dewpoint):
+            return
+        
+        celsius = lambda t: t - 273.1
+        T = celsius(temperature)
+        TD = celsius(dewpoint)
+        
         rh_c2 = 17.5043
         rh_c3 = 241.2
-        merged_list = {}
-        for i in range(len(timesteps)):
-            if temperatures[i] is not None and dewpoints[i] is not None:
-                T = temperatures[i] - 273.1
-                TD = dewpoints[i] - 273.1
-                RH = round(
-                    100
-                    * math.exp((rh_c2 * TD / (rh_c3 + TD)) - (rh_c2 * T / (rh_c3 + T))),
-                    1,
-                )
-            else:
-                RH = None
-            item = {
-                WeatherDataType.TEMPERATURE.value[0]: temperatures[i],
-                WeatherDataType.DEWPOINT.value[0]: dewpoints[i],
-                WeatherDataType.CONDITION.value[0]: conditions[i],
-                WeatherDataType.PRESSURE.value[0]: pressure[i],
-                WeatherDataType.WIND_DIRECTION.value[0]: wind_dir[i],
-                WeatherDataType.WIND_SPEED.value[0]: wind_speed[i],
-                WeatherDataType.WIND_GUSTS.value[0]: wind_gusts[i],
-                WeatherDataType.PRECIPITATION.value[0]: prec_sum[i],
-                WeatherDataType.PRECIPITATION_PROBABILITY.value[0]: None
-                if len(prec_prop) == 0
-                else prec_prop[i],
-                WeatherDataType.PRECIPITATION_DURATION.value[0]: None
-                if len(prec_dur) == 0
-                else prec_dur[i],
-                WeatherDataType.CLOUD_COVERAGE.value[0]: cloud_cov[i],
-                WeatherDataType.VISIBILITY.value[0]: visibility[i],
-                WeatherDataType.SUN_DURATION.value[0]: sun_dur[i],
-                WeatherDataType.SUN_IRRADIANCE.value[0]: sun_irr[i],
-                WeatherDataType.FOG_PROBABILITY.value[0]: fog_prop[i],
-                WeatherDataType.HUMIDITY.value[0]: RH,
-            }
-            merged_list[timesteps[i]] = item
-        # print(f"temperatures: {self.forecast_data}")
-        self.forecast_data = OrderedDict(merged_list)
+        return round(
+            100
+            * math.exp((rh_c2 * TD / (rh_c3 + TD)) - (rh_c2 * T / (rh_c3 + T))),
+            1,
+        )
 
     def parse_csv_row(self, row: dict):
         self.report_data = {
@@ -714,72 +682,72 @@ class Weather:
             WeatherDataType.CONDITION.value[0]: int(
                 row[WeatherDataType.CONDITION.value[1]]
             )
-            if row[WeatherDataType.CONDITION.value[1]] != "---"
+            if row[WeatherDataType.CONDITION.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.TEMPERATURE.value[0]: round(
                 float(
                     row[WeatherDataType.TEMPERATURE.value[1]]
-                    .replace("---", "0.0")
+                    .replace(self.NOT_AVAILABLE, "0.0")
                     .replace(",", ".")
                 )
                 + 273.1,
                 1,
             )
-            if row[WeatherDataType.TEMPERATURE.value[1]] != "---"
+            if row[WeatherDataType.TEMPERATURE.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.DEWPOINT.value[0]: round(
                 float(row[WeatherDataType.DEWPOINT.value[1]].replace(",", ".")) + 273.1,
                 1,
             )
-            if row[WeatherDataType.DEWPOINT.value[1]] != "---"
+            if row[WeatherDataType.DEWPOINT.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.PRESSURE.value[0]: float(
                 row[WeatherDataType.PRESSURE.value[1]].replace(",", ".")
             )
             * 100
-            if row[WeatherDataType.PRESSURE.value[1]] != "---"
+            if row[WeatherDataType.PRESSURE.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.WIND_SPEED.value[0]: round(
                 float(row[WeatherDataType.WIND_SPEED.value[1]].replace(",", ".")) / 3.6,
                 1,
             )
-            if row[WeatherDataType.WIND_SPEED.value[1]] != "---"
+            if row[WeatherDataType.WIND_SPEED.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.WIND_DIRECTION.value[0]: int(
                 row[WeatherDataType.WIND_DIRECTION.value[1]]
             )
-            if row[WeatherDataType.WIND_DIRECTION.value[1]] != "---"
+            if row[WeatherDataType.WIND_DIRECTION.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.WIND_GUSTS.value[0]: round(
                 float(row[WeatherDataType.WIND_GUSTS.value[1]].replace(",", ".")) / 3.6,
                 1,
             )
-            if row[WeatherDataType.WIND_GUSTS.value[1]] != "---"
+            if row[WeatherDataType.WIND_GUSTS.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.PRECIPITATION.value[0]: float(
                 row[WeatherDataType.PRECIPITATION.value[1]].replace(",", ".")
             )
-            if row[WeatherDataType.PRECIPITATION.value[1]] != "---"
+            if row[WeatherDataType.PRECIPITATION.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.CLOUD_COVERAGE.value[0]: float(
                 row[WeatherDataType.CLOUD_COVERAGE.value[1]].replace(",", ".")
             )
-            if row[WeatherDataType.CLOUD_COVERAGE.value[1]] != "---"
+            if row[WeatherDataType.CLOUD_COVERAGE.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.VISIBILITY.value[0]: float(
                 row[WeatherDataType.VISIBILITY.value[1]].replace(",", ".")
             )
-            if row[WeatherDataType.VISIBILITY.value[1]] != "---"
+            if row[WeatherDataType.VISIBILITY.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.SUN_IRRADIANCE.value[0]: float(
                 row[WeatherDataType.SUN_IRRADIANCE.value[1]].replace(",", ".")
             )
-            if row[WeatherDataType.SUN_IRRADIANCE.value[1]] != "---"
+            if row[WeatherDataType.SUN_IRRADIANCE.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.HUMIDITY.value[0]: float(
                 row[WeatherDataType.HUMIDITY.value[1]].replace(",", ".")
             )
-            if row[WeatherDataType.HUMIDITY.value[1]] != "---"
+            if row[WeatherDataType.HUMIDITY.value[1]] != self.NOT_AVAILABLE
             else None,
         }
 
@@ -806,6 +774,7 @@ class Weather:
         self.weather_report = weather_report
 
     def download_latest_kml(self, stationid, force_hourly=False):
+        tracemalloc.start()
         if force_hourly:
             url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_S/all_stations/kml/MOSMIX_S_LATEST_240.kmz"
         else:
@@ -818,34 +787,35 @@ class Weather:
         if request.status_code == 304:
             return
         self.etags[url] = request.headers["ETag"]
-        file = BytesIO(request.content)
-        kmz = ZipFile(file, "r")
-        snapshot3 = tracemalloc.take_snapshot()
-        # large RAM allocation
-        kml = kmz.open(kmz.namelist()[0], "r")
-        snapshot4 = tracemalloc.take_snapshot()
-        self.parse_kml(kml, force_hourly)
-        snapshot5 = tracemalloc.take_snapshot()
+        with ZipFile(BytesIO(request.content), "r") as kmz:
+            snapshot3 = tracemalloc.take_snapshot()
+            # large RAM allocation
+            with kmz.open(kmz.namelist()[0], "r") as kml:
+                snapshot4 = tracemalloc.take_snapshot()
+                self.parse_kml(kml, force_hourly)
+                snapshot5 = tracemalloc.take_snapshot()
 
-        top_stats = snapshot2.compare_to(snapshot1, 'lineno')
-        print("[ Top 3 differences after download ]")
-        for stat in top_stats[:3]:
-            print(stat)
+                top_stats = snapshot2.compare_to(snapshot1, 'lineno')
+                print("[ Top 3 differences after download ]")
+                for stat in top_stats[:3]:
+                    print(stat)
 
-        top_stats = snapshot3.compare_to(snapshot2, 'lineno')
-        print("[ Top 3 differences after zip read ]")
-        for stat in top_stats[:3]:
-            print(stat)
+                top_stats = snapshot3.compare_to(snapshot2, 'lineno')
+                print("[ Top 3 differences after zip read ]")
+                for stat in top_stats[:3]:
+                    print(stat)
 
-        top_stats = snapshot4.compare_to(snapshot3, 'lineno')
-        print("[ Top 3 differences  after kmz read ]")
-        for stat in top_stats[:3]:
-            print(stat)
+                top_stats = snapshot4.compare_to(snapshot3, 'lineno')
+                print("[ Top 3 differences  after kmz read ]")
+                for stat in top_stats[:3]:
+                    print(stat)
 
-        top_stats = snapshot5.compare_to(snapshot4, 'lineno')
-        print("[ Top 3 differences after parse_kml ]")
-        for stat in top_stats[:3]:
-            print(stat)
+                top_stats = snapshot5.compare_to(snapshot4, 'lineno')
+                print("[ Top 3 differences after parse_kml ]")
+                for stat in top_stats[:3]:
+                    print(stat)
+
+        tracemalloc.stop()
 
     def download_latest_report(self):
         station_id = self.station_id
@@ -872,13 +842,13 @@ class Weather:
 
                 # Some items are only reported each hour
                 for backuprow in backuprows:
-                    if row["cloud_cover_total"] == "---":
+                    if row["cloud_cover_total"] == self.NOT_AVAILABLE:
                         row["cloud_cover_total"] = backuprow["cloud_cover_total"]
-                    if row["horizontal_visibility"] == "---":
+                    if row["horizontal_visibility"] == self.NOT_AVAILABLE:
                         row["horizontal_visibility"] = backuprow[
                             "horizontal_visibility"
                         ]
-                    if row["present_weather"] == "---":
+                    if row["present_weather"] == self.NOT_AVAILABLE:
                         row["present_weather"] = backuprow["present_weather"]
                 self.parse_csv_row(row)
                 # We only want the latest report
