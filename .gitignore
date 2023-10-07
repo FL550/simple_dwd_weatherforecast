@@ -1,6 +1,7 @@
 .venv
 __pycache__
 .vscode
+.env
 .coverage
 build
 init
