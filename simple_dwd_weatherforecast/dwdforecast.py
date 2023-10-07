@@ -576,8 +576,14 @@ class Weather:
             self.download_latest_kml(self.station_id, force_hourly)
             if force_hourly:
                 for item in self.forecast_data:
-                    self.forecast_data[item]["wwP"] = temp_forecast_data[item]["wwP"]
-                    self.forecast_data[item]["DRR1"] = temp_forecast_data[item]["DRR1"]
+                    if "wwP" in temp_forecast_data[item]:
+                        self.forecast_data[item]["wwP"] = temp_forecast_data[item][
+                            "wwP"
+                        ]
+                    if "DRR1" in temp_forecast_data[item]:
+                        self.forecast_data[item]["DRR1"] = temp_forecast_data[item][
+                            "DRR1"
+                        ]
 
     def get_weather_type(self, kmlTree, weatherDataType: WeatherDataType):
         """Parses the kml-File to the requested value and returns the items as array"""
