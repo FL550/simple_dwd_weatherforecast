@@ -568,30 +568,16 @@ class Weather:
         return items
 
     def parse_kml(self, kml, force_hourly=False):
-        tree1 = etree.iterparse(kml)
-        # Needed for later access of the elements
-        for action, elem in tree1:
-            pass
-        tree = tree1.root
-        result = tree.xpath("//dwd:IssueTime", namespaces=self.namespaces)[0].text
-        issue_time_new = datetime(
-            *(time.strptime(result, "%Y-%m-%dT%H:%M:%S.%fZ")[0:6]), 0, timezone.utc
-        )
-        print(f"parsekml self.issue:{self.issue_time} new_issue:{issue_time_new}")
+        stream = etree.iterparse(kml)
+        (_, tree) = next(stream)
+        timesteps = self.parse_timesteps(tree)
+        issue_time_new = self.parse_issue_time(tree)
+        tree.clear()
 
+        tree = self.parse_placemark(stream)
         self.issue_time = issue_time_new
 
-        timesteps = self.parse_timesteps(tree)
-
-        for placemark in tree.findall(".//kml:Placemark", namespaces=self.namespaces):
-            item = placemark.find(".//kml:name", namespaces=self.namespaces)
-
-            if item.text == self.station_id:
-                tree = placemark
-                break
-        self.loaded_station_name = tree.xpath(
-            "./kml:description", namespaces=self.namespaces
-        )[0].text
+        self.loaded_station_name = self.parse_station_name(tree)
 
         value = lambda wdt: self.get_weather_type(tree, wdt)
 
@@ -623,6 +609,27 @@ class Weather:
             })
             for (i, t) in enumerate(timesteps)
         )
+
+    def parse_placemark(self, stream):
+        for (_, tree) in stream:
+            for placemark in tree.findall(".//kml:Placemark", namespaces=self.namespaces):
+                item = placemark.find(".//kml:name", namespaces=self.namespaces)
+
+                if item.text == self.station_id:
+                    return placemark
+                placemark.clear()
+
+    def parse_issue_time(self, tree):
+        issue_time_new = datetime(
+            *(time.strptime(tree.xpath("//dwd:IssueTime", namespaces=self.namespaces)[0].text, "%Y-%m-%dT%H:%M:%S.%fZ")[0:6]), 0, timezone.utc
+        )
+
+        return issue_time_new
+
+    def parse_station_name(self, tree):
+        return tree.xpath(
+            "./kml:description", namespaces=self.namespaces
+        )[0].text
 
     def parse_timesteps(self, tree):
         return [elem.text for elem in tree.xpath("//dwd:ForecastTimeSteps/dwd:TimeStep", namespaces=self.namespaces)]
