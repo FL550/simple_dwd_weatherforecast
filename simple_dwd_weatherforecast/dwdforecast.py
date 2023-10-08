@@ -1,4 +1,5 @@
-from collections import OrderedDict
+
+from collections import OrderedDict, defaultdict
 import requests
 from io import BytesIO
 from zipfile import ZipFile
@@ -43,16 +44,6 @@ def get_stations_sorted_by_distance(lat: float, lon: float):
     for station in stations.items():
         _lat = float(station[1]["lat"])
         _lon = float(station[1]["lon"])
-        # _lat = station[1]["lat"].split(".")
-        # if len(_lat) == 2:
-        #     _lat = round(float(_lat[0]) + float(_lat[1]) / 60, 2)
-        # else:
-        #     _lat = float(_lat[0])
-        # _lon = station[1]["lon"].split(".")
-        # if len(_lon) == 2:
-        #     _lon = round(float(_lon[0]) + float(_lon[1]) / 60, 2)
-        # else:
-        #     _lon = float(_lon[0])
         distance_temp = get_distance(lat, lon, _lat, _lon)
         result.append([station[0], distance_temp])
     result.sort(key=lambda x: x[1])
@@ -63,7 +54,6 @@ def get_distance(lat, lon, _lat, _lon):
     """Calculate the distance between two points. Result is returned in km."""
 
     lon_diff = 111.3 * math.cos((lat + _lat) / 2 * 0.01745) * (lon - _lon)
-
     lat_diff = 111.3 * (lat - _lat)
 
     return round(math.sqrt(math.pow(lon_diff, 2) + math.pow(lat_diff, 2)), 1)
@@ -92,13 +82,13 @@ class WeatherDataType(Enum):
         "mean_wind_direction_during_last_10 min_at_10_meters_above_ground",
     ]  # Unit: Degrees
     WIND_GUSTS = ["FX1", "maximum_wind_speed_last_hour"]  # Unit: m/s
-    PRECIPITATION = ["RR1c", "precipitation_amount_last_hour"]  # Unit: kg/m2
+    PRECIPITATION = ["RR1c", "precipitation_amount_last_hour"]  # Unit: kg/m^2
     PRECIPITATION_PROBABILITY = ["wwP", ""]  # Unit: % (0..100)
     PRECIPITATION_DURATION = ["DRR1", ""]  # Unit: s
     CLOUD_COVERAGE = ["N", "cloud_cover_total"]  # Unit: % (0..100)
     VISIBILITY = ["VV", "horizontal_visibility"]  # Unit: m
     SUN_DURATION = ["SunD1", ""]  # Unit: s
-    SUN_IRRADIANCE = ["Rad1h", "diffuse_solar_radiation_last_hour"]  # Unit: kJ/m2
+    SUN_IRRADIANCE = ["Rad1h", "diffuse_solar_radiation_last_hour"]  # Unit: kJ/m^2
     FOG_PROBABILITY = ["wwM", ""]  # Unit: % (0..100)
     HUMIDITY = ["humidity", "relative_humidity"]  # Unit: %
 
@@ -287,59 +277,40 @@ class Weather:
             ][0]
 
         priority = 99
-        condition_text = ""
-        sunny_counter = 1
-        cloudy_counter = 1
-        rainy_counter = 0
-        snowy_counter = 0
-        thunder_counter = 0
-        fog_counter = 0
-
-        # Count the different condition codes
+        weight = defaultdict(lambda: 0, {"sunny": 1, "cloudy": 1})
         for item in weather_data:
-            if item[WeatherDataType.CONDITION.value[0]] != "-":
-                condition = self.weather_codes[item[WeatherDataType.CONDITION.value[0]]]
-                if condition[0] == "sunny":
-                    sunny_counter += 1
-                elif condition[0] == "cloudy":
-                    cloudy_counter += 1
-                elif condition[0] == "partlycloudy":
-                    cloudy_counter += 0.5
-                elif condition[0] == "fog":
-                    fog_counter += 1
-                elif condition[0] == "rainy":
-                    rainy_counter += 1
-                elif condition[0] == "snowy":
-                    snowy_counter += 1
-                elif condition[0] == "lightning-rainy":
-                    thunder_counter += 1
+            entry = item[WeatherDataType.CONDITION.value[0]]
+            if entry != "-":
+                (_condition, _priority) = self.weather_codes[entry]
+                weight[_condition] = weight[_condition] + 1
 
-                if condition[1] < priority:
-                    priority = condition[1]
-                    condition_text = condition[0]
+                if _priority < priority:
+                    priority = _priority
+                    condition_text = _condition
 
-        if cloudy_counter / sunny_counter > 0.7:
+        if (weight["cloudy"] + 0.5 * weight["partlycloudy"]) / weight["sunny"] > 0.7:
             condition_text = "cloudy"
-        elif cloudy_counter / sunny_counter > 0.2:
+        elif (weight["cloudy"] + 0.5 * weight["partlycloudy"]) / weight["sunny"] > 0.2:
             condition_text = "partlycloudy"
         else:
             condition_text = "sunny"
+
         # Check for special weather
-        if fog_counter / len(weather_data) > 0.5:
+        if weight["fog"] / len(weather_data) > 0.5:
             condition_text = "fog"
-        if snowy_counter / len(weather_data) > 0.2:
+        if weight["snowy"] / len(weather_data) > 0.2:
             condition_text = "snowy"
         # Check for rain
-        if rainy_counter / len(weather_data) > 0.2:
+        if weight["rainy"] / len(weather_data) > 0.2:
             if condition_text == "snowy":
                 condition_text = "snowy-rainy"
             else:
                 condition_text = "rainy"
         # Check for thunder
-        if thunder_counter > 0:
+        if weight["lightning-rainy"] > 0:
             condition_text = "lightning-rainy"
 
-        return str(condition_text)
+        return condition_text
 
     def get_reported_weather(self, weatherDataType: WeatherDataType, shouldUpdate=True):
         if not self.has_measurement(self.station_id):
@@ -610,10 +581,7 @@ class Weather:
 
         self.issue_time = issue_time_new
 
-        result = tree.xpath(
-            "//dwd:ForecastTimeSteps/dwd:TimeStep", namespaces=self.namespaces
-        )
-        timesteps = [elem.text for elem in result]
+        timesteps = self.parse_timesteps(tree)
 
         for placemark in tree.findall(".//kml:Placemark", namespaces=self.namespaces):
             item = placemark.find(".//kml:name", namespaces=self.namespaces)
@@ -625,48 +593,54 @@ class Weather:
             "./kml:description", namespaces=self.namespaces
         )[0].text
 
-        result = tree.xpath(
+        value = lambda wdt: self.get_weather_type(tree, wdt)
+
+        values = [
+            (wdt, value(wdt)) for wdt in (
+            WeatherDataType.TEMPERATURE,
+            WeatherDataType.DEWPOINT,
+            WeatherDataType.PRESSURE,
+            WeatherDataType.WIND_DIRECTION,
+            WeatherDataType.WIND_SPEED,
+            WeatherDataType.WIND_GUSTS,
+            WeatherDataType.PRECIPITATION,
+            WeatherDataType.PRECIPITATION_PROBABILITY,
+            WeatherDataType.PRECIPITATION_DURATION,
+            WeatherDataType.CLOUD_COVERAGE,
+            WeatherDataType.VISIBILITY,
+            WeatherDataType.SUN_DURATION,
+            WeatherDataType.SUN_IRRADIANCE,
+            WeatherDataType.FOG_PROBABILITY
+        )]
+        values.extend([
+            (WeatherDataType.CONDITION, self.parse_condition(tree)),
+            (WeatherDataType.HUMIDITY, [self.get_relative_humidity(t, d) for (t, d) in zip(value(WeatherDataType.TEMPERATURE) ,value(WeatherDataType.DEWPOINT))])
+        ])
+        self.forecast_data = OrderedDict(
+            (t, {
+                wdt.value[0] : (v[i] if len(v) else None)
+                for (wdt, v) in values
+            })
+            for (i, t) in enumerate(timesteps)
+        )
+
+    def parse_timesteps(self, tree):
+        return [elem.text for elem in tree.xpath("//dwd:ForecastTimeSteps/dwd:TimeStep", namespaces=self.namespaces)]
+
+    def parse_condition(self, tree):
+        return [elem.split(".")[0] for elem in tree.xpath(
             './kml:ExtendedData/dwd:Forecast[@dwd:elementName="ww"]/dwd:value',
             namespaces=self.namespaces,
-        )[0].text
-        condition = [elem.split(".")[0] for elem in result.split()]
-        
-        value = lambda wdt: self.get_weather_type(tree, wdt)
-        get = lambda l: l[i] if len(l) else None
-        
-        forecast_data = OrderedDict()
-        for (i, timestep) in enumerate(timesteps):
-            item = dict(
-                (wdt.value[0], get(value(wdt))) for wdt in (
-                WeatherDataType.TEMPERATURE,
-                WeatherDataType.DEWPOINT,
-                WeatherDataType.PRESSURE,
-                WeatherDataType.WIND_DIRECTION,
-                WeatherDataType.WIND_SPEED,
-                WeatherDataType.WIND_GUSTS,
-                WeatherDataType.PRECIPITATION,
-                WeatherDataType.PRECIPITATION_PROBABILITY,
-                WeatherDataType.PRECIPITATION_DURATION,
-                WeatherDataType.CLOUD_COVERAGE,
-                WeatherDataType.VISIBILITY,
-                WeatherDataType.SUN_DURATION,
-                WeatherDataType.SUN_IRRADIANCE,
-                WeatherDataType.FOG_PROBABILITY)
-            )
-            item[WeatherDataType.CONDITION.value[0]] = get(condition)
-            item[WeatherDataType.HUMIDITY.value[0]] = self.get_relative_humidity(get(value(WeatherDataType.TEMPERATURE)), get(value(WeatherDataType.DEWPOINT)))
-            forecast_data[timestep] = item
-
-        self.forecast_data = forecast_data
+        )[0].text.split()]
 
     def get_relative_humidity(self, temperature, dewpoint):
         if None in (temperature, dewpoint):
             return
-        
+
         celsius = lambda t: t - 273.1
         T = celsius(temperature)
         TD = celsius(dewpoint)
-        
+
         rh_c2 = 17.5043
         rh_c3 = 241.2
         return round(
