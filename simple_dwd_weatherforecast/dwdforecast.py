@@ -297,11 +297,13 @@ class Weather:
 
         # Check for special weather
         if weight["fog"] / len(weather_data) > 0.5:
+
             condition_text = "fog"
         if weight["snowy"] / len(weather_data) > 0.2:
             condition_text = "snowy"
         # Check for rain
         if weight["rainy"] / len(weather_data) > 0.2:
+
             if condition_text == "snowy":
                 condition_text = "snowy-rainy"
             else:
@@ -543,7 +545,20 @@ class Weather:
             or (datetime.now(timezone.utc) - self.issue_time >= timedelta(hours=6))
             or force_hourly
         ):
+            if force_hourly:
+                self.download_latest_kml(self.station_id)
+                temp_forecast_data = self.forecast_data
             self.download_latest_kml(self.station_id, force_hourly)
+            if force_hourly:
+                for item in self.forecast_data:
+                    if "wwP" in temp_forecast_data[item]:
+                        self.forecast_data[item]["wwP"] = temp_forecast_data[item][
+                            "wwP"
+                        ]
+                    if "DRR1" in temp_forecast_data[item]:
+                        self.forecast_data[item]["DRR1"] = temp_forecast_data[item][
+                            "DRR1"
+                        ]
 
     def get_weather_type(self, kmlTree, weatherDataType: WeatherDataType):
         """Parses the kml-File to the requested value and returns the items as array"""

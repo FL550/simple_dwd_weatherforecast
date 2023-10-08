@@ -61,6 +61,7 @@ for row in soup.table.find_all("tr"):
                 }
             )
 
+
 stations_catalogue = pd.DataFrame(
     stations_catalogue,
     columns=[
