@@ -1,4 +1,3 @@
-
 from collections import OrderedDict, defaultdict
 import requests
 from io import BytesIO
@@ -95,6 +94,7 @@ class WeatherDataType(Enum):
 
 class Weather:
     """A class for interacting with weather data from dwd.de"""
+
     NOT_AVAILABLE = "---"
 
     station_id = ""
@@ -582,37 +582,49 @@ class Weather:
         value = lambda wdt: self.get_weather_type(tree, wdt)
 
         values = [
-            (wdt, value(wdt)) for wdt in (
-            WeatherDataType.TEMPERATURE,
-            WeatherDataType.DEWPOINT,
-            WeatherDataType.PRESSURE,
-            WeatherDataType.WIND_DIRECTION,
-            WeatherDataType.WIND_SPEED,
-            WeatherDataType.WIND_GUSTS,
-            WeatherDataType.PRECIPITATION,
-            WeatherDataType.PRECIPITATION_PROBABILITY,
-            WeatherDataType.PRECIPITATION_DURATION,
-            WeatherDataType.CLOUD_COVERAGE,
-            WeatherDataType.VISIBILITY,
-            WeatherDataType.SUN_DURATION,
-            WeatherDataType.SUN_IRRADIANCE,
-            WeatherDataType.FOG_PROBABILITY
-        )]
-        values.extend([
-            (WeatherDataType.CONDITION, self.parse_condition(tree)),
-            (WeatherDataType.HUMIDITY, [self.get_relative_humidity(t, d) for (t, d) in zip(value(WeatherDataType.TEMPERATURE) ,value(WeatherDataType.DEWPOINT))])
-        ])
+            (wdt, value(wdt))
+            for wdt in (
+                WeatherDataType.TEMPERATURE,
+                WeatherDataType.DEWPOINT,
+                WeatherDataType.PRESSURE,
+                WeatherDataType.WIND_DIRECTION,
+                WeatherDataType.WIND_SPEED,
+                WeatherDataType.WIND_GUSTS,
+                WeatherDataType.PRECIPITATION,
+                WeatherDataType.PRECIPITATION_PROBABILITY,
+                WeatherDataType.PRECIPITATION_DURATION,
+                WeatherDataType.CLOUD_COVERAGE,
+                WeatherDataType.VISIBILITY,
+                WeatherDataType.SUN_DURATION,
+                WeatherDataType.SUN_IRRADIANCE,
+                WeatherDataType.FOG_PROBABILITY,
+            )
+        ]
+        values.extend(
+            [
+                (WeatherDataType.CONDITION, self.parse_condition(tree)),
+                (
+                    WeatherDataType.HUMIDITY,
+                    [
+                        self.get_relative_humidity(t, d)
+                        for (t, d) in zip(
+                            value(WeatherDataType.TEMPERATURE),
+                            value(WeatherDataType.DEWPOINT),
+                        )
+                    ],
+                ),
+            ]
+        )
         self.forecast_data = OrderedDict(
-            (t, {
-                wdt.value[0] : (v[i] if len(v) else None)
-                for (wdt, v) in values
-            })
+            (t, {wdt.value[0]: (v[i] if len(v) else None) for (wdt, v) in values})
             for (i, t) in enumerate(timesteps)
         )
 
     def parse_placemark(self, stream):
-        for (_, tree) in stream:
-            for placemark in tree.findall(".//kml:Placemark", namespaces=self.namespaces):
+        for _, tree in stream:
+            for placemark in tree.findall(
+                ".//kml:Placemark", namespaces=self.namespaces
+            ):
                 item = placemark.find(".//kml:name", namespaces=self.namespaces)
 
                 if item.text == self.station_id:
@@ -621,24 +633,37 @@ class Weather:
 
     def parse_issue_time(self, tree):
         issue_time_new = datetime(
-            *(time.strptime(tree.xpath("//dwd:IssueTime", namespaces=self.namespaces)[0].text, "%Y-%m-%dT%H:%M:%S.%fZ")[0:6]), 0, timezone.utc
+            *(
+                time.strptime(
+                    tree.xpath("//dwd:IssueTime", namespaces=self.namespaces)[0].text,
+                    "%Y-%m-%dT%H:%M:%S.%fZ",
+                )[0:6]
+            ),
+            0,
+            timezone.utc,
         )
 
         return issue_time_new
 
     def parse_station_name(self, tree):
-        return tree.xpath(
-            "./kml:description", namespaces=self.namespaces
-        )[0].text
+        return tree.xpath("./kml:description", namespaces=self.namespaces)[0].text
 
     def parse_timesteps(self, tree):
-        return [elem.text for elem in tree.xpath("//dwd:ForecastTimeSteps/dwd:TimeStep", namespaces=self.namespaces)]
+        return [
+            elem.text
+            for elem in tree.xpath(
+                "//dwd:ForecastTimeSteps/dwd:TimeStep", namespaces=self.namespaces
+            )
+        ]
 
     def parse_condition(self, tree):
-        return [elem.split(".")[0] for elem in tree.xpath(
-            './kml:ExtendedData/dwd:Forecast[@dwd:elementName="ww"]/dwd:value',
-            namespaces=self.namespaces,
-        )[0].text.split()]
+        return [
+            elem.split(".")[0]
+            for elem in tree.xpath(
+                './kml:ExtendedData/dwd:Forecast[@dwd:elementName="ww"]/dwd:value',
+                namespaces=self.namespaces,
+            )[0].text.split()
+        ]
 
     def get_relative_humidity(self, temperature, dewpoint):
         if None in (temperature, dewpoint):
@@ -651,8 +676,7 @@ class Weather:
         rh_c2 = 17.5043
         rh_c3 = 241.2
         return round(
-            100
-            * math.exp((rh_c2 * TD / (rh_c3 + TD)) - (rh_c2 * T / (rh_c3 + T))),
+            100 * math.exp((rh_c2 * TD / (rh_c3 + TD)) - (rh_c2 * T / (rh_c3 + T))),
             1,
         )
 
@@ -776,22 +800,22 @@ class Weather:
                 self.parse_kml(kml, force_hourly)
                 snapshot5 = tracemalloc.take_snapshot()
 
-                top_stats = snapshot2.compare_to(snapshot1, 'lineno')
+                top_stats = snapshot2.compare_to(snapshot1, "lineno")
                 print("[ Top 3 differences after download ]")
                 for stat in top_stats[:3]:
                     print(stat)
 
-                top_stats = snapshot3.compare_to(snapshot2, 'lineno')
+                top_stats = snapshot3.compare_to(snapshot2, "lineno")
                 print("[ Top 3 differences after zip read ]")
                 for stat in top_stats[:3]:
                     print(stat)
 
-                top_stats = snapshot4.compare_to(snapshot3, 'lineno')
+                top_stats = snapshot4.compare_to(snapshot3, "lineno")
                 print("[ Top 3 differences  after kmz read ]")
                 for stat in top_stats[:3]:
                     print(stat)
 
-                top_stats = snapshot5.compare_to(snapshot4, 'lineno')
+                top_stats = snapshot5.compare_to(snapshot4, "lineno")
                 print("[ Top 3 differences after parse_kml ]")
                 for stat in top_stats[:3]:
                     print(stat)
