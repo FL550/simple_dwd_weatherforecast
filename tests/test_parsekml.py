@@ -1,15 +1,31 @@
 import unittest
+
 from simple_dwd_weatherforecast import dwdforecast
-from dummy_data import parsed_data
+import dummy_data
+import dummy_data_full
 
 
 class KMLParseTestCase(unittest.TestCase):
+    FILE_NAME = "development/TEST_N4333.kml"
+
     def setUp(self):
         self.dwd_weather = dwdforecast.Weather("N4333")
 
     def test_parse_kml(self):
-        in_file = open("development/TEST_N4333.kml", "rb")
-        data = in_file.read()
-        in_file.close()
-        self.dwd_weather.parse_kml(data)
-        self.assertEqual(self.dwd_weather.forecast_data, parsed_data)
+        with open(self.FILE_NAME, "rb") as kml:
+            self.dwd_weather.parse_kml(kml)
+            self.assertEqual(self.dwd_weather.forecast_data, dummy_data.parsed_data)
+
+
+class KMLParseFullTestCase(unittest.TestCase):
+    FILE_NAME = "development/MOSMIX_L_2023100809_stripped.kml"
+
+    def setUp(self):
+        self.dwd_weather = dwdforecast.Weather("L511")
+
+    def test_parse_kml(self):
+        with open(self.FILE_NAME, "rb") as kml:
+            self.dwd_weather.parse_kml(kml)
+            self.assertEqual(
+                self.dwd_weather.forecast_data, dummy_data_full.parsed_data
+            )

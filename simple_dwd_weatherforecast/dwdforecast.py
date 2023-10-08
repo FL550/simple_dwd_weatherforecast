@@ -1,4 +1,4 @@
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 import requests
 from io import BytesIO
 from zipfile import ZipFile
@@ -10,6 +10,7 @@ import math
 import json
 import csv
 import importlib
+import tracemalloc
 
 with importlib.resources.files("simple_dwd_weatherforecast").joinpath(
     "stations.json"
@@ -42,16 +43,6 @@ def get_stations_sorted_by_distance(lat: float, lon: float):
     for station in stations.items():
         _lat = float(station[1]["lat"])
         _lon = float(station[1]["lon"])
-        # _lat = station[1]["lat"].split(".")
-        # if len(_lat) == 2:
-        #     _lat = round(float(_lat[0]) + float(_lat[1]) / 60, 2)
-        # else:
-        #     _lat = float(_lat[0])
-        # _lon = station[1]["lon"].split(".")
-        # if len(_lon) == 2:
-        #     _lon = round(float(_lon[0]) + float(_lon[1]) / 60, 2)
-        # else:
-        #     _lon = float(_lon[0])
         distance_temp = get_distance(lat, lon, _lat, _lon)
         result.append([station[0], distance_temp])
     result.sort(key=lambda x: x[1])
@@ -62,7 +53,6 @@ def get_distance(lat, lon, _lat, _lon):
     """Calculate the distance between two points. Result is returned in km."""
 
     lon_diff = 111.3 * math.cos((lat + _lat) / 2 * 0.01745) * (lon - _lon)
-
     lat_diff = 111.3 * (lat - _lat)
 
     return round(math.sqrt(math.pow(lon_diff, 2) + math.pow(lat_diff, 2)), 1)
@@ -91,19 +81,21 @@ class WeatherDataType(Enum):
         "mean_wind_direction_during_last_10 min_at_10_meters_above_ground",
     ]  # Unit: Degrees
     WIND_GUSTS = ["FX1", "maximum_wind_speed_last_hour"]  # Unit: m/s
-    PRECIPITATION = ["RR1c", "precipitation_amount_last_hour"]  # Unit: kg/m2
+    PRECIPITATION = ["RR1c", "precipitation_amount_last_hour"]  # Unit: kg/m^2
     PRECIPITATION_PROBABILITY = ["wwP", ""]  # Unit: % (0..100)
     PRECIPITATION_DURATION = ["DRR1", ""]  # Unit: s
     CLOUD_COVERAGE = ["N", "cloud_cover_total"]  # Unit: % (0..100)
     VISIBILITY = ["VV", "horizontal_visibility"]  # Unit: m
     SUN_DURATION = ["SunD1", ""]  # Unit: s
-    SUN_IRRADIANCE = ["Rad1h", "diffuse_solar_radiation_last_hour"]  # Unit: kJ/m2
+    SUN_IRRADIANCE = ["Rad1h", "diffuse_solar_radiation_last_hour"]  # Unit: kJ/m^2
     FOG_PROBABILITY = ["wwM", ""]  # Unit: % (0..100)
     HUMIDITY = ["humidity", "relative_humidity"]  # Unit: %
 
 
 class Weather:
     """A class for interacting with weather data from dwd.de"""
+
+    NOT_AVAILABLE = "---"
 
     station_id = ""
     station_name = ""
@@ -285,59 +277,42 @@ class Weather:
             ][0]
 
         priority = 99
-        condition_text = ""
-        sunny_counter = 1
-        cloudy_counter = 1
-        rainy_counter = 0
-        snowy_counter = 0
-        thunder_counter = 0
-        fog_counter = 0
-
-        # Count the different condition codes
+        weight = defaultdict(lambda: 0, {"sunny": 1, "cloudy": 1})
         for item in weather_data:
-            if item[WeatherDataType.CONDITION.value[0]] != "-":
-                condition = self.weather_codes[item[WeatherDataType.CONDITION.value[0]]]
-                if condition[0] == "sunny":
-                    sunny_counter += 1
-                elif condition[0] == "cloudy":
-                    cloudy_counter += 1
-                elif condition[0] == "partlycloudy":
-                    cloudy_counter += 0.5
-                elif condition[0] == "fog":
-                    fog_counter += 1
-                elif condition[0] == "rainy":
-                    rainy_counter += 1
-                elif condition[0] == "snowy":
-                    snowy_counter += 1
-                elif condition[0] == "lightning-rainy":
-                    thunder_counter += 1
+            entry = item[WeatherDataType.CONDITION.value[0]]
+            if entry != "-":
+                (_condition, _priority) = self.weather_codes[entry]
+                weight[_condition] = weight[_condition] + 1
 
-                if condition[1] < priority:
-                    priority = condition[1]
-                    condition_text = condition[0]
+                if _priority < priority:
+                    priority = _priority
+                    condition_text = _condition
 
-        if cloudy_counter / sunny_counter > 0.7:
+        if (weight["cloudy"] + 0.5 * weight["partlycloudy"]) / weight["sunny"] > 0.7:
             condition_text = "cloudy"
-        elif cloudy_counter / sunny_counter > 0.2:
+        elif (weight["cloudy"] + 0.5 * weight["partlycloudy"]) / weight["sunny"] > 0.2:
             condition_text = "partlycloudy"
         else:
             condition_text = "sunny"
+
         # Check for special weather
-        if fog_counter / len(weather_data) > 0.5:
+        if weight["fog"] / len(weather_data) > 0.5:
+
             condition_text = "fog"
-        if snowy_counter / len(weather_data) > 0.2:
+        if weight["snowy"] / len(weather_data) > 0.2:
             condition_text = "snowy"
         # Check for rain
-        if rainy_counter / len(weather_data) > 0.2:
+        if weight["rainy"] / len(weather_data) > 0.2:
+
             if condition_text == "snowy":
                 condition_text = "snowy-rainy"
             else:
                 condition_text = "rainy"
         # Check for thunder
-        if thunder_counter > 0:
+        if weight["lightning-rainy"] > 0:
             condition_text = "lightning-rainy"
 
-        return str(condition_text)
+        return condition_text
 
     def get_reported_weather(self, weatherDataType: WeatherDataType, shouldUpdate=True):
         if not self.has_measurement(self.station_id):
@@ -608,111 +583,117 @@ class Weather:
         return items
 
     def parse_kml(self, kml, force_hourly=False):
-        p = etree.XMLParser(huge_tree=force_hourly)
-        tree = etree.parse(BytesIO(kml), parser=p)
-        result = tree.xpath("//dwd:IssueTime", namespaces=self.namespaces)[0].text
-        issue_time_new = datetime(
-            *(time.strptime(result, "%Y-%m-%dT%H:%M:%S.%fZ")[0:6]), 0, timezone.utc
-        )
-        # print(f"parsekml self.issue:{self.issue_time} new_issue:{issue_time_new}")
-        # if self.issue_time is None or issue_time_new > self.issue_time:
+        stream = etree.iterparse(kml)
+        (_, tree) = next(stream)
+        timesteps = self.parse_timesteps(tree)
+        issue_time_new = self.parse_issue_time(tree)
+        tree.clear()
+
+        tree = self.parse_placemark(stream)
         self.issue_time = issue_time_new
 
-        result = tree.xpath(
-            "//dwd:ForecastTimeSteps/dwd:TimeStep", namespaces=self.namespaces
+        self.loaded_station_name = self.parse_station_name(tree)
+
+        value = lambda wdt: self.get_weather_type(tree, wdt)
+
+        values = [
+            (wdt, value(wdt))
+            for wdt in (
+                WeatherDataType.TEMPERATURE,
+                WeatherDataType.DEWPOINT,
+                WeatherDataType.PRESSURE,
+                WeatherDataType.WIND_DIRECTION,
+                WeatherDataType.WIND_SPEED,
+                WeatherDataType.WIND_GUSTS,
+                WeatherDataType.PRECIPITATION,
+                WeatherDataType.PRECIPITATION_PROBABILITY,
+                WeatherDataType.PRECIPITATION_DURATION,
+                WeatherDataType.CLOUD_COVERAGE,
+                WeatherDataType.VISIBILITY,
+                WeatherDataType.SUN_DURATION,
+                WeatherDataType.SUN_IRRADIANCE,
+                WeatherDataType.FOG_PROBABILITY,
+            )
+        ]
+        values.extend(
+            [
+                (WeatherDataType.CONDITION, self.parse_condition(tree)),
+                (
+                    WeatherDataType.HUMIDITY,
+                    [
+                        self.get_relative_humidity(t, d)
+                        for (t, d) in zip(
+                            value(WeatherDataType.TEMPERATURE),
+                            value(WeatherDataType.DEWPOINT),
+                        )
+                    ],
+                ),
+            ]
         )
-        timesteps = []
-        for elem in result:
-            timesteps.append(elem.text)
-        # print(f"timesteps: {timesteps}")
-
-        for placemark in tree.findall("//kml:Placemark", namespaces=self.namespaces):
-            item = placemark.find("./kml:name", namespaces=self.namespaces)
-            if item.text == self.station_id:
-                tree = placemark
-                break
-        self.loaded_station_name = tree.xpath(
-            "./kml:description", namespaces=self.namespaces
-        )[0].text
-
-        result = tree.xpath(
-            './kml:ExtendedData/dwd:Forecast[@dwd:elementName="ww"]/dwd:value',
-            namespaces=self.namespaces,
-        )[0].text
-        conditions = []
-        for elem in result.split():
-            conditions.append(elem.split(".")[0])
-
-        temperatures = self.get_weather_type(tree, WeatherDataType.TEMPERATURE)
-
-        dewpoints = self.get_weather_type(tree, WeatherDataType.DEWPOINT)
-
-        pressure = self.get_weather_type(tree, WeatherDataType.PRESSURE)
-
-        wind_dir = self.get_weather_type(tree, WeatherDataType.WIND_DIRECTION)
-
-        wind_speed = self.get_weather_type(tree, WeatherDataType.WIND_SPEED)
-
-        wind_gusts = self.get_weather_type(tree, WeatherDataType.WIND_GUSTS)
-
-        prec_sum = self.get_weather_type(tree, WeatherDataType.PRECIPITATION)
-
-        prec_prop = self.get_weather_type(
-            tree, WeatherDataType.PRECIPITATION_PROBABILITY
+        self.forecast_data = OrderedDict(
+            (t, {wdt.value[0]: (v[i] if len(v) else None) for (wdt, v) in values})
+            for (i, t) in enumerate(timesteps)
         )
 
-        prec_dur = self.get_weather_type(tree, WeatherDataType.PRECIPITATION_DURATION)
+    def parse_placemark(self, stream):
+        for _, tree in stream:
+            for placemark in tree.findall(
+                ".//kml:Placemark", namespaces=self.namespaces
+            ):
+                item = placemark.find(".//kml:name", namespaces=self.namespaces)
 
-        cloud_cov = self.get_weather_type(tree, WeatherDataType.CLOUD_COVERAGE)
+                if item.text == self.station_id:
+                    return placemark
+                placemark.clear()
 
-        visibility = self.get_weather_type(tree, WeatherDataType.VISIBILITY)
+    def parse_issue_time(self, tree):
+        issue_time_new = datetime(
+            *(
+                time.strptime(
+                    tree.xpath("//dwd:IssueTime", namespaces=self.namespaces)[0].text,
+                    "%Y-%m-%dT%H:%M:%S.%fZ",
+                )[0:6]
+            ),
+            0,
+            timezone.utc,
+        )
 
-        sun_dur = self.get_weather_type(tree, WeatherDataType.SUN_DURATION)
+        return issue_time_new
 
-        sun_irr = self.get_weather_type(tree, WeatherDataType.SUN_IRRADIANCE)
+    def parse_station_name(self, tree):
+        return tree.xpath("./kml:description", namespaces=self.namespaces)[0].text
 
-        fog_prop = self.get_weather_type(tree, WeatherDataType.FOG_PROBABILITY)
+    def parse_timesteps(self, tree):
+        return [
+            elem.text
+            for elem in tree.xpath(
+                "//dwd:ForecastTimeSteps/dwd:TimeStep", namespaces=self.namespaces
+            )
+        ]
 
-        # Humidity
+    def parse_condition(self, tree):
+        return [
+            elem.split(".")[0]
+            for elem in tree.xpath(
+                './kml:ExtendedData/dwd:Forecast[@dwd:elementName="ww"]/dwd:value',
+                namespaces=self.namespaces,
+            )[0].text.split()
+        ]
+
+    def get_relative_humidity(self, temperature, dewpoint):
+        if None in (temperature, dewpoint):
+            return
+
+        celsius = lambda t: t - 273.1
+        T = celsius(temperature)
+        TD = celsius(dewpoint)
+
         rh_c2 = 17.5043
         rh_c3 = 241.2
-        merged_list = {}
-        for i in range(len(timesteps)):
-            if temperatures[i] is not None and dewpoints[i] is not None:
-                T = temperatures[i] - 273.1
-                TD = dewpoints[i] - 273.1
-                RH = round(
-                    100
-                    * math.exp((rh_c2 * TD / (rh_c3 + TD)) - (rh_c2 * T / (rh_c3 + T))),
-                    1,
-                )
-            else:
-                RH = None
-            item = {
-                WeatherDataType.TEMPERATURE.value[0]: temperatures[i],
-                WeatherDataType.DEWPOINT.value[0]: dewpoints[i],
-                WeatherDataType.CONDITION.value[0]: conditions[i],
-                WeatherDataType.PRESSURE.value[0]: pressure[i],
-                WeatherDataType.WIND_DIRECTION.value[0]: wind_dir[i],
-                WeatherDataType.WIND_SPEED.value[0]: wind_speed[i],
-                WeatherDataType.WIND_GUSTS.value[0]: wind_gusts[i],
-                WeatherDataType.PRECIPITATION.value[0]: prec_sum[i],
-                WeatherDataType.PRECIPITATION_PROBABILITY.value[0]: None
-                if len(prec_prop) == 0
-                else prec_prop[i],
-                WeatherDataType.PRECIPITATION_DURATION.value[0]: None
-                if len(prec_dur) == 0
-                else prec_dur[i],
-                WeatherDataType.CLOUD_COVERAGE.value[0]: cloud_cov[i],
-                WeatherDataType.VISIBILITY.value[0]: visibility[i],
-                WeatherDataType.SUN_DURATION.value[0]: sun_dur[i],
-                WeatherDataType.SUN_IRRADIANCE.value[0]: sun_irr[i],
-                WeatherDataType.FOG_PROBABILITY.value[0]: fog_prop[i],
-                WeatherDataType.HUMIDITY.value[0]: RH,
-            }
-            merged_list[timesteps[i]] = item
-        # print(f"temperatures: {self.forecast_data}")
-        self.forecast_data = OrderedDict(merged_list)
+        return round(
+            100 * math.exp((rh_c2 * TD / (rh_c3 + TD)) - (rh_c2 * T / (rh_c3 + T))),
+            1,
+        )
 
     def parse_csv_row(self, row: dict):
         self.report_data = {
@@ -721,72 +702,72 @@ class Weather:
             WeatherDataType.CONDITION.value[0]: int(
                 row[WeatherDataType.CONDITION.value[1]]
             )
-            if row[WeatherDataType.CONDITION.value[1]] != "---"
+            if row[WeatherDataType.CONDITION.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.TEMPERATURE.value[0]: round(
                 float(
                     row[WeatherDataType.TEMPERATURE.value[1]]
-                    .replace("---", "0.0")
+                    .replace(self.NOT_AVAILABLE, "0.0")
                     .replace(",", ".")
                 )
                 + 273.1,
                 1,
             )
-            if row[WeatherDataType.TEMPERATURE.value[1]] != "---"
+            if row[WeatherDataType.TEMPERATURE.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.DEWPOINT.value[0]: round(
                 float(row[WeatherDataType.DEWPOINT.value[1]].replace(",", ".")) + 273.1,
                 1,
             )
-            if row[WeatherDataType.DEWPOINT.value[1]] != "---"
+            if row[WeatherDataType.DEWPOINT.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.PRESSURE.value[0]: float(
                 row[WeatherDataType.PRESSURE.value[1]].replace(",", ".")
             )
             * 100
-            if row[WeatherDataType.PRESSURE.value[1]] != "---"
+            if row[WeatherDataType.PRESSURE.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.WIND_SPEED.value[0]: round(
                 float(row[WeatherDataType.WIND_SPEED.value[1]].replace(",", ".")) / 3.6,
                 1,
             )
-            if row[WeatherDataType.WIND_SPEED.value[1]] != "---"
+            if row[WeatherDataType.WIND_SPEED.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.WIND_DIRECTION.value[0]: int(
                 row[WeatherDataType.WIND_DIRECTION.value[1]]
             )
-            if row[WeatherDataType.WIND_DIRECTION.value[1]] != "---"
+            if row[WeatherDataType.WIND_DIRECTION.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.WIND_GUSTS.value[0]: round(
                 float(row[WeatherDataType.WIND_GUSTS.value[1]].replace(",", ".")) / 3.6,
                 1,
             )
-            if row[WeatherDataType.WIND_GUSTS.value[1]] != "---"
+            if row[WeatherDataType.WIND_GUSTS.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.PRECIPITATION.value[0]: float(
                 row[WeatherDataType.PRECIPITATION.value[1]].replace(",", ".")
             )
-            if row[WeatherDataType.PRECIPITATION.value[1]] != "---"
+            if row[WeatherDataType.PRECIPITATION.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.CLOUD_COVERAGE.value[0]: float(
                 row[WeatherDataType.CLOUD_COVERAGE.value[1]].replace(",", ".")
             )
-            if row[WeatherDataType.CLOUD_COVERAGE.value[1]] != "---"
+            if row[WeatherDataType.CLOUD_COVERAGE.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.VISIBILITY.value[0]: float(
                 row[WeatherDataType.VISIBILITY.value[1]].replace(",", ".")
             )
-            if row[WeatherDataType.VISIBILITY.value[1]] != "---"
+            if row[WeatherDataType.VISIBILITY.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.SUN_IRRADIANCE.value[0]: float(
                 row[WeatherDataType.SUN_IRRADIANCE.value[1]].replace(",", ".")
             )
-            if row[WeatherDataType.SUN_IRRADIANCE.value[1]] != "---"
+            if row[WeatherDataType.SUN_IRRADIANCE.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.HUMIDITY.value[0]: float(
                 row[WeatherDataType.HUMIDITY.value[1]].replace(",", ".")
             )
-            if row[WeatherDataType.HUMIDITY.value[1]] != "---"
+            if row[WeatherDataType.HUMIDITY.value[1]] != self.NOT_AVAILABLE
             else None,
         }
 
@@ -813,20 +794,48 @@ class Weather:
         self.weather_report = weather_report
 
     def download_latest_kml(self, stationid, force_hourly=False):
+        tracemalloc.start()
         if force_hourly:
             url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_S/all_stations/kml/MOSMIX_S_LATEST_240.kmz"
         else:
             url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/{stationid}/kml/MOSMIX_L_LATEST_{stationid}.kmz"
         headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}
+        snapshot1 = tracemalloc.take_snapshot()
         request = requests.get(url, headers=headers)
+        snapshot2 = tracemalloc.take_snapshot()
         # If resource has not been modified, return
         if request.status_code == 304:
             return
         self.etags[url] = request.headers["ETag"]
-        file = BytesIO(request.content)
-        kmz = ZipFile(file, "r")
-        kml = kmz.open(kmz.namelist()[0], "r").read()
-        self.parse_kml(kml, force_hourly)
+        with ZipFile(BytesIO(request.content), "r") as kmz:
+            snapshot3 = tracemalloc.take_snapshot()
+            # large RAM allocation
+            with kmz.open(kmz.namelist()[0], "r") as kml:
+                snapshot4 = tracemalloc.take_snapshot()
+                self.parse_kml(kml, force_hourly)
+                snapshot5 = tracemalloc.take_snapshot()
+
+                top_stats = snapshot2.compare_to(snapshot1, "lineno")
+                print("[ Top 3 differences after download ]")
+                for stat in top_stats[:3]:
+                    print(stat)
+
+                top_stats = snapshot3.compare_to(snapshot2, "lineno")
+                print("[ Top 3 differences after zip read ]")
+                for stat in top_stats[:3]:
+                    print(stat)
+
+                top_stats = snapshot4.compare_to(snapshot3, "lineno")
+                print("[ Top 3 differences  after kmz read ]")
+                for stat in top_stats[:3]:
+                    print(stat)
+
+                top_stats = snapshot5.compare_to(snapshot4, "lineno")
+                print("[ Top 3 differences after parse_kml ]")
+                for stat in top_stats[:3]:
+                    print(stat)
+
+        tracemalloc.stop()
 
     def download_latest_report(self):
         station_id = self.station_id
@@ -853,13 +862,13 @@ class Weather:
 
                 # Some items are only reported each hour
                 for backuprow in backuprows:
-                    if row["cloud_cover_total"] == "---":
+                    if row["cloud_cover_total"] == self.NOT_AVAILABLE:
                         row["cloud_cover_total"] = backuprow["cloud_cover_total"]
-                    if row["horizontal_visibility"] == "---":
+                    if row["horizontal_visibility"] == self.NOT_AVAILABLE:
                         row["horizontal_visibility"] = backuprow[
                             "horizontal_visibility"
                         ]
-                    if row["present_weather"] == "---":
+                    if row["present_weather"] == self.NOT_AVAILABLE:
                         row["present_weather"] = backuprow["present_weather"]
                 self.parse_csv_row(row)
                 # We only want the latest report
