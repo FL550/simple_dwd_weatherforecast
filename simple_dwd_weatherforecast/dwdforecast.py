@@ -10,7 +10,6 @@ import math
 import json
 import csv
 import importlib
-import tracemalloc
 
 with importlib.resources.files("simple_dwd_weatherforecast").joinpath(
     "stations.json"
@@ -297,13 +296,11 @@ class Weather:
 
         # Check for special weather
         if weight["fog"] / len(weather_data) > 0.5:
-
             condition_text = "fog"
         if weight["snowy"] / len(weather_data) > 0.2:
             condition_text = "snowy"
         # Check for rain
         if weight["rainy"] / len(weather_data) > 0.2:
-
             if condition_text == "snowy":
                 condition_text = "snowy-rainy"
             else:
@@ -794,48 +791,20 @@ class Weather:
         self.weather_report = weather_report
 
     def download_latest_kml(self, stationid, force_hourly=False):
-        tracemalloc.start()
         if force_hourly:
             url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_S/all_stations/kml/MOSMIX_S_LATEST_240.kmz"
         else:
             url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/{stationid}/kml/MOSMIX_L_LATEST_{stationid}.kmz"
         headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}
-        snapshot1 = tracemalloc.take_snapshot()
         request = requests.get(url, headers=headers)
-        snapshot2 = tracemalloc.take_snapshot()
         # If resource has not been modified, return
         if request.status_code == 304:
             return
         self.etags[url] = request.headers["ETag"]
         with ZipFile(BytesIO(request.content), "r") as kmz:
-            snapshot3 = tracemalloc.take_snapshot()
             # large RAM allocation
             with kmz.open(kmz.namelist()[0], "r") as kml:
-                snapshot4 = tracemalloc.take_snapshot()
                 self.parse_kml(kml, force_hourly)
-                snapshot5 = tracemalloc.take_snapshot()
-
-                top_stats = snapshot2.compare_to(snapshot1, "lineno")
-                print("[ Top 3 differences after download ]")
-                for stat in top_stats[:3]:
-                    print(stat)
-
-                top_stats = snapshot3.compare_to(snapshot2, "lineno")
-                print("[ Top 3 differences after zip read ]")
-                for stat in top_stats[:3]:
-                    print(stat)
-
-                top_stats = snapshot4.compare_to(snapshot3, "lineno")
-                print("[ Top 3 differences  after kmz read ]")
-                for stat in top_stats[:3]:
-                    print(stat)
-
-                top_stats = snapshot5.compare_to(snapshot4, "lineno")
-                print("[ Top 3 differences after parse_kml ]")
-                for stat in top_stats[:3]:
-                    print(stat)
-
-        tracemalloc.stop()
 
     def download_latest_report(self):
         station_id = self.station_id
