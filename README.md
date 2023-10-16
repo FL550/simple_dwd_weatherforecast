@@ -63,8 +63,6 @@ There is also data available which is updated every hour by DWD. Be careful thou
 - PRECIPITATION_PROBABILITY
 - PRECIPITATION_DURATION
 
-These values will be replaced by the 6 hour forecast.
-
 You can use this data by using the optional parameter `force_hourly=True`.
 
 ```python
