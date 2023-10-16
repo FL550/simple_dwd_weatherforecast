@@ -740,7 +740,7 @@ class Weather:
             else None,
             WeatherDataType.VISIBILITY.value[0]: float(
                 row[WeatherDataType.VISIBILITY.value[1]].replace(",", ".")
-            )
+            ) * 1e3
             if row[WeatherDataType.VISIBILITY.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.SUN_IRRADIANCE.value[0]: float(
