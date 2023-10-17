@@ -323,7 +323,11 @@ class Weather:
                     self.report_data[WeatherDataType.CONDITION.value[0]]
                 ]
             else:
-                return self.report_data[weatherDataType.value[0]]
+                return (
+                    self.report_data[weatherDataType.value[0]]
+                    if weatherDataType.value[0] in self.report_data
+                    else None
+                )
         else:
             print("no report for this station available. Have you updated first?")
 
