@@ -744,7 +744,8 @@ class Weather:
             else None,
             WeatherDataType.VISIBILITY.value[0]: float(
                 row[WeatherDataType.VISIBILITY.value[1]].replace(",", ".")
-            ) * 1e3
+            )
+            * 1e3
             if row[WeatherDataType.VISIBILITY.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.SUN_IRRADIANCE.value[0]: float(
@@ -760,7 +761,7 @@ class Weather:
         }
 
     def get_weather_report(self, shouldUpdate=False):
-        if shouldUpdate or self.weather_report is None:
+        if (shouldUpdate or self.weather_report is None) and self.region is not None:
             self.update(with_report=True)
         return self.weather_report
 
