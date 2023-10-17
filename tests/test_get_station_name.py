@@ -10,4 +10,4 @@ class Weather_get_station_name(unittest.TestCase):
         self.dwd_weather.forecast_data = parsed_data
 
     def test_get_station_name(self):
-        self.assertEqual(self.dwd_weather.get_station_name(), "Burbach-Würgendorf")
+        self.assertEqual(self.dwd_weather.get_station_name(), "Burbach-Wuergendorf")

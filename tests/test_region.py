@@ -5,7 +5,7 @@ from simple_dwd_weatherforecast import dwdforecast
 class StationTestCase(unittest.TestCase):
     def test_get_region(self):
         self.assertEqual(
-            dwdforecast.get_region("10147"),
+            dwdforecast.get_region("C316"),
             "HH",
             "Wrong region",
         )
