@@ -86,7 +86,7 @@ class WeatherDataType(Enum):
     CLOUD_COVERAGE = ["N", "cloud_cover_total"]  # Unit: % (0..100)
     VISIBILITY = ["VV", "horizontal_visibility"]  # Unit: m
     SUN_DURATION = ["SunD1", ""]  # Unit: s
-    SUN_IRRADIANCE = ["Rad1h", "diffuse_solar_radiation_last_hour"]  # Unit: kJ/m^2
+    SUN_IRRADIANCE = ["Rad1h", "global_radiation_last_hour"]  # Unit: kJ/m^2
     FOG_PROBABILITY = ["wwM", ""]  # Unit: % (0..100)
     HUMIDITY = ["humidity", "relative_humidity"]  # Unit: %
 
@@ -744,7 +744,7 @@ class Weather:
             else None,
             WeatherDataType.VISIBILITY.value[0]: float(
                 row[WeatherDataType.VISIBILITY.value[1]].replace(",", ".")
-            )
+            ) * 1e3
             if row[WeatherDataType.VISIBILITY.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.SUN_IRRADIANCE.value[0]: float(
