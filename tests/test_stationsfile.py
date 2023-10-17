@@ -6,7 +6,7 @@ import json
 
 
 class StationsFileTestCase(unittest.TestCase):
-    FILE_NAME = "stations.json"
+    FILE_NAME = "simple_dwd_weatherforecast/stations.json"
 
     def setUp(self):
         with open(self.FILE_NAME, encoding="utf-8", mode="r") as file:

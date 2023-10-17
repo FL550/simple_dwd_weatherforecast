@@ -63,5 +63,5 @@ for i in range_iter:
     )
     stations[group_id] = station
 
-with open("./stations.json", "w", encoding="utf-8") as f:
+with open("simple_dwd_weatherforecast/stations.json", "w", encoding="utf-8") as f:
     json.dump(stations, f, ensure_ascii=False)
