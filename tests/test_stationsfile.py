@@ -1,7 +1,5 @@
 import random
 import unittest
-
-from simple_dwd_weatherforecast import dwdforecast
 import json
 
 
@@ -29,6 +27,10 @@ class StationsFileTestCase(unittest.TestCase):
         self.assertTrue("48564" in self.stations)
 
     def test_correct_mapping(self):
-        self.assertTrue(self.stations["H721"]["name"] == "Bedburg-Weiler Hohen")
-        self.assertTrue(self.stations["78458"]["name"] == "Puerto Plata")
-        self.assertTrue(self.stations["H361"]["name"] == "Beckum-Unterberg")
+        self.assertEqual(self.stations["H721"]["name"], "Bedburg-Weiler Hohen")
+        self.assertEqual(self.stations["78458"]["name"], "Puerto Plata")
+        self.assertEqual(self.stations["H361"]["name"], "Beckum-Unterberg")
+
+    def test_bundesland(self):
+        self.assertEqual(self.stations["10452"]["bundesland"], "NI")
+        self.assertEqual(self.stations["10147"]["bundesland"], "HH")

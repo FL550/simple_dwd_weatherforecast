@@ -6,12 +6,17 @@ class LocationToolsTestCase(unittest.TestCase):
     def test_get_nearest_station_id(self):
         self.assertEqual(
             dwdforecast.get_nearest_station_id(50.291472, 8.607336),
-            "L643",
+            "L732",
             "Wrong nearest station",
         )
         self.assertEqual(
             dwdforecast.get_nearest_station_id(50.357, 8.751),
-            "L543",
+            "L635",
+            "Wrong nearest station",
+        )
+        self.assertEqual(
+            dwdforecast.get_nearest_station_id(51.290303, 6.763528),
+            "10400",
             "Wrong nearest station",
         )
 
