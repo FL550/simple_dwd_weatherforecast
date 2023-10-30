@@ -748,8 +748,9 @@ class Weather:
             * 1e3
             if row[WeatherDataType.VISIBILITY.value[1]] != self.NOT_AVAILABLE
             else None,
-            WeatherDataType.SUN_IRRADIANCE.value[0]: float(
-                row[WeatherDataType.SUN_IRRADIANCE.value[1]].replace(",", ".")
+            WeatherDataType.SUN_IRRADIANCE.value[0]: round(
+                float(row[WeatherDataType.SUN_IRRADIANCE.value[1]].replace(",", ".")) * 3.6
+                , 1
             )
             if row[WeatherDataType.SUN_IRRADIANCE.value[1]] != self.NOT_AVAILABLE
             else None,
