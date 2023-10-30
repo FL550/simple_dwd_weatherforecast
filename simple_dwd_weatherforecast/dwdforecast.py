@@ -97,7 +97,6 @@ class Weather:
     NOT_AVAILABLE = "---"
 
     station_id = ""
-    station_name = ""
     issue_time = None
     forecast_data = None
     report_data = None
@@ -196,16 +195,15 @@ class Weather:
 
     def __init__(self, station_id):
         self.etags = {}
-        station = load_station_id(station_id)
-        if station:
+        self.station = load_station_id(station_id)
+        if self.station:
             self.station_id = station_id
-            self.station_name = station["name"]
             self.region = get_region(station_id)
         else:
             raise ValueError("Not a valid station_id")
 
     def get_station_name(self):
-        return self.station_name
+        return self.station["name"]
 
     def is_in_timerange(self, timestamp: datetime):
         return (
