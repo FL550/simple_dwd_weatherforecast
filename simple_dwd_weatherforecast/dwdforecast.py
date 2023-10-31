@@ -175,22 +175,22 @@ class Weather:
     }
 
     region_codes = {
-        "NW": "dweh",
-        "NI": "dwhg",
-        "HB": "dwhg",
-        "SH": "dwhh",
-        "HH": "dwhh",
-        "SN": "dwlg",
-        "ST": "dwlh",
-        "TH": "dwli",
-        "BY": "dwmg",
-        "DW": "dwsg",
-        "HE": "dwoh",
-        "RP": "dwoi",
-        "SL": "dwoi",
-        "BB": "dwpg",
-        "BE": "dwpg",
-        "MV": "dwph",
+        "NW": "dweh",  # Nordrhein-Westfalen
+        "NI": "dwhg",  # Niedersachsen
+        "HB": "dwhg",  # Bremen
+        "SH": "dwhh",  # Schleswig-Holstein
+        "HH": "dwhh",  # Hamburg
+        "SN": "dwlg",  # Sachsen
+        "ST": "dwlh",  # Sachsen-Anhalt
+        "TH": "dwli",  # Thueringen
+        "BY": "dwmg",  # Bayern
+        "BW": "dwsg",  # Baden-Württemberg
+        "HE": "dwoh",  # Hessen
+        "RP": "dwoi",  # Rheinland-Pfalz
+        "SL": "dwoi",  # Saarland
+        "BB": "dwpg",  # Brandenburg
+        "BE": "dwpg",  # Berlin
+        "MV": "dwph",  # Mecklenburg-Vorpommern
     }
 
     def __init__(self, station_id):
@@ -734,8 +734,9 @@ class Weather:
             if row[WeatherDataType.VISIBILITY.value[1]] != self.NOT_AVAILABLE
             else None,
             WeatherDataType.SUN_IRRADIANCE.value[0]: round(
-                float(row[WeatherDataType.SUN_IRRADIANCE.value[1]].replace(",", ".")) * 3.6
-                , 1
+                float(row[WeatherDataType.SUN_IRRADIANCE.value[1]].replace(",", "."))
+                * 3.6,
+                1,
             )
             if row[WeatherDataType.SUN_IRRADIANCE.value[1]] != self.NOT_AVAILABLE
             else None,
