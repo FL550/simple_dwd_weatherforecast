@@ -5,7 +5,7 @@ from zipfile import ZipFile
 from enum import Enum
 from lxml import etree
 from datetime import datetime, timedelta, timezone
-import time
+import arrow
 import math
 import json
 import csv
@@ -478,15 +478,9 @@ class Weather:
     def get_day_values(self, timestamp: datetime):
         "timestamp has to be checked prior to be in timerange"
         result = []
-        first_entry_date = datetime(
-            *(
-                time.strptime(next(iter(self.forecast_data)), "%Y-%m-%dT%H:%M:%S.%fZ")[
-                    0:6
-                ]
-            ),
-            0,
-            timezone.utc,
-        )
+        first_entry_date = arrow.get(
+            next(iter(self.forecast_data)), "YYYY-MM-DDTHH:mm:ss.SSSZ"
+        ).datetime
         if timestamp.day != first_entry_date.day:
             time_step = self.strip_to_day(timestamp)
             for _ in range(24):
@@ -633,17 +627,10 @@ class Weather:
                 placemark.clear()
 
     def parse_issue_time(self, tree):
-        issue_time_new = datetime(
-            *(
-                time.strptime(
-                    tree.xpath("//dwd:IssueTime", namespaces=self.namespaces)[0].text,
-                    "%Y-%m-%dT%H:%M:%S.%fZ",
-                )[0:6]
-            ),
-            0,
-            timezone.utc,
-        )
-
+        issue_time_new = arrow.get(
+            tree.xpath("//dwd:IssueTime", namespaces=self.namespaces)[0].text,
+            "YYYY-MM-DDTHH:mm:ss.SSSZ",
+        ).datetime
         return issue_time_new
 
     def parse_station_name(self, tree):

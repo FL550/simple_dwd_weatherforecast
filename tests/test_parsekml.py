@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import unittest
 
 from simple_dwd_weatherforecast import dwdforecast
@@ -15,6 +16,7 @@ class KMLParseTestCase(unittest.TestCase):
         with open(self.FILE_NAME, "rb") as kml:
             self.dwd_weather.parse_kml(kml)
             self.assertEqual(self.dwd_weather.forecast_data, dummy_data.parsed_data)
+            self.assertEqual(self.dwd_weather.issue_time, datetime(2020, 11, 6, 3, 0, tzinfo=timezone.utc))
 
 
 class KMLParseFullTestCase(unittest.TestCase):
