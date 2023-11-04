@@ -20,5 +20,5 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
-    install_requires=['lxml','requests']
+    install_requires=['lxml','requests', 'Pillow', 'arrow']
 )
