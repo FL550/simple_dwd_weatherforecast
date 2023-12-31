@@ -17,21 +17,12 @@ def get_distance(lat, lon, _lat, _lon):
 def get_bundesland_with_smallest_distance(station, bundeslaender):
     smallest_distance = float("inf")
     smallest_distance_bundesland = ""
-    for key in bundeslaender:
+    for key in bundeslaender.keys():
         coords = key.split(";")
-        lat_points = coords[0].split(".")
-        lat = float(lat_points[0])
-        if len(lat_points) > 1:
-            lat = lat + float(lat_points[1]) / 60
-        lat = round(lat, 3)
+        temp_distance = get_distance(
+            station["lat"], station["lon"], float(coords[0]), float(coords[1])
+        )
 
-        lon_points = coords[1].split(".")
-        lon = float(lon_points[0])
-        if len(lon_points) > 1:
-            lon = lon + float(lon_points[1]) / 60
-        lon = round(lon, 3)
-
-        temp_distance = get_distance(station["lat"], station["lon"], lat, lon)
         if temp_distance < smallest_distance:
             smallest_distance = temp_distance
             smallest_distance_bundesland = bundeslaender[key]

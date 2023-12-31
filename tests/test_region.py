@@ -14,6 +14,16 @@ class StationTestCase(unittest.TestCase):
             "HE",
             "Wrong region",
         )
+        self.assertEqual(
+            dwdforecast.get_region("G002"),
+            "BE",
+            "Wrong region",
+        )
+        self.assertEqual(
+            dwdforecast.get_region("G005"),
+            "BE",
+            "Wrong region",
+        )
 
     def test_get_region_not_valid(self):
         self.assertIsNone(dwdforecast.get_region("10"))
