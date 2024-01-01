@@ -23,6 +23,12 @@ def load_station_id(station_id: str):
     return None
 
 
+def get_station_by_name(station_name: str):
+    for station in stations.items():
+        if station[1]["name"] == station_name:
+            return station
+
+
 def get_nearest_station_id(lat: float, lon: float):
     return get_stations_sorted_by_distance(lat, lon)[0][0]
 
@@ -101,6 +107,7 @@ class Weather:
     forecast_data = None
     report_data = None
     weather_report = None
+    uv_reports = {}
     etags = None
 
     namespaces = {
@@ -193,14 +200,76 @@ class Weather:
         "MV": "dwph",  # Mecklenburg-Vorpommern
     }
 
+    uv_index_stations = {
+        "Weinbiet": "Weinbiet",
+        "Hamburg": "Hamburg Innenstadt",
+        "Seehausen": "Seehausen",
+        "Osnabrück": "Osnabrueck",
+        "Leipzig": "Leipzig",
+        "Stuttgart": "Stuttgart-Schn.",
+        "Frankfurt/Main": "Frankfurt/M",
+        "Norderney": "Norderney",
+        "Berlin": "Berlin-Alex.",
+        "Großer Arber": "Gr.Arber",
+        "Weimar": "Weimar",
+        "Sankt Peter-Ording": "St.Peter-Ording",
+        "Konstanz": "Konstanz",
+        "Düsseldorf": "Duesseldorf",
+        "Freiburg": "Freiburg",
+        "Magdeburg": "Magdeburg",
+        "Wernigerode": "Wernigerode",
+        "Neubrandenburg": "Neubrandenburg",
+        "Bonn": "Bonn-Roleber",
+        "Marienleuchte": "Bisdorf",
+        "Cottbus": "Cottbus",
+        "Kiel": "Kiel-H.",
+        "List auf Sylt": "List/Sylt",
+        "Arkona": "Arkona",
+        "Hannover": "Hannover",
+        "München": "Muenchen Stadt",
+        "Waren": "Waren",
+        "Kahler Asten": "K.Asten",
+        "Hahn": "Hahn",
+        "Bremen": "Bremen",
+        "Würzburg": "Wuerzburg",
+        "Rostock": "Rostock-Stadt",
+        "Ulm": "Ulm",
+        "Regensburg": "Regensburg",
+        "Kassel": "Kassel",
+        "Dresden": "Dresden-Stadt",
+        "Zugspitze": "Zugspitze",
+        "Nürnberg": "Nuernberg",
+    }
+
     def __init__(self, station_id):
         self.etags = {}
         self.station = load_station_id(station_id)
         if self.station:
             self.station_id = station_id
             self.region = get_region(station_id)
+            self.download_uv_index()
+            self.nearest_uv_index_station = self.get_nearest_station_id_with_uv()
         else:
             raise ValueError("Not a valid station_id")
+
+    def get_nearest_station_id_with_uv(self):
+        nearest_distance = float("inf")
+        nearest_station_id = None
+        for station in self.uv_reports.items():
+            distance = get_distance(
+                self.station["lat"],
+                self.station["lon"],
+                station[1]["lat"],
+                station[1]["lon"],
+            )
+
+            if distance < nearest_distance:
+                nearest_distance = distance
+                nearest_station_id = get_station_by_name(
+                    self.uv_index_stations[station[1]["city"]]
+                )
+
+        return nearest_station_id
 
     def get_station_name(self):
         return self.station["name"]
@@ -328,6 +397,18 @@ class Weather:
                 )
         else:
             print("no report for this station available. Have you updated first?")
+
+    def get_uv_index(self, days_from_today: int) -> int:
+        if days_from_today < 0 or days_from_today > 2:
+            print("days_from_today must be between 0 and 2")
+            return None
+        if days_from_today == 0:
+            day = "today"
+        elif days_from_today == 1:
+            day = "tomorrow"
+        elif days_from_today == 2:
+            day = "dayafter_to"
+        return self.uv_reports[self.nearest_uv_index_station[0]]["forecast"][day]
 
     def get_timeframe_max(
         self,
@@ -751,6 +832,26 @@ class Weather:
         if (shouldUpdate or self.weather_report is None) and self.region is not None:
             self.update(with_report=True)
         return self.weather_report
+
+    def download_uv_index(self):
+        url = "https://opendata.dwd.de/climate_environment/health/alerts/uvi.json"
+        headers = {
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.116 Safari/537.36"
+        }
+        headers["If-None-Match"] = self.etags[url] if url in self.etags else ""
+        request = requests.get(url, headers=headers)
+        # If resource has not been modified, return
+        if request.status_code == 304:
+            return
+        elif request.status_code != 200:
+            raise Exception(f"Unexpected status code {request.status_code}")
+        self.etags[url] = request.headers["ETag"]
+        uv_reports = json.loads(request.text)["content"]
+        # Match with existing stations
+        for uv_report in uv_reports:
+            station = get_station_by_name(self.uv_index_stations[uv_report["city"]])
+            uv_report.update({"lat": station[1]["lat"], "lon": station[1]["lon"]})
+            self.uv_reports[station[0]] = uv_report
 
     def download_weather_report(self, region_code):
         url = f"https://www.dwd.de/DWD/wetter/wv_allg/deutschland/text/vhdl13_{region_code}.html"

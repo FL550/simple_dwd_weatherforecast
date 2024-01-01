@@ -5,7 +5,7 @@ from dummy_data import parsed_data
 
 class WeatherInit(unittest.TestCase):
     def setUp(self):
-        self.dwd_weather = dwdforecast.Weather("H889")
+        self.dwd_weather = dwdforecast.Weather("L821")
         self.dwd_weather.forecast_data = parsed_data
         self.dwd_weather.station_name = "BAD HOMBURG"
 
@@ -20,3 +20,6 @@ class WeatherInit(unittest.TestCase):
     def test_init_with_no_id(self):
         with self.assertRaises(TypeError) as _:
             dwdforecast.Weather()
+
+    def test_uv_index(self):
+        self.assertEqual(self.dwd_weather.nearest_uv_index_station[0], "10637")
