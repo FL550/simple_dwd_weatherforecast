@@ -22,4 +22,4 @@ class WeatherInit(unittest.TestCase):
             dwdforecast.Weather()
 
     def test_uv_index(self):
-        self.assertEqual(self.dwd_weather.nearest_uv_index_station[0], "10637")
+        self.assertEqual(self.dwd_weather.nearest_uv_index_station, "10637")

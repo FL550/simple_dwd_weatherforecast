@@ -16,6 +16,11 @@ with importlib.resources.files("simple_dwd_weatherforecast").joinpath(
 ).open("r", encoding="utf-8") as file:
     stations = json.load(file)
 
+with importlib.resources.files("simple_dwd_weatherforecast").joinpath(
+    "uv_stations.json"
+).open("r", encoding="utf-8") as file:
+    uv_stations = json.load(file)
+
 
 def load_station_id(station_id: str):
     if station_id in stations:
@@ -200,7 +205,7 @@ class Weather:
         "MV": "dwph",  # Mecklenburg-Vorpommern
     }
 
-    uv_index_stations = {
+    uv_index_stations_reference_names = {
         "Weinbiet": "Weinbiet",
         "Hamburg": "Hamburg Innenstadt",
         "Seehausen": "Seehausen",
@@ -247,7 +252,6 @@ class Weather:
         if self.station:
             self.station_id = station_id
             self.region = get_region(station_id)
-            self.download_uv_index()
             self.nearest_uv_index_station = self.get_nearest_station_id_with_uv()
         else:
             raise ValueError("Not a valid station_id")
@@ -255,7 +259,7 @@ class Weather:
     def get_nearest_station_id_with_uv(self):
         nearest_distance = float("inf")
         nearest_station_id = None
-        for station in self.uv_reports.items():
+        for station in uv_stations.items():
             distance = get_distance(
                 self.station["lat"],
                 self.station["lon"],
@@ -265,9 +269,7 @@ class Weather:
 
             if distance < nearest_distance:
                 nearest_distance = distance
-                nearest_station_id = get_station_by_name(
-                    self.uv_index_stations[station[1]["city"]]
-                )
+                nearest_station_id = station[0]
 
         return nearest_station_id
 
@@ -399,6 +401,14 @@ class Weather:
             print("no report for this station available. Have you updated first?")
 
     def get_uv_index(self, days_from_today: int) -> int:
+        if not self.uv_reports:
+            self.update(
+                force_hourly=False,
+                with_forecast=False,
+                with_measurements=False,
+                with_report=False,
+                with_uv=True,
+            )
         if days_from_today < 0 or days_from_today > 2:
             print("days_from_today must be between 0 and 2")
             return None
@@ -408,7 +418,7 @@ class Weather:
             day = "tomorrow"
         elif days_from_today == 2:
             day = "dayafter_to"
-        return self.uv_reports[self.nearest_uv_index_station[0]]["forecast"][day]
+        return self.uv_reports[self.nearest_uv_index_station]["forecast"][day]
 
     def get_timeframe_max(
         self,
@@ -607,6 +617,7 @@ class Weather:
         with_forecast=True,
         with_measurements=False,
         with_report=False,
+        with_uv=True,
     ):
         if with_measurements and self.has_measurement(self.station_id):
             self.download_latest_report()
@@ -620,6 +631,8 @@ class Weather:
             or force_hourly
         ):
             self.download_latest_kml(self.station_id, force_hourly)
+        if with_uv:
+            self.download_uv_index()
 
     def get_weather_type(self, kmlTree, weatherDataType: WeatherDataType):
         """Parses the kml-File to the requested value and returns the items as array"""
@@ -849,8 +862,10 @@ class Weather:
         uv_reports = json.loads(request.text)["content"]
         # Match with existing stations
         for uv_report in uv_reports:
-            station = get_station_by_name(self.uv_index_stations[uv_report["city"]])
-            uv_report.update({"lat": station[1]["lat"], "lon": station[1]["lon"]})
+            station = get_station_by_name(
+                self.uv_index_stations_reference_names[uv_report["city"]]
+            )
+            # uv_report.update({"lat": station[1]["lat"], "lon": station[1]["lon"]})
             self.uv_reports[station[0]] = uv_report
 
     def download_weather_report(self, region_code):
