@@ -21,6 +21,7 @@ class WeatherBackgroundMapType(Enum):
     KREISE = "dwd:Warngebiete_Kreise"
     GEMEINDEN = "dwd:Warngebiete_Gemeinden"
     SATELLIT = "dwd:bluemarble"
+    GEWAESSER = "dwd:Gewaesser"
 
 def get_from_location(longitude, latitude, radius_km, map_type: WeatherMapType, background_type: WeatherBackgroundMapType = WeatherBackgroundMapType.BUNDESLAENDER, image_width=520, image_height=580, filename="map.png"):
     if radius_km <= 0:
