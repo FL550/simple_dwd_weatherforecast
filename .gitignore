@@ -11,3 +11,4 @@ __init__.pyc
 development/secret.py
 custom_test.py
 pyvenv.cfg
+run.py
