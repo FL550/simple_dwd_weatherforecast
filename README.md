@@ -149,9 +149,13 @@ You can download weather maps from the DWD GeoServer with this package. There ar
 ```python
 from simple_dwd_weatherforecast import dwdmap
 
-dwdmap.get_from_location(51.272, 8.84, radius_km=100, map_type=dwdmap.WeatherMapType.NIEDERSCHLAGSRADAR, background_type=dwdmap.WeatherBackgroundMapType.BUNDESLAENDER, file_name="map.png")
+image = dwdmap.get_from_location(51.272, 8.84, radius_km=100, map_type=dwdmap.WeatherMapType.NIEDERSCHLAGSRADAR, background_type=dwdmap.WeatherBackgroundMapType.BUNDESLAENDER)
 
-dwdmap.get_germany(map_type=dwdmap.WeatherMapType.UVINDEX, width=520, height=580, filename="germany.png")
+image.save("niederschlag.png")
+
+image = dwdmap.get_germany(map_type=dwdmap.WeatherMapType.UVINDEX, image_width=520, image_height=580)
+
+image.save("uvindex.png")
 ```
 
 #### Available methods
@@ -175,11 +179,11 @@ class WeatherBackgroundMapType(Enum):
     GEMEINDEN = "dwd:Warngebiete_Gemeinden"
     SATELLIT = "dwd:bluemarble"
 
-def get_from_location(longitude, latitude, radius_km, map_type: WeatherMapType, background_type: WeatherBackgroundMapType, optional integer image_width, optional integer image_height, optional string filename (default:"map.png")) #Saves map with given radius from coordinates
+def get_from_location(longitude, latitude, radius_km, map_type: WeatherMapType, background_type: WeatherBackgroundMapType, optional integer image_width, optional integer image_height) #Returns map as pillow image with given radius from coordinates
 
-get_germany(map_type: WeatherMapType, optional integer image_width, optional integer image_height, optional string filename (default:"map.png")) #Saves map of whole germany
+get_germany(map_type: WeatherMapType, optional integer image_width, optional integer image_height, optional string save_to_filename) #Returns map as pillow image of whole germany
 
-get_map(minx,miny,maxx,maxy, map_type: WeatherMapType, background_type: WeatherBackgroundMapType, optional integer image_width, optional integer image_height, optional string filename (default:"map.png")) #Map retrieval
+get_map(minx,miny,maxx,maxy, map_type: WeatherMapType, background_type: WeatherBackgroundMapType, optional integer image_width, optional integer image_height, optional string save_to_filename) #Returns map as pillow image
 ```
 
 ## Help and Contribution
