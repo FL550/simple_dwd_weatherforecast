@@ -181,7 +181,7 @@ class WeatherBackgroundMapType(Enum):
 
 def get_from_location(longitude, latitude, radius_km, map_type: WeatherMapType, background_type: WeatherBackgroundMapType, optional integer image_width, optional integer image_height) #Returns map as pillow image with given radius from coordinates
 
-get_germany(map_type: WeatherMapType, optional integer image_width, optional integer image_height, optional string save_to_filename) #Returns map as pillow image of whole germany
+get_germany(map_type: WeatherMapType, optional WeatherBackgroundMapType background_type, optional integer image_width, optional integer image_height, optional string save_to_filename) #Returns map as pillow image of whole germany
 
 get_map(minx,miny,maxx,maxy, map_type: WeatherMapType, background_type: WeatherBackgroundMapType, optional integer image_width, optional integer image_height, optional string save_to_filename) #Returns map as pillow image
 ```

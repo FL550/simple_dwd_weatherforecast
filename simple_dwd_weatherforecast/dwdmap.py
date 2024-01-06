@@ -33,8 +33,8 @@ def get_from_location(longitude, latitude, radius_km, map_type: WeatherMapType, 
     radius = math.fabs(radius_km / (111.3 * math.cos(latitude)))
     return get_map(latitude-radius, longitude-radius, latitude+radius, longitude+radius, map_type, background_type, image_width, image_height)
 
-def get_germany(map_type: WeatherMapType, image_width=520, image_height=580):
-    return get_map(4.4, 46.4, 16.1, 55.6, map_type, WeatherBackgroundMapType.BUNDESLAENDER, image_width, image_height)
+def get_germany(map_type: WeatherMapType, background_type: WeatherBackgroundMapType = WeatherBackgroundMapType.BUNDESLAENDER, image_width=520, image_height=580):
+    return get_map(4.4, 46.4, 16.1, 55.6, map_type, background_type, image_width, image_height)
 
 def get_map(minx,miny,maxx,maxy, map_type: WeatherMapType, background_type: WeatherBackgroundMapType, image_width=520, image_height=580):
     if image_width > 1200 or image_height > 1400:
