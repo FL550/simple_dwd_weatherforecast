@@ -40,7 +40,7 @@ def get_map(minx,miny,maxx,maxy, map_type: WeatherMapType, background_type: Weat
     if image_width > 1200 or image_height > 1400:
         raise ValueError("Width and height must not exceed 1200 and 1400 respectively. Please be kind to the DWD servers.")
 
-    url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.1.0&request=GetMap&layers={map_type.value},{background_type.value}&bbox={minx},{miny},{maxx},{maxy}&width={image_width}&height={image_height}&srs=EPSG:4326&styles=&format=image/png"
+    url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.1.0&request=GetMap&layers={background_type.value},{map_type.value}&bbox={minx},{miny},{maxx},{maxy}&width={image_width}&height={image_height}&srs=EPSG:4326&styles=&format=image/png"
     request = requests.get(url, stream=True)
     if request.status_code == 200:
         image = Image.open(BytesIO(request.content))
