@@ -400,8 +400,8 @@ class Weather:
         else:
             print("no report for this station available. Have you updated first?")
 
-    def get_uv_index(self, days_from_today: int) -> int:
-        if not self.uv_reports:
+    def get_uv_index(self, days_from_today: int, shouldUpdate=True) -> int:
+        if not self.uv_reports and shouldUpdate:
             self.update(
                 force_hourly=False,
                 with_forecast=False,
@@ -418,7 +418,11 @@ class Weather:
             day = "tomorrow"
         elif days_from_today == 2:
             day = "dayafter_to"
-        return self.uv_reports[self.nearest_uv_index_station]["forecast"][day]
+        return (
+            self.uv_reports[self.nearest_uv_index_station]["forecast"][day]
+            if self.uv_reports
+            else None
+        )
 
     def get_timeframe_max(
         self,
@@ -766,79 +770,92 @@ class Weather:
         self.report_data = {
             "time": row["Parameter description"],
             "date": row["surface observations"],
-            WeatherDataType.CONDITION.value[0]: int(
-                row[WeatherDataType.CONDITION.value[1]]
-            )
-            if row[WeatherDataType.CONDITION.value[1]] != self.NOT_AVAILABLE
-            else None,
-            WeatherDataType.TEMPERATURE.value[0]: round(
-                float(
-                    row[WeatherDataType.TEMPERATURE.value[1]]
-                    .replace(self.NOT_AVAILABLE, "0.0")
-                    .replace(",", ".")
+            WeatherDataType.CONDITION.value[0]: (
+                int(row[WeatherDataType.CONDITION.value[1]])
+                if row[WeatherDataType.CONDITION.value[1]] != self.NOT_AVAILABLE
+                else None
+            ),
+            WeatherDataType.TEMPERATURE.value[0]: (
+                round(
+                    float(
+                        row[WeatherDataType.TEMPERATURE.value[1]]
+                        .replace(self.NOT_AVAILABLE, "0.0")
+                        .replace(",", ".")
+                    )
+                    + 273.1,
+                    1,
                 )
-                + 273.1,
-                1,
-            )
-            if row[WeatherDataType.TEMPERATURE.value[1]] != self.NOT_AVAILABLE
-            else None,
-            WeatherDataType.DEWPOINT.value[0]: round(
-                float(row[WeatherDataType.DEWPOINT.value[1]].replace(",", ".")) + 273.1,
-                1,
-            )
-            if row[WeatherDataType.DEWPOINT.value[1]] != self.NOT_AVAILABLE
-            else None,
-            WeatherDataType.PRESSURE.value[0]: float(
-                row[WeatherDataType.PRESSURE.value[1]].replace(",", ".")
-            )
-            * 100
-            if row[WeatherDataType.PRESSURE.value[1]] != self.NOT_AVAILABLE
-            else None,
-            WeatherDataType.WIND_SPEED.value[0]: round(
-                float(row[WeatherDataType.WIND_SPEED.value[1]].replace(",", ".")) / 3.6,
-                1,
-            )
-            if row[WeatherDataType.WIND_SPEED.value[1]] != self.NOT_AVAILABLE
-            else None,
-            WeatherDataType.WIND_DIRECTION.value[0]: int(
-                row[WeatherDataType.WIND_DIRECTION.value[1]]
-            )
-            if row[WeatherDataType.WIND_DIRECTION.value[1]] != self.NOT_AVAILABLE
-            else None,
-            WeatherDataType.WIND_GUSTS.value[0]: round(
-                float(row[WeatherDataType.WIND_GUSTS.value[1]].replace(",", ".")) / 3.6,
-                1,
-            )
-            if row[WeatherDataType.WIND_GUSTS.value[1]] != self.NOT_AVAILABLE
-            else None,
-            WeatherDataType.PRECIPITATION.value[0]: float(
-                row[WeatherDataType.PRECIPITATION.value[1]].replace(",", ".")
-            )
-            if row[WeatherDataType.PRECIPITATION.value[1]] != self.NOT_AVAILABLE
-            else None,
-            WeatherDataType.CLOUD_COVERAGE.value[0]: float(
-                row[WeatherDataType.CLOUD_COVERAGE.value[1]].replace(",", ".")
-            )
-            if row[WeatherDataType.CLOUD_COVERAGE.value[1]] != self.NOT_AVAILABLE
-            else None,
-            WeatherDataType.VISIBILITY.value[0]: float(
-                row[WeatherDataType.VISIBILITY.value[1]].replace(",", ".")
-            )
-            * 1e3
-            if row[WeatherDataType.VISIBILITY.value[1]] != self.NOT_AVAILABLE
-            else None,
-            WeatherDataType.SUN_IRRADIANCE.value[0]: round(
-                float(row[WeatherDataType.SUN_IRRADIANCE.value[1]].replace(",", "."))
-                * 3.6,
-                1,
-            )
-            if row[WeatherDataType.SUN_IRRADIANCE.value[1]] != self.NOT_AVAILABLE
-            else None,
-            WeatherDataType.HUMIDITY.value[0]: float(
-                row[WeatherDataType.HUMIDITY.value[1]].replace(",", ".")
-            )
-            if row[WeatherDataType.HUMIDITY.value[1]] != self.NOT_AVAILABLE
-            else None,
+                if row[WeatherDataType.TEMPERATURE.value[1]] != self.NOT_AVAILABLE
+                else None
+            ),
+            WeatherDataType.DEWPOINT.value[0]: (
+                round(
+                    float(row[WeatherDataType.DEWPOINT.value[1]].replace(",", "."))
+                    + 273.1,
+                    1,
+                )
+                if row[WeatherDataType.DEWPOINT.value[1]] != self.NOT_AVAILABLE
+                else None
+            ),
+            WeatherDataType.PRESSURE.value[0]: (
+                float(row[WeatherDataType.PRESSURE.value[1]].replace(",", ".")) * 100
+                if row[WeatherDataType.PRESSURE.value[1]] != self.NOT_AVAILABLE
+                else None
+            ),
+            WeatherDataType.WIND_SPEED.value[0]: (
+                round(
+                    float(row[WeatherDataType.WIND_SPEED.value[1]].replace(",", "."))
+                    / 3.6,
+                    1,
+                )
+                if row[WeatherDataType.WIND_SPEED.value[1]] != self.NOT_AVAILABLE
+                else None
+            ),
+            WeatherDataType.WIND_DIRECTION.value[0]: (
+                int(row[WeatherDataType.WIND_DIRECTION.value[1]])
+                if row[WeatherDataType.WIND_DIRECTION.value[1]] != self.NOT_AVAILABLE
+                else None
+            ),
+            WeatherDataType.WIND_GUSTS.value[0]: (
+                round(
+                    float(row[WeatherDataType.WIND_GUSTS.value[1]].replace(",", "."))
+                    / 3.6,
+                    1,
+                )
+                if row[WeatherDataType.WIND_GUSTS.value[1]] != self.NOT_AVAILABLE
+                else None
+            ),
+            WeatherDataType.PRECIPITATION.value[0]: (
+                float(row[WeatherDataType.PRECIPITATION.value[1]].replace(",", "."))
+                if row[WeatherDataType.PRECIPITATION.value[1]] != self.NOT_AVAILABLE
+                else None
+            ),
+            WeatherDataType.CLOUD_COVERAGE.value[0]: (
+                float(row[WeatherDataType.CLOUD_COVERAGE.value[1]].replace(",", "."))
+                if row[WeatherDataType.CLOUD_COVERAGE.value[1]] != self.NOT_AVAILABLE
+                else None
+            ),
+            WeatherDataType.VISIBILITY.value[0]: (
+                float(row[WeatherDataType.VISIBILITY.value[1]].replace(",", ".")) * 1e3
+                if row[WeatherDataType.VISIBILITY.value[1]] != self.NOT_AVAILABLE
+                else None
+            ),
+            WeatherDataType.SUN_IRRADIANCE.value[0]: (
+                round(
+                    float(
+                        row[WeatherDataType.SUN_IRRADIANCE.value[1]].replace(",", ".")
+                    )
+                    * 3.6,
+                    1,
+                )
+                if row[WeatherDataType.SUN_IRRADIANCE.value[1]] != self.NOT_AVAILABLE
+                else None
+            ),
+            WeatherDataType.HUMIDITY.value[0]: (
+                float(row[WeatherDataType.HUMIDITY.value[1]].replace(",", "."))
+                if row[WeatherDataType.HUMIDITY.value[1]] != self.NOT_AVAILABLE
+                else None
+            ),
         }
 
     def get_weather_report(self, shouldUpdate=False):
