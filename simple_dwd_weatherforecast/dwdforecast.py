@@ -869,21 +869,24 @@ class Weather:
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.116 Safari/537.36"
         }
         headers["If-None-Match"] = self.etags[url] if url in self.etags else ""
-        request = requests.get(url, headers=headers)
-        # If resource has not been modified, return
-        if request.status_code == 304:
-            return
-        elif request.status_code != 200:
-            raise Exception(f"Unexpected status code {request.status_code}")
-        self.etags[url] = request.headers["ETag"]
-        uv_reports = json.loads(request.text)["content"]
-        # Match with existing stations
-        for uv_report in uv_reports:
-            station = get_station_by_name(
-                self.uv_index_stations_reference_names[uv_report["city"]]
-            )
-            # uv_report.update({"lat": station[1]["lat"], "lon": station[1]["lon"]})
-            self.uv_reports[station[0]] = uv_report
+        try:
+            request = requests.get(url, headers=headers, timeout=30)
+            # If resource has not been modified, return
+            if request.status_code == 304:
+                return
+            elif request.status_code != 200:
+                raise Exception(f"Unexpected status code {request.status_code}")
+            self.etags[url] = request.headers["ETag"]
+            uv_reports = json.loads(request.text)["content"]
+            # Match with existing stations
+            for uv_report in uv_reports:
+                station = get_station_by_name(
+                    self.uv_index_stations_reference_names[uv_report["city"]]
+                )
+                # uv_report.update({"lat": station[1]["lat"], "lon": station[1]["lon"]})
+                self.uv_reports[station[0]] = uv_report
+        except Exception as error:
+            print(f"Error in download_weather_report: {type(error)} args: {error.args}")
 
     def download_weather_report(self, region_code):
         url = f"https://www.dwd.de/DWD/wetter/wv_allg/deutschland/text/vhdl13_{region_code}.html"
@@ -891,16 +894,19 @@ class Weather:
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.116 Safari/537.36"
         }
         headers["If-None-Match"] = self.etags[url] if url in self.etags else ""
-        request = requests.get(url, headers=headers)
-        # If resource has not been modified, return
-        if request.status_code == 304:
-            return
-        self.etags[url] = request.headers["ETag"]
-        weather_report = request.text
-        a = weather_report.find(">")
-        if a != -1:
-            weather_report = weather_report[a + 1 :]
-        self.weather_report = weather_report
+        try:
+            request = requests.get(url, headers=headers, timeout=30)
+            # If resource has not been modified, return
+            if request.status_code == 304:
+                return
+            self.etags[url] = request.headers["ETag"]
+            weather_report = request.text
+            a = weather_report.find(">")
+            if a != -1:
+                weather_report = weather_report[a + 1 :]
+            self.weather_report = weather_report
+        except Exception as error:
+            print(f"Error in download_weather_report: {type(error)} args: {error.args}")
 
     def download_latest_kml(self, stationid, force_hourly=False):
         if force_hourly:
@@ -908,15 +914,18 @@ class Weather:
         else:
             url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/{stationid}/kml/MOSMIX_L_LATEST_{stationid}.kmz"
         headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}
-        request = requests.get(url, headers=headers)
-        # If resource has not been modified, return
-        if request.status_code == 304:
-            return
-        self.etags[url] = request.headers["ETag"]
-        with ZipFile(BytesIO(request.content), "r") as kmz:
-            # large RAM allocation
-            with kmz.open(kmz.namelist()[0], "r") as kml:
-                self.parse_kml(kml, force_hourly)
+        try:
+            request = requests.get(url, headers=headers, timeout=30)
+            # If resource has not been modified, return
+            if request.status_code == 304:
+                return
+            self.etags[url] = request.headers["ETag"]
+            with ZipFile(BytesIO(request.content), "r") as kmz:
+                # large RAM allocation
+                with kmz.open(kmz.namelist()[0], "r") as kml:
+                    self.parse_kml(kml, force_hourly)
+        except Exception as error:
+            print(f"Error in download_weather_report: {type(error)} args: {error.args}")
 
     def download_latest_report(self):
         station_id = self.station_id
@@ -926,38 +935,43 @@ class Weather:
             f"https://opendata.dwd.de/weather/weather_reports/poi/{station_id}-BEOB.csv"
         )
         headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}
-        response = requests.get(url, headers=headers)
-        if response.status_code == 200:
-            content = response.content
-            reader = csv.DictReader(content.decode("utf-8").splitlines(), delimiter=";")
-            is_first_run = True
-            backuprows = []
-            for row in reader:
-                if is_first_run:
-                    is_first_run = False
-                    reader.__next__()
-                    continue
-                backuprows.append(reader.__next__())
-                backuprows.append(reader.__next__())
-                backuprows.append(reader.__next__())
+        try:
+            response = requests.get(url, headers=headers, timeout=30)
+            if response.status_code == 200:
+                content = response.content
+                reader = csv.DictReader(
+                    content.decode("utf-8").splitlines(), delimiter=";"
+                )
+                is_first_run = True
+                backuprows = []
+                for row in reader:
+                    if is_first_run:
+                        is_first_run = False
+                        reader.__next__()
+                        continue
+                    backuprows.append(reader.__next__())
+                    backuprows.append(reader.__next__())
+                    backuprows.append(reader.__next__())
 
-                # Some items are only reported each hour
-                for backuprow in backuprows:
-                    if row["cloud_cover_total"] == self.NOT_AVAILABLE:
-                        row["cloud_cover_total"] = backuprow["cloud_cover_total"]
-                    if row["horizontal_visibility"] == self.NOT_AVAILABLE:
-                        row["horizontal_visibility"] = backuprow[
-                            "horizontal_visibility"
-                        ]
-                    if row["present_weather"] == self.NOT_AVAILABLE:
-                        row["present_weather"] = backuprow["present_weather"]
-                self.parse_csv_row(row)
-                # We only want the latest report
-                break
+                    # Some items are only reported each hour
+                    for backuprow in backuprows:
+                        if row["cloud_cover_total"] == self.NOT_AVAILABLE:
+                            row["cloud_cover_total"] = backuprow["cloud_cover_total"]
+                        if row["horizontal_visibility"] == self.NOT_AVAILABLE:
+                            row["horizontal_visibility"] = backuprow[
+                                "horizontal_visibility"
+                            ]
+                        if row["present_weather"] == self.NOT_AVAILABLE:
+                            row["present_weather"] = backuprow["present_weather"]
+                    self.parse_csv_row(row)
+                    # We only want the latest report
+                    break
 
-        elif response.status_code == 304:
-            # The report is already up to date
-            print("Report is already up to date")
-        else:
-            # Handle other status codes
-            print(f"Failed to download report. Status code: {response.status_code}")
+            elif response.status_code == 304:
+                # The report is already up to date
+                print("Report is already up to date")
+            else:
+                # Handle other status codes
+                print(f"Failed to download report. Status code: {response.status_code}")
+        except Exception as error:
+            print(f"Error in download_weather_report: {type(error)} args: {error.args}")
