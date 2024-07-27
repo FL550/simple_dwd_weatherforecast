@@ -586,20 +586,16 @@ class Weather:
                 time_step += timedelta(hours=1)
         else:
             time_step = first_entry_date
-            endtime = (
-                datetime(
-                    time_step.year,
-                    time_step.month,
-                    time_step.day,
-                    0,
-                    0,
-                    0,
-                    0,
-                    timezone.utc,
-                )
-                + timedelta(days=1)
-                + timedelta(hours=-1)
-            )
+            endtime = datetime(
+                time_step.year,
+                time_step.month,
+                time_step.day,
+                0,
+                0,
+                0,
+                0,
+                timezone.utc,
+            ) + timedelta(days=1)
             timediff = endtime - time_step
             for _ in range(round(timediff.total_seconds() / 3600)):
                 result.append(self.forecast_data[self.strip_to_hour_str(time_step)])

@@ -451,6 +451,7 @@ class Weather_get_day_values(unittest.TestCase):
             self.dwd_weather.get_day_values(test_time),
             test_data,
         )
+        self.assertEqual(len(self.dwd_weather.get_day_values(test_time)), 24)
 
     def test_day_not_last_day(self):
         test_time = datetime(2020, 11, 16, 1, 0)
@@ -1004,8 +1005,27 @@ class Weather_get_day_values(unittest.TestCase):
                 "wwM": 3.0,
                 "humidity": 81.3,
             },
+            {
+                "TTT": 275.55,
+                "Td": 273.45,
+                "condition": "51",
+                "PPPP": 103060.0,
+                "DD": 52.0,
+                "FF": 1.54,
+                "FX1": 3.09,
+                "RR1c": 8.76,
+                "wwP": 2.0,
+                "DRR1": 0.0,
+                "N": 22.0,
+                "VV": 15500.0,
+                "SunD1": 0.0,
+                "Rad1h": None,
+                "wwM": 2.0,
+                "humidity": 86.0,
+            },
         ]
         self.assertEqual(
             self.dwd_weather.get_day_values(test_time),
             test_data,
         )
+        self.assertEqual(len(self.dwd_weather.get_day_values(test_time)), 20)

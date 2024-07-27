@@ -35,7 +35,7 @@ class Weather_get_daily_sum(unittest.TestCase):
         test_time = datetime(2020, 11, 6, 10, 0)
         self.assertEqual(
             self.dwd_weather.get_daily_sum(WeatherDataType.PRECIPITATION, test_time),
-            27.25,
+            36.01,
         )
 
     @patch("simple_dwd_weatherforecast.dwdforecast.Weather.update", return_value=None)
@@ -43,5 +43,5 @@ class Weather_get_daily_sum(unittest.TestCase):
         test_time = datetime(2020, 11, 6, 10, 0)
         self.assertEqual(
             self.dwd_weather.get_daily_sum(WeatherDataType.TEMPERATURE, test_time),
-            5286.25,
+            5561.8,
         )
