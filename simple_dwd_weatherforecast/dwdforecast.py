@@ -546,6 +546,15 @@ class Weather:
             )
         return None
 
+    def get_daily_avg(
+        self, weatherDataType: WeatherDataType, timestamp: datetime, shouldUpdate=True
+    ):
+        if shouldUpdate:
+            self.update()
+        if self.is_in_timerange(timestamp):
+            return self.get_avg(self.get_day_values(timestamp), weatherDataType)
+        return None
+
     def get_avg(_, weather_data, weatherDataType):
         value_sum = 0.0
         count = len(weather_data)
