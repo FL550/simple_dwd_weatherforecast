@@ -46,3 +46,11 @@ class Weather_get_daily_avg(unittest.TestCase):
             self.dwd_weather.get_daily_avg(WeatherDataType.TEMPERATURE, test_time),
             278.09,
         )
+
+    @patch("simple_dwd_weatherforecast.dwdforecast.Weather.update", return_value=None)
+    def test_midnight(self, mock_update):
+        test_time = datetime(2020, 11, 6, 0, 0)
+        self.assertEqual(
+            self.dwd_weather.get_daily_avg(WeatherDataType.TEMPERATURE, test_time),
+            278.09,
+        )

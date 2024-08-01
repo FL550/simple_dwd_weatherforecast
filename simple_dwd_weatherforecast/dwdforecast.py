@@ -283,6 +283,21 @@ class Weather:
             <= list(self.forecast_data.keys())[-1]
         )
 
+    def is_in_timerange_day(self, timestamp: datetime):
+        return (
+            self.strip_to_day(
+                arrow.get(
+                    list(self.forecast_data.keys())[0], "YYYY-MM-DDTHH:mm:ss.SSSZ"
+                ).datetime
+            )
+            <= self.strip_to_day(timestamp)
+            <= self.strip_to_day(
+                arrow.get(
+                    list(self.forecast_data.keys())[-1], "YYYY-MM-DDTHH:mm:ss.SSSZ"
+                ).datetime
+            )
+        )
+
     def is_valid_timeframe(_, timeframe: int) -> bool:
         if 24 < timeframe or timeframe <= 0:
             return False
@@ -444,7 +459,7 @@ class Weather:
     ):
         if shouldUpdate:
             self.update()
-        if self.is_in_timerange(timestamp):
+        if self.is_in_timerange_day(timestamp):
             return self.get_max(self.get_day_values(timestamp), weatherDataType)
         return None
 
@@ -481,7 +496,7 @@ class Weather:
     ):
         if shouldUpdate:
             self.update()
-        if self.is_in_timerange(timestamp):
+        if self.is_in_timerange_day(timestamp):
             return self.get_min(self.get_day_values(timestamp), weatherDataType)
         return None
 
@@ -519,7 +534,7 @@ class Weather:
     ):
         if shouldUpdate:
             self.update()
-        if self.is_in_timerange(timestamp):
+        if self.is_in_timerange_day(timestamp):
             return self.get_sum(self.get_day_values(timestamp), weatherDataType)
         return None
 
@@ -551,7 +566,7 @@ class Weather:
     ):
         if shouldUpdate:
             self.update()
-        if self.is_in_timerange(timestamp):
+        if self.is_in_timerange_day(timestamp):
             return self.get_avg(self.get_day_values(timestamp), weatherDataType)
         return None
 
