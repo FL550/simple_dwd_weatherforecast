@@ -6,7 +6,7 @@ from enum import Enum
 
 
 class WeatherMapType(Enum):
-    NIEDERSCHLAGSRADAR = "dwd:Niederschlagsradar"
+    NIEDERSCHLAGSRADAR = "dwd:Niederschlagsradar,dwd:NCEW_EU"
     MAXTEMP = "dwd:GefuehlteTempMax"
     UVINDEX = "dwd:UVI_CS"
     POLLENFLUG = "dwd:Pollenflug"
@@ -78,7 +78,6 @@ def get_map(
         raise ValueError(
             "Width and height must not exceed 1200 and 1400 respectively. Please be kind to the DWD servers."
         )
-
     url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.1.0&request=GetMap&layers={map_type.value},{background_type.value}&bbox={minx},{miny},{maxx},{maxy}&width={image_width}&height={image_height}&srs=EPSG:4326&styles=&format=image/png"
     request = requests.get(url, stream=True)
     if request.status_code == 200:
