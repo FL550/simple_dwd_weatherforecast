@@ -17,7 +17,7 @@ class StationTestCase(unittest.TestCase):
 
     def test_is_valid_station_id_empty_string(self):
         self.assertFalse(dwdforecast.load_station_id(""))
-        self.assertFalse(dwdforecast.load_station_id(1))
+        self.assertFalse(dwdforecast.load_station_id("1"))
 
     def test_get_station_by_name(self):
-        self.assertEqual(dwdforecast.get_station_by_name("Ulm")[0], "10838")
+        self.assertEqual(dwdforecast.get_station_by_name("Ulm")[0], "10838")  # type: ignore

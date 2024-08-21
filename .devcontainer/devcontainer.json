@@ -24,7 +24,8 @@
 				],
 				"[python]": {
                     "editor.defaultFormatter": "charliermarsh.ruff"
-                }
+				},
+				"python.analysis.typeCheckingMode": "basic"
 			},
 			"extensions": [
 				"ms-python.black-formatter",

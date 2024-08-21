@@ -1,22 +1,23 @@
-from collections import OrderedDict, defaultdict
-import requests
-from io import BytesIO
-from zipfile import ZipFile
-from enum import Enum
-from lxml import etree
-from datetime import datetime, timedelta, timezone
-import arrow
-import math
-import json
 import csv
 import importlib
+import json
+import math
+from collections import OrderedDict, defaultdict
+from datetime import datetime, timedelta, timezone
+from enum import Enum
+from io import BytesIO
+from zipfile import ZipFile
 
-with importlib.resources.files("simple_dwd_weatherforecast").joinpath(
+import arrow
+import requests
+from lxml import etree
+
+with importlib.resources.files("simple_dwd_weatherforecast").joinpath(  # type: ignore
     "stations.json"
 ).open("r", encoding="utf-8") as file:
     stations = json.load(file)
 
-with importlib.resources.files("simple_dwd_weatherforecast").joinpath(
+with importlib.resources.files("simple_dwd_weatherforecast").joinpath(  # type: ignore
     "uv_stations.json"
 ).open("r", encoding="utf-8") as file:
     uv_stations = json.load(file)
@@ -32,6 +33,7 @@ def get_station_by_name(station_name: str):
     for station in stations.items():
         if station[1]["name"] == station_name:
             return station
+    return None
 
 
 def get_nearest_station_id(lat: float, lon: float):
@@ -40,14 +42,21 @@ def get_nearest_station_id(lat: float, lon: float):
 
 def get_stations_sorted_by_distance(lat: float, lon: float):
     """
-    Given a latitude and longitude, this function returns a list of stations sorted by their distance from the provided location.
+    Return stations sort by distance.
 
-    Parameters:
-        lat (float): The latitude of the location.
-        lon (float): The longitude of the location.
+    Given a latitude and longitude, this function returns a list of stations sorted by
+    their distance from the provided location.
+
+    Args:
+    ----
+        lat: The latitude of the location.
+        lon: The longitude of the location.
 
     Returns:
-        list: A list of stations sorted by distance, where each element is a list containing the station ID and its distance from the location.
+    -------
+        list: A list of stations sorted by distance, where each element is a list
+           containing the station ID and its distance from the location.
+
     """
     result = []
     for station in stations.items():
@@ -70,40 +79,40 @@ def get_distance(lat, lon, _lat, _lon):
 
 def get_region(station_id: str):
     if (
-        station_id in stations.keys()
-        and stations[station_id]["bundesland"] in Weather.region_codes.keys()
+        station_id in stations
+        and stations[station_id]["bundesland"] in Weather.region_codes
     ):
         return stations[station_id]["bundesland"]
     return None
 
 
 class WeatherDataType(Enum):
-    CONDITION = ["condition", "present_weather"]
-    TEMPERATURE = ["TTT", "dry_bulb_temperature_at_2_meter_above_ground"]  # Unit: K
-    DEWPOINT = ["Td", "dew_point_temperature_at_2_meter_above_ground"]  # Unit: K
-    PRESSURE = ["PPPP", "pressure_reduced_to_mean_sea_level"]  # Unit: Pa
-    WIND_SPEED = [
+    CONDITION = ("condition", "present_weather")
+    TEMPERATURE = ("TTT", "dry_bulb_temperature_at_2_meter_above_ground")  # Unit: K
+    DEWPOINT = ("Td", "dew_point_temperature_at_2_meter_above_ground")  # Unit: K
+    PRESSURE = ("PPPP", "pressure_reduced_to_mean_sea_level")  # Unit: Pa
+    WIND_SPEED = (
         "FF",
         "maximum_wind_speed_as_10_minutes_mean_during_last_hour",
-    ]  # Unit: m/s
-    WIND_DIRECTION = [
+    )  # Unit: m/s
+    WIND_DIRECTION = (
         "DD",
         "mean_wind_direction_during_last_10 min_at_10_meters_above_ground",
-    ]  # Unit: Degrees
-    WIND_GUSTS = ["FX1", "maximum_wind_speed_last_hour"]  # Unit: m/s
-    PRECIPITATION = ["RR1c", "precipitation_amount_last_hour"]  # Unit: kg/m^2
-    PRECIPITATION_PROBABILITY = ["wwP", ""]  # Unit: % (0..100)
-    PRECIPITATION_DURATION = ["DRR1", ""]  # Unit: s
-    CLOUD_COVERAGE = ["N", "cloud_cover_total"]  # Unit: % (0..100)
-    VISIBILITY = ["VV", "horizontal_visibility"]  # Unit: m
-    SUN_DURATION = ["SunD1", ""]  # Unit: s
-    SUN_IRRADIANCE = ["Rad1h", "global_radiation_last_hour"]  # Unit: kJ/m^2
-    FOG_PROBABILITY = ["wwM", ""]  # Unit: % (0..100)
-    HUMIDITY = ["humidity", "relative_humidity"]  # Unit: %
+    )  # Unit: Degrees
+    WIND_GUSTS = ("FX1", "maximum_wind_speed_last_hour")  # Unit: m/s
+    PRECIPITATION = ("RR1c", "precipitation_amount_last_hour")  # Unit: kg/m^2
+    PRECIPITATION_PROBABILITY = ("wwP", "")  # Unit: % (0..100)
+    PRECIPITATION_DURATION = ("DRR1", "")  # Unit: s
+    CLOUD_COVERAGE = ("N", "cloud_cover_total")  # Unit: % (0..100)
+    VISIBILITY = ("VV", "horizontal_visibility")  # Unit: m
+    SUN_DURATION = ("SunD1", "")  # Unit: s
+    SUN_IRRADIANCE = ("Rad1h", "global_radiation_last_hour")  # Unit: kJ/m^2
+    FOG_PROBABILITY = ("wwM", "")  # Unit: % (0..100)
+    HUMIDITY = ("humidity", "relative_humidity")  # Unit: %
 
 
 class Weather:
-    """A class for interacting with weather data from dwd.de"""
+    """A class for interacting with weather data from dwd.de."""
 
     NOT_AVAILABLE = "---"
 
@@ -254,15 +263,17 @@ class Weather:
             self.region = get_region(station_id)
             self.nearest_uv_index_station = self.get_nearest_station_id_with_uv()
         else:
-            raise ValueError("Not a valid station_id")
+            msg = "Not a valid station_id"
+            raise ValueError(msg)
 
     def get_nearest_station_id_with_uv(self):
         nearest_distance = float("inf")
         nearest_station_id = None
+        _station = self.station
         for station in uv_stations.items():
             distance = get_distance(
-                self.station["lat"],
-                self.station["lon"],
+                self.station["lat"],  # type: ignore
+                self.station["lon"],  # type: ignore
                 station[1]["lat"],
                 station[1]["lon"],
             )
@@ -274,32 +285,32 @@ class Weather:
         return nearest_station_id
 
     def get_station_name(self):
-        return self.station["name"]
+        return self.station["name"]  # type: ignore
 
     def is_in_timerange(self, timestamp: datetime):
         return (
-            list(self.forecast_data.keys())[0]
+            list(self.forecast_data.keys())[0]  # type: ignore
             <= self.strip_to_hour_str(timestamp)
-            <= list(self.forecast_data.keys())[-1]
+            <= list(self.forecast_data.keys())[-1]  # type: ignore
         )
 
     def is_in_timerange_day(self, timestamp: datetime):
         return (
             self.strip_to_day(
                 arrow.get(
-                    list(self.forecast_data.keys())[0], "YYYY-MM-DDTHH:mm:ss.SSSZ"
+                    list(self.forecast_data.keys())[0], "YYYY-MM-DDTHH:mm:ss.SSSZ"  # type: ignore
                 ).datetime
             )
             <= self.strip_to_day(timestamp)
             <= self.strip_to_day(
                 arrow.get(
-                    list(self.forecast_data.keys())[-1], "YYYY-MM-DDTHH:mm:ss.SSSZ"
+                    list(self.forecast_data.keys())[-1], "YYYY-MM-DDTHH:mm:ss.SSSZ"  # type: ignore
                 ).datetime
             )
         )
 
-    def is_valid_timeframe(_, timeframe: int) -> bool:
-        if 24 < timeframe or timeframe <= 0:
+    def is_valid_timeframe(self, timeframe: int) -> bool:
+        if timeframe > 24 or timeframe <= 0:
             return False
         return 24 % timeframe == 0
 
@@ -314,7 +325,7 @@ class Weather:
         if shouldUpdate:
             self.update()
         if self.is_in_timerange(timestamp):
-            return self.forecast_data[self.strip_to_hour_str(timestamp)][
+            return self.forecast_data[self.strip_to_hour_str(timestamp)][  # type: ignore
                 weatherDataType.value[0]
             ]
         return None
@@ -326,7 +337,7 @@ class Weather:
         if self.is_in_timerange(timestamp):
             return str(
                 self.weather_codes[
-                    self.forecast_data[self.strip_to_hour_str(timestamp)][
+                    self.forecast_data[self.strip_to_hour_str(timestamp)][  # type: ignore
                         WeatherDataType.CONDITION.value[0]
                     ]
                 ][0]
@@ -415,7 +426,7 @@ class Weather:
         else:
             print("no report for this station available. Have you updated first?")
 
-    def get_uv_index(self, days_from_today: int, shouldUpdate=True) -> int:
+    def get_uv_index(self, days_from_today: int, shouldUpdate=True) -> int | None:
         if not self.uv_reports and shouldUpdate:
             self.update(
                 force_hourly=False,
@@ -463,7 +474,7 @@ class Weather:
             return self.get_max(self.get_day_values(timestamp), weatherDataType)
         return None
 
-    def get_max(_, weather_data, weatherDataType: WeatherDataType):
+    def get_max(self, weather_data, weatherDataType: WeatherDataType):
         value = None
         for item in weather_data:
             value_new = item[weatherDataType.value[0]]
@@ -500,7 +511,7 @@ class Weather:
             return self.get_min(self.get_day_values(timestamp), weatherDataType)
         return None
 
-    def get_min(_, weather_data, weatherDataType: WeatherDataType):
+    def get_min(self, weather_data, weatherDataType: WeatherDataType):
         value = None
         for item in weather_data:
             value_new = item[weatherDataType.value[0]]
@@ -538,7 +549,7 @@ class Weather:
             return self.get_sum(self.get_day_values(timestamp), weatherDataType)
         return None
 
-    def get_sum(_, weather_data, weatherDataType):
+    def get_sum(self, weather_data, weatherDataType):
         value_sum = 0.0
         for item in weather_data:
             value = item[weatherDataType.value[0]]
@@ -570,7 +581,7 @@ class Weather:
             return self.get_avg(self.get_day_values(timestamp), weatherDataType)
         return None
 
-    def get_avg(_, weather_data, weatherDataType):
+    def get_avg(self, weather_data, weatherDataType):
         value_sum = 0.0
         count = len(weather_data)
         if count != 0:
@@ -589,24 +600,24 @@ class Weather:
         for _ in range(timeframe):
             hour_str = self.strip_to_hour_str(time_step)
             time_step += timedelta(hours=1)
-            if hour_str not in self.forecast_data:
+            if hour_str not in self.forecast_data:  # type: ignore
                 continue
-            result.append(self.forecast_data[hour_str])
+            result.append(self.forecast_data[hour_str])  # type: ignore
         return result
 
     def get_day_values(self, timestamp: datetime):
         "timestamp has to be checked prior to be in timerange"
         result = []
         first_entry_date = arrow.get(
-            next(iter(self.forecast_data)), "YYYY-MM-DDTHH:mm:ss.SSSZ"
-        ).datetime
+            next(iter(self.forecast_data)), "YYYY-MM-DDTHH:mm:ss.SSSZ"  # type: ignore
+        ).datetime  # type: ignore
         if timestamp.day != first_entry_date.day:
             time_step = self.strip_to_day(timestamp)
             for _ in range(24):
                 hour_str = self.strip_to_hour_str(time_step)
-                if hour_str not in self.forecast_data:
+                if hour_str not in self.forecast_data:  # type: ignore
                     break
-                result.append(self.forecast_data[hour_str])
+                result.append(self.forecast_data[hour_str])  # type: ignore
                 time_step += timedelta(hours=1)
         else:
             time_step = first_entry_date
@@ -622,17 +633,17 @@ class Weather:
             ) + timedelta(days=1)
             timediff = endtime - time_step
             for _ in range(round(timediff.total_seconds() / 3600)):
-                result.append(self.forecast_data[self.strip_to_hour_str(time_step)])
+                result.append(self.forecast_data[self.strip_to_hour_str(time_step)])  # type: ignore
                 time_step += timedelta(hours=1)
         return result
 
-    def strip_to_hour_str(_, timestamp: datetime):
+    def strip_to_hour_str(self, timestamp: datetime):
         return timestamp.strftime("%Y-%m-%dT%H:00:00.000Z")
 
-    def strip_to_hour(_, timestamp: datetime):
+    def strip_to_hour(self, timestamp: datetime):
         return datetime(timestamp.year, timestamp.month, timestamp.day, timestamp.hour)
 
-    def strip_to_day(_, timestamp: datetime):
+    def strip_to_day(self, timestamp: datetime):
         return datetime(timestamp.year, timestamp.month, timestamp.day)
 
     def update(
@@ -692,7 +703,8 @@ class Weather:
 
         self.loaded_station_name = self.parse_station_name(tree)
 
-        value = lambda wdt: self.get_weather_type(tree, wdt)
+        def value(wdt):
+            return self.get_weather_type(tree, wdt)
 
         values = [
             (wdt, value(wdt))
@@ -775,7 +787,9 @@ class Weather:
         if None in (temperature, dewpoint):
             return
 
-        celsius = lambda t: t - 273.1
+        def celsius(t):
+            return t - 273.1
+
         T = celsius(temperature)
         TD = celsius(dewpoint)
 
@@ -888,7 +902,7 @@ class Weather:
         headers = {
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.116 Safari/537.36"
         }
-        headers["If-None-Match"] = self.etags[url] if url in self.etags else ""
+        headers["If-None-Match"] = self.etags[url] if url in self.etags else ""  # type: ignore
         try:
             request = requests.get(url, headers=headers, timeout=30)
             # If resource has not been modified, return
@@ -896,7 +910,7 @@ class Weather:
                 return
             elif request.status_code != 200:
                 raise Exception(f"Unexpected status code {request.status_code}")
-            self.etags[url] = request.headers["ETag"]
+            self.etags[url] = request.headers["ETag"]  # type: ignore
             uv_reports = json.loads(request.text)["content"]
             # Match with existing stations
             for uv_report in uv_reports:
@@ -904,7 +918,7 @@ class Weather:
                     self.uv_index_stations_reference_names[uv_report["city"]]
                 )
                 # uv_report.update({"lat": station[1]["lat"], "lon": station[1]["lon"]})
-                self.uv_reports[station[0]] = uv_report
+                self.uv_reports[station[0]] = uv_report  # type: ignore
         except Exception as error:
             print(f"Error in download_weather_report: {type(error)} args: {error.args}")
 
@@ -913,13 +927,13 @@ class Weather:
         headers = {
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.116 Safari/537.36"
         }
-        headers["If-None-Match"] = self.etags[url] if url in self.etags else ""
+        headers["If-None-Match"] = self.etags[url] if url in self.etags else ""  # type: ignore
         try:
             request = requests.get(url, headers=headers, timeout=30)
             # If resource has not been modified, return
             if request.status_code == 304:
                 return
-            self.etags[url] = request.headers["ETag"]
+            self.etags[url] = request.headers["ETag"]  # type: ignore
             weather_report = request.text
             a = weather_report.find(">")
             if a != -1:
@@ -930,16 +944,16 @@ class Weather:
 
     def download_latest_kml(self, stationid, force_hourly=False):
         if force_hourly:
-            url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_S/all_stations/kml/MOSMIX_S_LATEST_240.kmz"
+            url = "https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_S/all_stations/kml/MOSMIX_S_LATEST_240.kmz"
         else:
             url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/{stationid}/kml/MOSMIX_L_LATEST_{stationid}.kmz"
-        headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}
+        headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}  # type: ignore
         try:
             request = requests.get(url, headers=headers, timeout=30)
             # If resource has not been modified, return
             if request.status_code == 304:
                 return
-            self.etags[url] = request.headers["ETag"]
+            self.etags[url] = request.headers["ETag"]  # type: ignore
             with ZipFile(BytesIO(request.content), "r") as kmz:
                 # large RAM allocation
                 with kmz.open(kmz.namelist()[0], "r") as kml:
@@ -954,7 +968,7 @@ class Weather:
         url = (
             f"https://opendata.dwd.de/weather/weather_reports/poi/{station_id}-BEOB.csv"
         )
-        headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}
+        headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}  # type: ignore
         try:
             response = requests.get(url, headers=headers, timeout=30)
             if response.status_code == 200:

@@ -7,8 +7,7 @@ from dummy_data import parsed_data
 class Weather_get_timeframe_values(unittest.TestCase):
     def setUp(self):
         self.dwd_weather = dwdforecast.Weather("H889")
-        self.dwd_weather.forecast_data = parsed_data
-        self.dwd_weather.station_name = "BAD HOMBURG"
+        self.dwd_weather.forecast_data = parsed_data  # type: ignore
 
     def test_timeframe_6(self):
         test_time = datetime(2020, 11, 7, 1, 0)

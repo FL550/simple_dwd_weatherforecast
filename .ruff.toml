@@ -9,11 +9,15 @@ select = [
 
 ignore = [
     "ANN101", # Missing type annotation for `self` in method
+    "ANN201", # Missing return type annotation for public function
     "ANN401", # Dynamically typed expressions (typing.Any) are disallowed
+    "D103", # Missing docstring in public function
     "D203", # no-blank-line-before-class (incompatible with formatter)
     "D212", # multi-line-summary-first-line (incompatible with formatter)
     "COM812", # incompatible with formatter
     "ISC001", # incompatible with formatter
+    "RUF012" # Mutable class attributes should be annotated with `typing.ClassVar`
+    "FBT002", # Boolean default positional argument in function definition
 ]
 
 [lint.flake8-pytest-style]
