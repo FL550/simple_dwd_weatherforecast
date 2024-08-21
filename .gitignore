@@ -1,6 +1,5 @@
 .venv
 __pycache__
-.vscode
 .env
 .coverage
 build
@@ -8,7 +7,6 @@ init
 dist
 htmlcov
 __init__.pyc
-development/secret.py
 custom_test.py
 pyvenv.cfg
 run.py
