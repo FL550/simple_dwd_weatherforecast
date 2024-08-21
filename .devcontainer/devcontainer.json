@@ -21,7 +21,10 @@
 					"./tests",
 					"-p",
 					"test_*.py"
-				]
+				],
+				"[python]": {
+                    "editor.defaultFormatter": "charliermarsh.ruff"
+                }
 			},
 			"extensions": [
 				"ms-python.black-formatter",
