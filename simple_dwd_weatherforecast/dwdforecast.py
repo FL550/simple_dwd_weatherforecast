@@ -752,9 +752,9 @@ class Weather:
             ):
                 item = placemark.find(".//kml:name", namespaces=self.namespaces)
 
-                if item.text == self.station_id:
+                if item is not None and item.text == self.station_id:
                     return placemark
-                placemark.clear()
+                # placemark.clear()
 
     def parse_issue_time(self, tree):
         issue_time_new = arrow.get(
