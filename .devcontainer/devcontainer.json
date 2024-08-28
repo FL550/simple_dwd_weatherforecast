@@ -11,8 +11,11 @@
 		// Configure properties specific to VS Code.
 		"vscode": {
 			"settings": {
+				"files.eol": "\n",
+				"editor.tabSize": 4,
 				"editor.formatOnPaste": true,
 				"editor.formatOnSave": true,
+				"editor.formatOnType": false,
 				"python.testing.pytestEnabled": false,
 				"python.testing.unittestEnabled": true,
 				"python.testing.unittestArgs": [
@@ -28,7 +31,6 @@
 				"python.analysis.typeCheckingMode": "basic"
 			},
 			"extensions": [
-				"ms-python.black-formatter",
 				"gruntfuggly.todo-tree",
 				"charliermarsh.ruff",
 				"github.vscode-pull-request-github",
