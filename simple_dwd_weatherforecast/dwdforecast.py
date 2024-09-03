@@ -298,13 +298,15 @@ class Weather:
         return (
             self.strip_to_day(
                 arrow.get(
-                    list(self.forecast_data.keys())[0], "YYYY-MM-DDTHH:mm:ss.SSSZ"  # type: ignore
+                    list(self.forecast_data.keys())[0],  # type: ignore
+                    "YYYY-MM-DDTHH:mm:ss.SSSZ",  # type: ignore
                 ).datetime
             )
             <= self.strip_to_day(timestamp)
             <= self.strip_to_day(
                 arrow.get(
-                    list(self.forecast_data.keys())[-1], "YYYY-MM-DDTHH:mm:ss.SSSZ"  # type: ignore
+                    list(self.forecast_data.keys())[-1],  # type: ignore
+                    "YYYY-MM-DDTHH:mm:ss.SSSZ",  # type: ignore
                 ).datetime
             )
         )
@@ -356,9 +358,11 @@ class Weather:
         return None
 
     def get_daily_condition(self, timestamp: datetime, shouldUpdate=True):
+        print("testieng")
         if shouldUpdate:
             self.update()
-        if self.is_in_timerange(timestamp):
+        if self.is_in_timerange_day(timestamp):
+            print("working")
             return self.get_condition(self.get_day_values(timestamp))
         return None
 
@@ -609,7 +613,8 @@ class Weather:
         "timestamp has to be checked prior to be in timerange"
         result = []
         first_entry_date = arrow.get(
-            next(iter(self.forecast_data)), "YYYY-MM-DDTHH:mm:ss.SSSZ"  # type: ignore
+            next(iter(self.forecast_data)),  # type: ignore
+            "YYYY-MM-DDTHH:mm:ss.SSSZ",  # type: ignore
         ).datetime  # type: ignore
         if timestamp.day != first_entry_date.day:
             time_step = self.strip_to_day(timestamp)
