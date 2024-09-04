@@ -1,8 +1,11 @@
+from typing import Iterable
 import requests
 import math
 from io import BytesIO
-from PIL import Image
+from PIL import Image, ImageFile
 from enum import Enum
+from collections import deque
+from datetime import datetime, timedelta, timezone
 
 
 class WeatherMapType(Enum):
@@ -23,6 +26,13 @@ class WeatherBackgroundMapType(Enum):
     GEMEINDEN = "dwd:Warngebiete_Gemeinden"
     SATELLIT = "dwd:bluemarble"
     GEWAESSER = "dwd:Gewaesser"
+
+
+class germany_boundaries:
+    minx = 4.4
+    miny = 46.4
+    maxx = 16.1
+    maxy = 55.6
 
 
 def get_from_location(
@@ -60,7 +70,14 @@ def get_germany(
     image_height=580,
 ):
     return get_map(
-        4.4, 46.4, 16.1, 55.6, map_type, background_type, image_width, image_height
+        germany_boundaries.minx,
+        germany_boundaries.miny,
+        germany_boundaries.maxx,
+        germany_boundaries.maxy,
+        map_type,
+        background_type,
+        image_width,
+        image_height,
     )
 
 
@@ -83,3 +100,85 @@ def get_map(
     if request.status_code == 200:
         image = Image.open(BytesIO(request.content))
         return image
+
+
+class ImageLoop:
+    _last_update: datetime
+    _images: deque[ImageFile.ImageFile]
+
+    _minx: float
+    _miny: float
+    _maxx: float
+    _maxy: float
+    _map_type: WeatherMapType
+    _background_type: WeatherBackgroundMapType
+    _image_width: int
+    _image_height: int
+
+    def __init__(
+        self,
+        minx: float,
+        miny: float,
+        maxx: float,
+        maxy: float,
+        map_type: WeatherMapType,
+        background_type: WeatherBackgroundMapType,
+        steps: int = 6,
+        image_width: int = 520,
+        image_height: int = 580,
+    ):
+        if image_width > 1200 or image_height > 1400:
+            raise ValueError(
+                "Width and height must not exceed 1200 and 1400 respectively. Please be kind to the DWD servers."
+            )
+        self._minx = minx
+        self._miny = miny
+        self._maxx = maxx
+        self._maxy = maxy
+        self._map_type = map_type
+        self._background_type = background_type
+        self._steps = steps
+        self._image_width = image_width
+        self._image_height = image_height
+
+        self._images = deque([], steps)
+
+        self._full_reload()
+
+    def get_images(self) -> Iterable[ImageFile.ImageFile]:
+        return self._images
+
+    def _full_reload(self):
+        self._images.clear()
+        now = get_time_last_5_min(datetime.now(timezone.utc))
+        self._last_update = now - timedelta(minutes=5) * self._steps
+
+        while now > self._last_update:
+            self._last_update += timedelta(minutes=5)
+            self._images.append(self._get_image(self._last_update))
+
+    def update(self):
+        now = get_time_last_5_min(datetime.now(timezone.utc))
+
+        # wenn last update länger her als buffer, dann lade alles neu
+        if now - self._last_update > self._steps * timedelta(minutes=5):
+            self._full_reload()
+        # wenn last update innerhalb des buffers ist, dann lade die bilder vom ältesten zum neuesten neu in den buffer
+        else:
+            while now > self._last_update:
+                self._last_update += timedelta(minutes=5)
+                self._images.append(self._get_image(self._last_update))
+
+    def _get_image(self, date: datetime) -> ImageFile.ImageFile:
+        print(f"{date.strftime('%Y-%m-%dT%H:%M:00.0Z')}")
+        url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.1.0&request=GetMap&layers={self._map_type.value},{self._background_type.value}&bbox={self._minx},{self._miny},{self._maxx},{self._maxy}&width={self._image_width}&height={self._image_height}&srs=EPSG:4326&styles=&format=image/png&TIME={date.strftime("%Y-%m-%dT%H:%M:00.0Z")}"
+        print(url)
+        request = requests.get(url, stream=True)
+        if request.status_code != 200:
+            raise ConnectionError("Error during image request from DWD servers")
+        return Image.open(BytesIO(request.content))
+
+
+def get_time_last_5_min(date: datetime) -> datetime:
+    minute = math.floor(date.minute / 5) * 5
+    return date.replace(minute=minute, second=0, microsecond=0)
