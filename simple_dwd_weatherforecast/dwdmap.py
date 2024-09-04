@@ -145,6 +145,9 @@ class ImageLoop:
 
         self._full_reload()
 
+    def __getitem__(self, key):
+        return self._images[key]
+
     def get_images(self) -> Iterable[ImageFile.ImageFile]:
         return self._images
 
