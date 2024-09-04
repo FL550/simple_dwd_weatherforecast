@@ -160,19 +160,17 @@ class ImageLoop:
     def update(self):
         now = get_time_last_5_min(datetime.now(timezone.utc))
 
-        # wenn last update länger her als buffer, dann lade alles neu
+        # If last update is older than the buffer can hold, reload the whole buffer
         if now - self._last_update > self._steps * timedelta(minutes=5):
             self._full_reload()
-        # wenn last update innerhalb des buffers ist, dann lade die bilder vom ältesten zum neuesten neu in den buffer
+        # Update the buffer and fetch only the new images
         else:
             while now > self._last_update:
                 self._last_update += timedelta(minutes=5)
                 self._images.append(self._get_image(self._last_update))
 
     def _get_image(self, date: datetime) -> ImageFile.ImageFile:
-        print(f"{date.strftime('%Y-%m-%dT%H:%M:00.0Z')}")
         url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.1.0&request=GetMap&layers={self._map_type.value},{self._background_type.value}&bbox={self._minx},{self._miny},{self._maxx},{self._maxy}&width={self._image_width}&height={self._image_height}&srs=EPSG:4326&styles=&format=image/png&TIME={date.strftime("%Y-%m-%dT%H:%M:00.0Z")}"
-        print(url)
         request = requests.get(url, stream=True)
         if request.status_code != 200:
             raise ConnectionError("Error during image request from DWD servers")

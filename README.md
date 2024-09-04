@@ -181,11 +181,48 @@ class WeatherBackgroundMapType(Enum):
     GEMEINDEN = "dwd:Warngebiete_Gemeinden"
     SATELLIT = "dwd:bluemarble"
 
-def get_from_location(longitude, latitude, radius_km, map_type: WeatherMapType, background_type: WeatherBackgroundMapType, optional integer image_width, optional integer image_height) #Returns map as pillow image with given radius from coordinates
+get_from_location(longitude, latitude, radius_km, map_type: WeatherMapType, background_type: WeatherBackgroundMapType, optional integer image_width, optional integer image_height) #Returns map as pillow image with given radius from coordinates
 
 get_germany(map_type: WeatherMapType, optional WeatherBackgroundMapType background_type, optional integer image_width, optional integer image_height, optional string save_to_filename) #Returns map as pillow image of whole germany
 
 get_map(minx,miny,maxx,maxy, map_type: WeatherMapType, background_type: WeatherBackgroundMapType, optional integer image_width, optional integer image_height, optional string save_to_filename) #Returns map as pillow image
+```
+
+
+### Image loop
+
+There is also the possibility to retrieve multiple images as a loop. This can be done by the class ImageLoop.
+
+
+#### Usage example
+```python
+from simple_dwd_weatherforecast import dwdmap
+
+maploop = dwdmap.ImageLoop(
+    dwdmap.germany_boundaries.minx,
+    dwdmap.germany_boundaries.miny,
+    dwdmap.germany_boundaries.maxx,
+    dwdmap.germany_boundaries.maxy,
+    dwdmap.WeatherMapType.NIEDERSCHLAGSRADAR,
+    dwdmap.WeatherBackgroundMapType.BUNDESLAENDER,
+    steps=5,
+)
+
+for image in enumerate(maploop._images):
+    image[1].save(f"image{image[0]}.png")
+
+```
+
+#### Available methods
+
+```python
+ImageLoop(minx: float, miny: float, maxx: float, maxy: float, map_type: WeatherMapType, background_type: WeatherBackgroundMapType,
+        steps: int = 6, image_width: int = 520,image_height: int = 580) -> ImageLoop
+
+get_images() -> Iterable[ImageFile.ImageFile] # Returns the image loop
+
+update() # Updates the loop to the most recent files
+
 ```
 
 ## Help and Contribution
