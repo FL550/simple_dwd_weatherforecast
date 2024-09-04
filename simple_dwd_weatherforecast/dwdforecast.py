@@ -358,11 +358,9 @@ class Weather:
         return None
 
     def get_daily_condition(self, timestamp: datetime, shouldUpdate=True):
-        print("testieng")
         if shouldUpdate:
             self.update()
         if self.is_in_timerange_day(timestamp):
-            print("working")
             return self.get_condition(self.get_day_values(timestamp))
         return None
 
