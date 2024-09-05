@@ -135,6 +135,8 @@ class ImageLoop:
         self._miny = miny
         self._maxx = maxx
         self._maxy = maxy
+        if map_type != WeatherMapType.NIEDERSCHLAGSRADAR:
+            raise ValueError("Only NIEDERSCHLAGSRADAR is supported in a loop")
         self._map_type = map_type
         self._background_type = background_type
         self._steps = steps
@@ -174,6 +176,7 @@ class ImageLoop:
 
     def _get_image(self, date: datetime) -> ImageFile.ImageFile:
         url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.1.0&request=GetMap&layers={self._map_type.value},{self._background_type.value}&bbox={self._minx},{self._miny},{self._maxx},{self._maxy}&width={self._image_width}&height={self._image_height}&srs=EPSG:4326&styles=&format=image/png&TIME={date.strftime("%Y-%m-%dT%H:%M:00.0Z")}"
+        print(url)
         request = requests.get(url, stream=True)
         if request.status_code != 200:
             raise ConnectionError("Error during image request from DWD servers")

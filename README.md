@@ -191,7 +191,7 @@ get_map(minx,miny,maxx,maxy, map_type: WeatherMapType, background_type: WeatherB
 
 ### Image loop
 
-There is also the possibility to retrieve multiple images as a loop. This can be done by the class ImageLoop.
+There is also the possibility to retrieve multiple images as a loop. This can be done by the class ImageLoop. This however only works for the precipitation radar.
 
 
 #### Usage example
