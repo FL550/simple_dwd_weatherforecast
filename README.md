@@ -4,6 +4,8 @@
 
 DISCLAIMER: This project is a private open source project and doesn't have any connection with Deutscher Wetterdienst.
 
+**If you like my work, I would be really happy if you buy me some coffee: [Buy Me A Coffee][buymecoffee]**
+
 ## Weather data
 
 This is a python package for simple access to hourly forecast data for the next 10 days. The data is updated every six hours and updated when needed. Some stations also have actual reported weather, which you can also retrieve.
