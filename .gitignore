@@ -8,6 +8,5 @@ init
 dist
 htmlcov
 __init__.pyc
-custom_test.py
 pyvenv.cfg
 run.py
