@@ -14,6 +14,8 @@ class WeatherUpdate(unittest.TestCase):
     def test_download(self):
         self.dwd_weather.update(force_hourly=True)
         self.assertIsNotNone(self.dwd_weather.forecast_data)
+        self.assertEqual(self.dwd_weather.station_id, "H889")
+        self.assertEqual(self.dwd_weather.issue_time.date(), datetime.now().date())  # type: ignore
 
     @patch(
         "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_kml",

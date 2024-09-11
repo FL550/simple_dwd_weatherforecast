@@ -22,6 +22,9 @@ class WeatherUpdate(unittest.TestCase):
     def test_download(self, _1, _2):
         self.dwd_weather.update()
         self.assertIsNotNone(self.dwd_weather.forecast_data)
+        self.assertIsNotNone(self.dwd_weather.forecast_data)
+        self.assertEqual(self.dwd_weather.station_id, "H889")
+        self.assertEqual(self.dwd_weather.issue_time.date(), datetime.now().date())  # type: ignore
 
     @patch(
         "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_report",
@@ -55,7 +58,7 @@ class WeatherUpdate(unittest.TestCase):
         self.dwd_weather.issue_time = datetime(
             *(time.strptime("2020-11-06T03:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ")[0:6]),
             0,
-            timezone.utc
+            timezone.utc,
         )
         self.dwd_weather.update()
         mock_function.assert_called()

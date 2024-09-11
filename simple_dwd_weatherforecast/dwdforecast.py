@@ -7,6 +7,8 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 from io import BytesIO
 from zipfile import ZipFile
+import httpx
+from stream_unzip import stream_unzip
 
 import arrow
 import requests
@@ -677,7 +679,7 @@ class Weather:
 
         items = []
         result = kmlTree.xpath(
-            './kml:ExtendedData/dwd:Forecast[@dwd:elementName="{}"]/dwd:value'.format(
+            './kml:Document/kml:Placemark/kml:ExtendedData/dwd:Forecast[@dwd:elementName="{}"]/dwd:value'.format(
                 weatherDataType.value[0]
             ),
             namespaces=self.namespaces,
@@ -694,14 +696,11 @@ class Weather:
                 items.append(None)
         return items
 
-    def parse_kml(self, kml, force_hourly=False):
-        stream = etree.iterparse(kml)
-        (_, tree) = next(stream)
+    def parse_kml(self, kml):
+        tree = etree.fromstring(kml)  # type: ignore
         timesteps = self.parse_timesteps(tree)
         issue_time_new = self.parse_issue_time(tree)
-        tree.clear()
 
-        tree = self.parse_placemark(stream)
         self.issue_time = issue_time_new
 
         self.loaded_station_name = self.parse_station_name(tree)
@@ -748,17 +747,6 @@ class Weather:
             for (i, t) in enumerate(timesteps)
         )
 
-    def parse_placemark(self, stream):
-        for _, tree in stream:
-            for placemark in tree.findall(
-                ".//kml:Placemark", namespaces=self.namespaces
-            ):
-                item = placemark.find(".//kml:name", namespaces=self.namespaces)
-
-                if item is not None and item.text == self.station_id:
-                    return placemark
-                # placemark.clear()
-
     def parse_issue_time(self, tree):
         issue_time_new = arrow.get(
             tree.xpath("//dwd:IssueTime", namespaces=self.namespaces)[0].text,
@@ -767,7 +755,9 @@ class Weather:
         return issue_time_new
 
     def parse_station_name(self, tree):
-        return tree.xpath("./kml:description", namespaces=self.namespaces)[0].text
+        return tree.xpath(
+            "./kml:Document/kml:Placemark/kml:description", namespaces=self.namespaces
+        )[0].text
 
     def parse_timesteps(self, tree):
         return [
@@ -781,7 +771,7 @@ class Weather:
         return [
             elem.split(".")[0]
             for elem in tree.xpath(
-                './kml:ExtendedData/dwd:Forecast[@dwd:elementName="ww"]/dwd:value',
+                './kml:Document/kml:Placemark/kml:ExtendedData/dwd:Forecast[@dwd:elementName="ww"]/dwd:value',
                 namespaces=self.namespaces,
             )[0].text.split()
         ]
@@ -945,11 +935,8 @@ class Weather:
         except Exception as error:
             print(f"Error in download_weather_report: {type(error)} args: {error.args}")
 
-    def download_latest_kml(self, stationid, force_hourly=False):
-        if force_hourly:
-            url = "https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_S/all_stations/kml/MOSMIX_S_LATEST_240.kmz"
-        else:
-            url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/{stationid}/kml/MOSMIX_L_LATEST_{stationid}.kmz"
+    def download_small_kml(self, stationid) -> bytes | None:
+        url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/{stationid}/kml/MOSMIX_L_LATEST_{stationid}.kmz"
         headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}  # type: ignore
         try:
             request = requests.get(url, headers=headers, timeout=30)
@@ -958,11 +945,72 @@ class Weather:
                 return
             self.etags[url] = request.headers["ETag"]  # type: ignore
             with ZipFile(BytesIO(request.content), "r") as kmz:
-                # large RAM allocation
                 with kmz.open(kmz.namelist()[0], "r") as kml:
-                    self.parse_kml(kml, force_hourly)
+                    return kml.read()
+
         except Exception as error:
             print(f"Error in download_latest_kml: {type(error)} args: {error.args}")
+
+    def get_chunks(self):
+        def zipped_chunks():
+            # Iterable that yields the bytes of a zip file
+            with httpx.stream(
+                "GET",
+                "https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_S/all_stations/kml/MOSMIX_S_LATEST_240.kmz",
+            ) as r:
+                yield from r.iter_bytes(chunk_size=131072)
+
+        return stream_unzip(zipped_chunks())
+
+    def download_large_kml(self, stationid):
+        placemark = b""
+
+        for file_name, file_size, unzipped_chunks in self.get_chunks():
+            chunk1 = b""
+            chunk2 = b""
+            first_chunk = None
+
+            save_next = False
+            save_next_next = False
+            stop = False
+            # unzipped_chunks must be iterated to completion or UnfinishedIterationError will be raised
+            for chunk in unzipped_chunks:
+                if stop:
+                    continue
+                if not first_chunk:
+                    first_chunk = chunk
+                if save_next_next:
+                    placemark = chunk1 + chunk2 + chunk
+                    save_next_next = False
+                    stop = True
+                if save_next:
+                    chunk2 = chunk
+                    save_next_next = True
+                    save_next = False
+
+                if stationid.encode() in chunk:
+                    chunk1 = chunk
+                    save_next = True
+            if first_chunk:
+                start = placemark.find(b"<kml:Placemark>\n")
+
+                result = (
+                    first_chunk[: first_chunk.find(b"<kml:Placemark>")]
+                    + placemark[
+                        start : placemark.find(b"</kml:Placemark>\n", start) + 17
+                    ]
+                    + b"</kml:Document></kml:kml>"
+                )
+                return result
+
+    def download_latest_kml(self, stationid, force_hourly=False):
+        kml = (
+            self.download_large_kml(stationid)
+            if force_hourly
+            else self.download_small_kml(stationid)
+        )
+        if kml is not None:
+            self.parse_kml(kml)
 
     def download_latest_report(self):
         station_id = self.station_id
