@@ -95,7 +95,15 @@ def get_map(
         raise ValueError(
             "Width and height must not exceed 1200 and 1400 respectively. Please be kind to the DWD servers."
         )
-    url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.1.0&request=GetMap&layers={map_type.value},{background_type.value}&bbox={minx},{miny},{maxx},{maxy}&width={image_width}&height={image_height}&srs=EPSG:4326&styles=&format=image/png"
+    if background_type in [
+        WeatherBackgroundMapType.SATELLIT,
+        WeatherBackgroundMapType.KREISE,
+        WeatherBackgroundMapType.GEMEINDEN,
+    ]:
+        layers = f"{background_type.value}, {map_type.value}"
+    else:
+        layers = f"{map_type.value}, {background_type.value}"
+    url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.1.0&request=GetMap&layers={layers}&bbox={minx},{miny},{maxx},{maxy}&width={image_width}&height={image_height}&srs=EPSG:4326&styles=&format=image/png"
     request = requests.get(url, stream=True)
     if request.status_code == 200:
         image = Image.open(BytesIO(request.content))
@@ -175,8 +183,15 @@ class ImageLoop:
                 self._images.append(self._get_image(self._last_update))
 
     def _get_image(self, date: datetime) -> ImageFile.ImageFile:
-        url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.1.0&request=GetMap&layers={self._map_type.value},{self._background_type.value}&bbox={self._minx},{self._miny},{self._maxx},{self._maxy}&width={self._image_width}&height={self._image_height}&srs=EPSG:4326&styles=&format=image/png&TIME={date.strftime("%Y-%m-%dT%H:%M:00.0Z")}"
-        print(url)
+        if self._background_type in [
+            WeatherBackgroundMapType.SATELLIT,
+            WeatherBackgroundMapType.KREISE,
+            WeatherBackgroundMapType.GEMEINDEN,
+        ]:
+            layers = f"{self._background_type.value}, {self._map_type.value}"
+        else:
+            layers = f"{self._map_type.value}, {self._background_type.value}"
+        url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.1.0&request=GetMap&layers={layers}&bbox={self._minx},{self._miny},{self._maxx},{self._maxy}&width={self._image_width}&height={self._image_height}&srs=EPSG:4326&styles=&format=image/png&TIME={date.strftime("%Y-%m-%dT%H:%M:00.0Z")}"
         request = requests.get(url, stream=True)
         if request.status_code != 200:
             raise ConnectionError("Error during image request from DWD servers")
