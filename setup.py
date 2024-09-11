@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="simple_dwd_weatherforecast",
-    version="2.1.2",
+    version="2.1.3",
     author="Max Fermor",
     description="A simple tool to retrieve a weather forecast from DWD OpenData",
     long_description=long_description,
@@ -20,5 +20,5 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.6",
-    install_requires=["lxml", "requests", "Pillow", "arrow"],
+    install_requires=["lxml", "requests", "Pillow", "arrow", "stream-unzip", "httpx"],
 )
