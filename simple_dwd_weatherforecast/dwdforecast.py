@@ -951,21 +951,31 @@ class Weather:
         except Exception as error:
             print(f"Error in download_latest_kml: {type(error)} args: {error.args}")
 
-    def get_chunks(self):
-        def zipped_chunks():
+    def get_chunks(self, url):
+        def zipped_chunks(url):
             # Iterable that yields the bytes of a zip file
             with httpx.stream(
                 "GET",
-                "https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_S/all_stations/kml/MOSMIX_S_LATEST_240.kmz",
+                url,
             ) as r:
+                self.etags[url] = r.headers["etag"]  # type: ignore
                 yield from r.iter_bytes(chunk_size=171072)
 
-        return stream_unzip(zipped_chunks())
+        return stream_unzip(zipped_chunks(url))
 
     def download_large_kml(self, stationid):
         placemark = b""
+        url = "https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_S/all_stations/kml/MOSMIX_S_LATEST_240.kmz"
+        # Check if content has updated
+        headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}  # type: ignore
+        r = httpx.head(
+            "https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_S/all_stations/kml/MOSMIX_S_LATEST_240.kmz",
+            headers=headers,
+        )
+        if r.status_code == 304:
+            return
 
-        for file_name, file_size, unzipped_chunks in self.get_chunks():
+        for file_name, file_size, unzipped_chunks in self.get_chunks(url):
             chunk1 = b""
             chunk2 = b""
             first_chunk = None
