@@ -969,7 +969,7 @@ class Weather:
         # Check if content has updated
         headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}  # type: ignore
         r = httpx.head(
-            "https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_S/all_stations/kml/MOSMIX_S_LATEST_240.kmz",
+            url,
             headers=headers,
         )
         if r.status_code == 304:
