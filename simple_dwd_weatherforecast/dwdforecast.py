@@ -958,7 +958,7 @@ class Weather:
                 "GET",
                 "https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_S/all_stations/kml/MOSMIX_S_LATEST_240.kmz",
             ) as r:
-                yield from r.iter_bytes(chunk_size=131072)
+                yield from r.iter_bytes(chunk_size=171072)
 
         return stream_unzip(zipped_chunks())
 
