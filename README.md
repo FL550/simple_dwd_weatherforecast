@@ -91,6 +91,7 @@ class WeatherDataType(Enum):
     SUN_IRRADIANCE = "Rad1h" # Unit: W/m2
     FOG_PROBABILITY = "wwM" # Unit: % (0..100)
     HUMIDITY = "humidity"  # Unit: %
+    EVAPORATION = ("PEvap", "evaporation")  # In the last 24h Unit: kg/m2
 
 class Weather:
 

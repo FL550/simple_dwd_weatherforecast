@@ -111,6 +111,7 @@ class WeatherDataType(Enum):
     SUN_IRRADIANCE = ("Rad1h", "global_radiation_last_hour")  # Unit: kJ/m^2
     FOG_PROBABILITY = ("wwM", "")  # Unit: % (0..100)
     HUMIDITY = ("humidity", "relative_humidity")  # Unit: %
+    EVAPORATION = ("PEvap", "evaporation")  # Unit: kg/m2
 
 
 class Weather:
@@ -725,6 +726,7 @@ class Weather:
                 WeatherDataType.SUN_DURATION,
                 WeatherDataType.SUN_IRRADIANCE,
                 WeatherDataType.FOG_PROBABILITY,
+                WeatherDataType.EVAPORATION,
             )
         ]
         values.extend(
