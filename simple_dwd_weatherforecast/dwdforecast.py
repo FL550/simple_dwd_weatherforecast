@@ -998,9 +998,12 @@ class Weather:
                     save_next_next = True
                     save_next = False
 
-                if stationid.encode() in chunk:
+                if f"<kml:name>{stationid}</kml:name>".encode() in chunk:
                     chunk1 = chunk
                     save_next = True
+
+            if not chunk1:
+                raise BufferError("Station not found")
             if first_chunk:
                 start = placemark.find(b"<kml:Placemark>\n")
 
