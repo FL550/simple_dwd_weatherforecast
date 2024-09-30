@@ -23,27 +23,24 @@ class KMLParseTestCase(unittest.TestCase):
             )
 
 
-def helper():
-    result = []
-    read_size = 131072
+def helper(file):
     # Iterable that yields the bytes of a zip file
-    with open("development/MOSMIX_L_2023100809_stripped.kml", "rb") as kml:
-        content = kml.read(read_size)
+    with open(file, "rb") as kml:
+        content = kml.read()
         while len(content) > 0:
-            result.append(content)
-            content = kml.read(read_size)
-    return zip([0], [0], [result])
+            yield content
+            content = kml.read()
 
 
 class KMLParseFullTestCase(unittest.TestCase):
-    FILE_NAME = "development/MOSMIX_L_2023100809_stripped.kml"
+    FILE_NAME = "development/MOSMIX_L_2023100809_stripped.kmz"
 
     def setUp(self):
         self.dwd_weather = dwdforecast.Weather("L511")
 
     @patch(
         "simple_dwd_weatherforecast.dwdforecast.Weather.get_chunks",
-        return_value=helper(),
+        return_value=helper(FILE_NAME),
     )
     def test_parse_kml(self, _):
         self.dwd_weather.download_latest_kml(

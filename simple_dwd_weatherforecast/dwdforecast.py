@@ -954,16 +954,13 @@ class Weather:
             print(f"Error in download_latest_kml: {type(error)} args: {error.args}")
 
     def get_chunks(self, url):
-        def zipped_chunks(url):
-            # Iterable that yields the bytes of a zip file
-            with httpx.stream(
-                "GET",
-                url,
-            ) as r:
-                self.etags[url] = r.headers["etag"]  # type: ignore
-                yield from r.iter_bytes(chunk_size=171072)
-
-        return stream_unzip(zipped_chunks(url))
+        # Iterable that yields the bytes of a zip file
+        with httpx.stream(
+            "GET",
+            url,
+        ) as r:
+            self.etags[url] = r.headers["etag"]  # type: ignore
+            yield from r.iter_bytes(chunk_size=65536)
 
     def download_large_kml(self, stationid):
         placemark = b""
@@ -977,40 +974,42 @@ class Weather:
         if r.status_code == 304:
             return
 
-        for file_name, file_size, unzipped_chunks in self.get_chunks(url):
-            chunk1 = b""
-            chunk2 = b""
-            first_chunk = None
+        for file_name, file_size, unzipped_chunks in stream_unzip(self.get_chunks(url)):
+            header = b""
+            placemark = b""
 
-            save_next = False
-            save_next_next = False
+            found_header = False
+            found_stationid = False
             stop = False
             # unzipped_chunks must be iterated to completion or UnfinishedIterationError will be raised
             for chunk in unzipped_chunks:
                 if stop:
                     continue
-                if not first_chunk:
-                    first_chunk = chunk
-                if save_next_next:
-                    placemark = chunk1 + chunk2 + chunk
-                    save_next_next = False
-                    stop = True
-                if save_next:
-                    chunk2 = chunk
-                    save_next_next = True
-                    save_next = False
+
+                if not found_header:
+                    header += chunk
+                    if "<kml:Placemark>".encode() in chunk:
+                        found_header = True
+
+                if found_stationid:
+                    placemark += chunk
+                    if "</kml:Placemark>\n".encode() in chunk:
+                        stop = True
 
                 if f"<kml:name>{stationid}</kml:name>".encode() in chunk:
-                    chunk1 = chunk
-                    save_next = True
+                    placemark = chunk
+                    found_stationid = True
 
-            if not chunk1:
+            if not placemark:
                 raise BufferError("Station not found")
-            if first_chunk:
+            if header and placemark:
                 start = placemark.find(b"<kml:Placemark>\n")
-
+                if start == -1:
+                    raise BufferError(
+                        "Error during stream parsing of station {}".format(stationid)
+                    )
                 result = (
-                    first_chunk[: first_chunk.find(b"<kml:Placemark>")]
+                    header[: header.find(b"<kml:Placemark>")]
                     + placemark[
                         start : placemark.find(b"</kml:Placemark>\n", start) + 17
                     ]
