@@ -49,7 +49,7 @@ class Marker:
         shape: MarkerShape,
         size: int,
         colorRGB: tuple[int, int, int],
-        width: int = 0
+        width: int = 0,
     ):
         if (
             latitude is None
@@ -106,7 +106,7 @@ def get_from_location(
         background_type,
         image_width,
         image_height,
-        markers
+        markers,
     )
 
 
@@ -174,7 +174,6 @@ class ImageLoop:
     _image_width: int
     _image_height: int
 
-    # TODO mapmarker
     def __init__(
         self,
         minx: float,
@@ -186,6 +185,7 @@ class ImageLoop:
         steps: int = 6,
         image_width: int = 520,
         image_height: int = 580,
+        markers: list[Marker] = [],
     ):
         if image_width > 1200 or image_height > 1400:
             raise ValueError(
@@ -202,7 +202,7 @@ class ImageLoop:
         self._steps = steps
         self._image_width = image_width
         self._image_height = image_height
-
+        self.markers = markers
         self._images = deque([], steps)
 
         self._full_reload()
@@ -234,8 +234,10 @@ class ImageLoop:
                 self._last_update += timedelta(minutes=5)
                 self._images.append(self._get_image(self._last_update))
 
-    # TODO mapmarker
-    def _get_image(self, date: datetime) -> ImageFile.ImageFile:
+    def _get_image(
+        self,
+        date: datetime,
+    ) -> ImageFile.ImageFile:
         if self._background_type in [
             WeatherBackgroundMapType.SATELLIT,
             WeatherBackgroundMapType.KREISE,
@@ -248,8 +250,13 @@ class ImageLoop:
         request = requests.get(url, stream=True)
         if request.status_code != 200:
             raise ConnectionError("Error during image request from DWD servers")
-        # TODO mapmarker
-        return Image.open(BytesIO(request.content))
+        image = Image.open(BytesIO(request.content))
+        image = draw_marker(
+            image,
+            ImageBoundaries(self._minx, self._maxx, self._miny, self._maxy),
+            self.markers,
+        )
+        return image
 
 
 def get_time_last_5_min(date: datetime) -> datetime:
@@ -284,7 +291,11 @@ def draw_marker(
             * image.height,
         )
         if marker.shape == MarkerShape.CIRCLE:
-            draw.circle(location_relative_to_image, marker.size, fill=marker.colorRGB)
+            draw.circle(
+                location_relative_to_image,
+                round(marker.size / 2, 0),
+                fill=marker.colorRGB,
+            )
         elif marker.shape == MarkerShape.CROSS:
             size = round(marker.size / 2, 0)
             draw.line(
@@ -299,7 +310,7 @@ def draw_marker(
                     ),
                 ],
                 marker.colorRGB,
-                marker.width
+                marker.width,
             )
             draw.line(
                 [
@@ -313,7 +324,7 @@ def draw_marker(
                     ),
                 ],
                 marker.colorRGB,
-                marker.width
+                marker.width,
             )
         elif marker.shape == MarkerShape.SQUARE:
             size = round(marker.size / 2, 0)
