@@ -2,7 +2,7 @@ from typing import Iterable
 import requests
 import math
 from io import BytesIO
-from PIL import Image, ImageFile
+from PIL import Image, ImageFile, ImageDraw
 from enum import Enum
 from collections import deque
 from datetime import datetime, timedelta, timezone
@@ -35,6 +35,51 @@ class germany_boundaries:
     maxy = 55.6
 
 
+class MarkerShape(Enum):
+    CIRCLE = "circle"
+    SQUARE = "square"
+    CROSS = "cross"
+
+
+class Marker:
+    def __init__(
+        self,
+        latitude: float,
+        longitude: float,
+        shape: MarkerShape,
+        size: int,
+        colorRGB: tuple[int, int, int],
+        width: int = 0,
+    ):
+        if (
+            latitude is None
+            or longitude is None
+            or shape is None
+            or size is None
+            or colorRGB is None
+        ):
+            raise ValueError("All values have to be defined")
+        self.latitude = latitude
+        self.longitude = longitude
+        self.shape = shape
+        self.size = size
+        self.colorRGB = colorRGB
+        self.width = width
+
+
+class ImageBoundaries:
+    minX: float
+    maxX: float
+    minY: float
+    maxY: float
+
+    def __init__(self, minX: float, maxX: float, minY: float, maxY: float) -> None:
+        self.minX = minX
+        self.maxX = maxX
+        self.minY = minY
+        self.maxY = maxY
+
+
 def get_from_location(
     longitude,
     latitude,
@@ -43,6 +88,7 @@ def get_from_location(
     background_type: WeatherBackgroundMapType = WeatherBackgroundMapType.BUNDESLAENDER,
     image_width=520,
     image_height=580,
+    markers: list[Marker] = [],
 ):
     if radius_km <= 0:
         raise ValueError("Radius must be greater than 0")
@@ -60,6 +106,7 @@ def get_from_location(
         background_type,
         image_width,
         image_height,
+        markers,
     )
 
 
@@ -68,6 +115,7 @@ def get_germany(
     background_type: WeatherBackgroundMapType = WeatherBackgroundMapType.BUNDESLAENDER,
     image_width=520,
     image_height=580,
+    markers: list[Marker] = [],
 ):
     return get_map(
         germany_boundaries.minx,
@@ -78,6 +126,7 @@ def get_germany(
         background_type,
         image_width,
         image_height,
+        markers,
     )
 
 
@@ -90,6 +139,7 @@ def get_map(
     background_type: WeatherBackgroundMapType,
     image_width=520,
     image_height=580,
+    markers: list[Marker] = [],
 ):
     if image_width > 1200 or image_height > 1400:
         raise ValueError(
@@ -107,6 +157,7 @@ def get_map(
     request = requests.get(url, stream=True)
     if request.status_code == 200:
         image = Image.open(BytesIO(request.content))
+        image = draw_marker(image, ImageBoundaries(minx, maxx, miny, maxy), markers)
         return image
 
 
@@ -134,6 +185,7 @@ class ImageLoop:
         steps: int = 6,
         image_width: int = 520,
         image_height: int = 580,
+        markers: list[Marker] = [],
     ):
         if image_width > 1200 or image_height > 1400:
             raise ValueError(
@@ -150,7 +202,7 @@ class ImageLoop:
         self._steps = steps
         self._image_width = image_width
         self._image_height = image_height
-
+        self.markers = markers
         self._images = deque([], steps)
 
         self._full_reload()
@@ -182,7 +234,10 @@ class ImageLoop:
                 self._last_update += timedelta(minutes=5)
                 self._images.append(self._get_image(self._last_update))
 
-    def _get_image(self, date: datetime) -> ImageFile.ImageFile:
+    def _get_image(
+        self,
+        date: datetime,
+    ) -> ImageFile.ImageFile:
         if self._background_type in [
             WeatherBackgroundMapType.SATELLIT,
             WeatherBackgroundMapType.KREISE,
@@ -195,9 +250,95 @@ class ImageLoop:
         request = requests.get(url, stream=True)
         if request.status_code != 200:
             raise ConnectionError("Error during image request from DWD servers")
-        return Image.open(BytesIO(request.content))
+        image = Image.open(BytesIO(request.content))
+        image = draw_marker(
+            image,
+            ImageBoundaries(self._minx, self._maxx, self._miny, self._maxy),
+            self.markers,
+        )
+        return image
 
 
 def get_time_last_5_min(date: datetime) -> datetime:
     minute = math.floor(date.minute / 5) * 5
     return date.replace(minute=minute, second=0, microsecond=0)
+
+
+def draw_marker(
+    image: ImageFile.ImageFile,
+    image_bounderies: ImageBoundaries,
+    marker_list: list[Marker],
+):
+    draw = ImageDraw.ImageDraw(image)
+    for marker in marker_list:
+        if (
+            marker.longitude < image_bounderies.minX
+            or marker.longitude > image_bounderies.maxX
+            or marker.latitude < image_bounderies.minY
+            or marker.latitude > image_bounderies.maxY
+        ):
+            raise ValueError("Marker location out of boundaries")
+        location_relative_to_image = (
+            (
+                (marker.longitude - image_bounderies.minX)
+                / (image_bounderies.maxX - image_bounderies.minX)
+            )
+            * image.width,
+            (
+                (marker.latitude - image_bounderies.minY)
+                / (image_bounderies.maxY - image_bounderies.minY)
+            )
+            * image.height,
+        )
+        if marker.shape == MarkerShape.CIRCLE:
+            draw.circle(
+                location_relative_to_image,
+                round(marker.size / 2, 0),
+                fill=marker.colorRGB,
+            )
+        elif marker.shape == MarkerShape.CROSS:
+            size = round(marker.size / 2, 0)
+            draw.line(
+                [
+                    (
+                        location_relative_to_image[0] - size,
+                        location_relative_to_image[1],
+                    ),
+                    (
+                        location_relative_to_image[0] + size,
+                        location_relative_to_image[1],
+                    ),
+                ],
+                marker.colorRGB,
+                marker.width,
+            )
+            draw.line(
+                [
+                    (
+                        location_relative_to_image[0],
+                        location_relative_to_image[1] - size,
+                    ),
+                    (
+                        location_relative_to_image[0],
+                        location_relative_to_image[1] + size,
+                    ),
+                ],
+                marker.colorRGB,
+                marker.width,
+            )
+        elif marker.shape == MarkerShape.SQUARE:
+            size = round(marker.size / 2, 0)
+            draw.rectangle(
+                [
+                    (
+                        location_relative_to_image[0] - size,
+                        location_relative_to_image[1] - size,
+                    ),
+                    (
+                        location_relative_to_image[0] + size,
+                        location_relative_to_image[1] + size,
+                    ),
+                ],
+                marker.colorRGB,
+            )
+    return image

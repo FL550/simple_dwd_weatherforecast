@@ -184,11 +184,25 @@ class WeatherBackgroundMapType(Enum):
     GEMEINDEN = "dwd:Warngebiete_Gemeinden"
     SATELLIT = "dwd:bluemarble"
 
-get_from_location(longitude, latitude, radius_km, map_type: WeatherMapType, background_type: WeatherBackgroundMapType, optional integer image_width, optional integer image_height) #Returns map as pillow image with given radius from coordinates
+class MarkerShape(Enum):
+    CIRCLE = "circle"
+    SQUARE = "square"
+    CROSS = "cross"
+    
+class Marker(
+        latitude: float,
+        longitude: float,
+        shape: MarkerShape,
+        size: int,
+        colorRGB: tuple[int, int, int],
+        width: int = 0,
+    )
 
-get_germany(map_type: WeatherMapType, optional WeatherBackgroundMapType background_type, optional integer image_width, optional integer image_height, optional string save_to_filename) #Returns map as pillow image of whole germany
+get_from_location(longitude, latitude, radius_km, map_type: WeatherMapType, background_type: WeatherBackgroundMapType, optional integer image_width, optional integer image_height, optional markers: list[Marker]) #Returns map as pillow image with given radius from coordinates
 
-get_map(minx,miny,maxx,maxy, map_type: WeatherMapType, background_type: WeatherBackgroundMapType, optional integer image_width, optional integer image_height, optional string save_to_filename) #Returns map as pillow image
+get_germany(map_type: WeatherMapType, optional WeatherBackgroundMapType background_type, optional integer image_width, optional integer image_height, optional markers: list[Marker]) #Returns map as pillow image of whole germany
+
+get_map(minx,miny,maxx,maxy, map_type: WeatherMapType, background_type: WeatherBackgroundMapType, optional integer image_width, optional integer image_height, optional markers: list[Marker]) #Returns map as pillow image
 ```
 
 
@@ -220,7 +234,7 @@ for image in enumerate(maploop._images):
 
 ```python
 ImageLoop(minx: float, miny: float, maxx: float, maxy: float, map_type: WeatherMapType, background_type: WeatherBackgroundMapType,
-        steps: int = 6, image_width: int = 520,image_height: int = 580) -> ImageLoop
+        steps: int = 6, image_width: int = 520,image_height: int = 580, markers: list[Marker] = []) -> ImageLoop
 
 get_images() -> Iterable[ImageFile.ImageFile] # Returns the image loop
 
