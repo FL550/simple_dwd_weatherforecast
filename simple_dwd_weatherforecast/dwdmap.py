@@ -2,7 +2,7 @@ from typing import Iterable
 import requests
 import math
 from io import BytesIO
-from PIL import Image, ImageFile
+from PIL import Image, ImageFile, ImageDraw
 from enum import Enum
 from collections import deque
 from datetime import datetime, timedelta, timezone
@@ -66,6 +66,19 @@ class Marker:
         self.colorRGB = colorRGB
 
 
+class ImageBoundaries:
+    minX: float
+    maxX: float
+    minY: float
+    maxY: float
+
+    def __init__(self, minX: float, maxX: float, minY: float, maxY: float) -> None:
+        self.minX = minX
+        self.maxX = maxX
+        self.minY = minY
+        self.maxY = maxY
+
+
 # TODO mapmarker
 def get_from_location(
     longitude,
@@ -95,12 +108,12 @@ def get_from_location(
     )
 
 
-# TODO mapmarker
 def get_germany(
     map_type: WeatherMapType,
     background_type: WeatherBackgroundMapType = WeatherBackgroundMapType.BUNDESLAENDER,
     image_width=520,
     image_height=580,
+    markers: list[Marker] = [],
 ):
     return get_map(
         germany_boundaries.minx,
@@ -111,10 +124,10 @@ def get_germany(
         background_type,
         image_width,
         image_height,
+        markers,
     )
 
 
-# TODO mapmarker
 def get_map(
     minx,
     miny,
@@ -124,6 +137,7 @@ def get_map(
     background_type: WeatherBackgroundMapType,
     image_width=520,
     image_height=580,
+    markers: list[Marker] = [],
 ):
     if image_width > 1200 or image_height > 1400:
         raise ValueError(
@@ -140,8 +154,8 @@ def get_map(
     url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.1.0&request=GetMap&layers={layers}&bbox={minx},{miny},{maxx},{maxy}&width={image_width}&height={image_height}&srs=EPSG:4326&styles=&format=image/png"
     request = requests.get(url, stream=True)
     if request.status_code == 200:
-        # TODO mapmarker
         image = Image.open(BytesIO(request.content))
+        image = draw_marker(image, ImageBoundaries(minx, maxx, miny, maxy), markers)
         return image
 
 
@@ -241,6 +255,39 @@ def get_time_last_5_min(date: datetime) -> datetime:
     return date.replace(minute=minute, second=0, microsecond=0)
 
 
-# TODO
-def draw_marker(image: ImageFile.ImageFile, marker: Marker):
-    pass
+def draw_marker(
+    image: ImageFile.ImageFile,
+    image_bounderies: ImageBoundaries,
+    marker_list: list[Marker],
+):
+    draw = ImageDraw.ImageDraw(image)
+    for marker in marker_list:
+        if (
+            marker.longitude < image_bounderies.minX
+            or marker.longitude > image_bounderies.maxX
+            or marker.latitude < image_bounderies.minY
+            or marker.latitude > image_bounderies.maxY
+        ):
+            raise ValueError("Marker location out of boundaries")
+        location_relative_to_image = (
+            (
+                (marker.longitude - image_bounderies.minX)
+                / (image_bounderies.maxX - image_bounderies.minX)
+            )
+            * image.width,
+            (
+                (marker.latitude - image_bounderies.minY)
+                / (image_bounderies.maxY - image_bounderies.minY)
+            )
+            * image.height,
+        )
+        if marker.shape == MarkerShape.CIRCLE:
+            draw.circle(location_relative_to_image, marker.size, fill=marker.colorRGB)
+        elif marker.shape == MarkerShape.CROSS:
+            # TODO
+            pass
+        elif marker.shape == MarkerShape.SQUARE:
+            pass
+        elif marker.shape == MarkerShape.TRIANGLE:
+            pass
+    return image
