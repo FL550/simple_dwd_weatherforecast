@@ -38,7 +38,6 @@ class germany_boundaries:
 class MarkerShape(Enum):
     CIRCLE = "circle"
     SQUARE = "square"
-    TRIANGLE = "triangle"
     CROSS = "cross"
 
 
@@ -50,6 +49,7 @@ class Marker:
         shape: MarkerShape,
         size: int,
         colorRGB: tuple[int, int, int],
+        width: int = 0
     ):
         if (
             latitude is None
@@ -64,6 +64,7 @@ class Marker:
         self.shape = shape
         self.size = size
         self.colorRGB = colorRGB
+        self.width = width
 
 
 class ImageBoundaries:
@@ -79,7 +80,6 @@ class ImageBoundaries:
         self.maxY = maxY
 
 
-# TODO mapmarker
 def get_from_location(
     longitude,
     latitude,
@@ -88,6 +88,7 @@ def get_from_location(
     background_type: WeatherBackgroundMapType = WeatherBackgroundMapType.BUNDESLAENDER,
     image_width=520,
     image_height=580,
+    markers: list[Marker] = [],
 ):
     if radius_km <= 0:
         raise ValueError("Radius must be greater than 0")
@@ -105,6 +106,7 @@ def get_from_location(
         background_type,
         image_width,
         image_height,
+        markers
     )
 
 
@@ -284,10 +286,48 @@ def draw_marker(
         if marker.shape == MarkerShape.CIRCLE:
             draw.circle(location_relative_to_image, marker.size, fill=marker.colorRGB)
         elif marker.shape == MarkerShape.CROSS:
-            # TODO
-            pass
+            size = round(marker.size / 2, 0)
+            draw.line(
+                [
+                    (
+                        location_relative_to_image[0] - size,
+                        location_relative_to_image[1],
+                    ),
+                    (
+                        location_relative_to_image[0] + size,
+                        location_relative_to_image[1],
+                    ),
+                ],
+                marker.colorRGB,
+                marker.width
+            )
+            draw.line(
+                [
+                    (
+                        location_relative_to_image[0],
+                        location_relative_to_image[1] - size,
+                    ),
+                    (
+                        location_relative_to_image[0],
+                        location_relative_to_image[1] + size,
+                    ),
+                ],
+                marker.colorRGB,
+                marker.width
+            )
         elif marker.shape == MarkerShape.SQUARE:
-            pass
-        elif marker.shape == MarkerShape.TRIANGLE:
-            pass
+            size = round(marker.size / 2, 0)
+            draw.rectangle(
+                [
+                    (
+                        location_relative_to_image[0] - size,
+                        location_relative_to_image[1] - size,
+                    ),
+                    (
+                        location_relative_to_image[0] + size,
+                        location_relative_to_image[1] + size,
+                    ),
+                ],
+                marker.colorRGB,
+            )
     return image
