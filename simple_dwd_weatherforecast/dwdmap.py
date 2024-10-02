@@ -35,6 +35,38 @@ class germany_boundaries:
     maxy = 55.6
 
 
+class MarkerShape(Enum):
+    CIRCLE = "circle"
+    SQUARE = "square"
+    TRIANGLE = "triangle"
+    CROSS = "cross"
+
+
+class Marker:
+    def __init__(
+        self,
+        latitude: float,
+        longitude: float,
+        shape: MarkerShape,
+        size: int,
+        colorRGB: tuple[int, int, int],
+    ):
+        if (
+            latitude is None
+            or longitude is None
+            or shape is None
+            or size is None
+            or colorRGB is None
+        ):
+            raise ValueError("All values have to be defined")
+        self.latitude = latitude
+        self.longitude = longitude
+        self.shape = shape
+        self.size = size
+        self.colorRGB = colorRGB
+
+
+# TODO mapmarker
 def get_from_location(
     longitude,
     latitude,
@@ -63,6 +95,7 @@ def get_from_location(
     )
 
 
+# TODO mapmarker
 def get_germany(
     map_type: WeatherMapType,
     background_type: WeatherBackgroundMapType = WeatherBackgroundMapType.BUNDESLAENDER,
@@ -81,6 +114,7 @@ def get_germany(
     )
 
 
+# TODO mapmarker
 def get_map(
     minx,
     miny,
@@ -106,6 +140,7 @@ def get_map(
     url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.1.0&request=GetMap&layers={layers}&bbox={minx},{miny},{maxx},{maxy}&width={image_width}&height={image_height}&srs=EPSG:4326&styles=&format=image/png"
     request = requests.get(url, stream=True)
     if request.status_code == 200:
+        # TODO mapmarker
         image = Image.open(BytesIO(request.content))
         return image
 
@@ -123,6 +158,7 @@ class ImageLoop:
     _image_width: int
     _image_height: int
 
+    # TODO mapmarker
     def __init__(
         self,
         minx: float,
@@ -182,6 +218,7 @@ class ImageLoop:
                 self._last_update += timedelta(minutes=5)
                 self._images.append(self._get_image(self._last_update))
 
+    # TODO mapmarker
     def _get_image(self, date: datetime) -> ImageFile.ImageFile:
         if self._background_type in [
             WeatherBackgroundMapType.SATELLIT,
@@ -195,9 +232,15 @@ class ImageLoop:
         request = requests.get(url, stream=True)
         if request.status_code != 200:
             raise ConnectionError("Error during image request from DWD servers")
+        # TODO mapmarker
         return Image.open(BytesIO(request.content))
 
 
 def get_time_last_5_min(date: datetime) -> datetime:
     minute = math.floor(date.minute / 5) * 5
     return date.replace(minute=minute, second=0, microsecond=0)
+
+
+# TODO
+def draw_marker(image: ImageFile.ImageFile, marker: Marker):
+    pass
