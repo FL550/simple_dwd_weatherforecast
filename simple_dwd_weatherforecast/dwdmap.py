@@ -285,7 +285,7 @@ def draw_marker(
             )
             * image.width,
             (
-                (image_bounderies.minY - marker.latitude)
+                (image_bounderies.maxY - marker.latitude)
                 / (image_bounderies.maxY - image_bounderies.minY)
             )
             * image.height,
