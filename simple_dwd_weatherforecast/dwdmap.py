@@ -92,16 +92,16 @@ def get_from_location(
 ):
     if radius_km <= 0:
         raise ValueError("Radius must be greater than 0")
-    if latitude < -90 or latitude > 90:
-        raise ValueError("Latitude must be between -90 and 90")
-    if longitude < -180 or longitude > 180:
-        raise ValueError("Longitude must be between -180 and 180")
+    if longitude < -90 or longitude > 90:
+        raise ValueError("Longitude must be between -90 and 90")
+    if latitude < -180 or latitude > 180:
+        raise ValueError("Latitude must be between -180 and 180")
     radius = math.fabs(radius_km / (111.3 * math.cos(latitude)))
     return get_map(
-        latitude - radius,
         longitude - radius,
-        latitude + radius,
+        latitude - radius,
         longitude + radius,
+        latitude + radius,
         map_type,
         background_type,
         image_width,
