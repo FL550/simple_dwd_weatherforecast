@@ -2,6 +2,6 @@ lxml
 requests
 Pillow
 arrow
-stream-inflate==0.0.14
+stream-inflate==0.0.40
 stream-unzip
 httpx
