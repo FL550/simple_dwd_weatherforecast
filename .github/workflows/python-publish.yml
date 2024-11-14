@@ -13,9 +13,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+    - name: Update version in setup.py from current git tag
+        run: |
+          sed -i "s/0\\.0\\.0\\.dev0/${GITHUB_REF_NAME}/g" setup.py
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: '3.x'
     - name: Install dependencies
