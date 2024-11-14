@@ -15,8 +15,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Update version in setup.py from current git tag
-        run: |
-          sed -i "s/0\\.0\\.0\\.dev0/${GITHUB_REF_NAME}/g" setup.py
+      run: |
+        sed -i "s/0\\.0\\.0\\.dev0/${GITHUB_REF_NAME}/g" setup.py
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
