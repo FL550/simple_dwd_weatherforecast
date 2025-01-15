@@ -757,9 +757,13 @@ class Weather:
         return issue_time_new
 
     def parse_station_name(self, tree):
-        return tree.xpath(
+        parsed_name = tree.xpath(
             "./kml:Document/kml:Placemark/kml:description", namespaces=self.namespaces
-        )[0].text
+        )
+        if len(parsed_name) == 0:
+            return None
+        else:
+            return parsed_name[0].text
 
     def parse_timesteps(self, tree):
         return [
