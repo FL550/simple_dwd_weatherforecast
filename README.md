@@ -188,7 +188,7 @@ class MarkerShape(Enum):
     CIRCLE = "circle"
     SQUARE = "square"
     CROSS = "cross"
-    
+
 class Marker(
         latitude: float,
         longitude: float,
@@ -198,11 +198,11 @@ class Marker(
         width: int = 0,
     )
 
-get_from_location(longitude, latitude, radius_km, map_type: WeatherMapType, background_type: WeatherBackgroundMapType, optional integer image_width, optional integer image_height, optional markers: list[Marker]) #Returns map as pillow image with given radius from coordinates
+get_from_location(longitude, latitude, radius_km, map_type: WeatherMapType, background_type: WeatherBackgroundMapType, optional integer image_width, optional integer image_height, optional markers: list[Marker], optional bool dark_mode) #Returns map as pillow image with given radius from coordinates
 
-get_germany(map_type: WeatherMapType, optional WeatherBackgroundMapType background_type, optional integer image_width, optional integer image_height, optional markers: list[Marker]) #Returns map as pillow image of whole germany
+get_germany(map_type: WeatherMapType, optional WeatherBackgroundMapType background_type, optional integer image_width, optional integer image_height, optional markers: list[Marker], optional bool dark_mode) #Returns map as pillow image of whole germany
 
-get_map(minx,miny,maxx,maxy, map_type: WeatherMapType, background_type: WeatherBackgroundMapType, optional integer image_width, optional integer image_height, optional markers: list[Marker]) #Returns map as pillow image
+get_map(minx,miny,maxx,maxy, map_type: WeatherMapType, background_type: WeatherBackgroundMapType, optional integer image_width, optional integer image_height, optional markers: list[Marker], optional bool dark_mode) #Returns map as pillow image
 ```
 
 
@@ -234,7 +234,7 @@ for image in enumerate(maploop._images):
 
 ```python
 ImageLoop(minx: float, miny: float, maxx: float, maxy: float, map_type: WeatherMapType, background_type: WeatherBackgroundMapType,
-        steps: int = 6, image_width: int = 520,image_height: int = 580, markers: list[Marker] = []) -> ImageLoop
+        steps: int = 6, image_width: int = 520,image_height: int = 580, markers: list[Marker] = [], optional bool dark_mode) -> ImageLoop
 
 get_images() -> Iterable[ImageFile.ImageFile] # Returns the image loop
 

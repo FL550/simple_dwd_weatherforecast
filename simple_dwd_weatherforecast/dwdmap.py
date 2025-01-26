@@ -89,6 +89,7 @@ def get_from_location(
     image_width=520,
     image_height=580,
     markers: list[Marker] = [],
+    dark_mode: bool = False,
 ):
     if radius_km <= 0:
         raise ValueError("Radius must be greater than 0")
@@ -107,6 +108,7 @@ def get_from_location(
         image_width,
         image_height,
         markers,
+        dark_mode,
     )
 
 
@@ -116,6 +118,7 @@ def get_germany(
     image_width=520,
     image_height=580,
     markers: list[Marker] = [],
+    dark_mode: bool = False,
 ):
     return get_map(
         germany_boundaries.minx,
@@ -127,6 +130,7 @@ def get_germany(
         image_width,
         image_height,
         markers,
+        dark_mode,
     )
 
 
@@ -140,6 +144,7 @@ def get_map(
     image_width=520,
     image_height=580,
     markers: list[Marker] = [],
+    dark_mode: bool = False,
 ):
     if image_width > 1200 or image_height > 1400:
         raise ValueError(
@@ -157,6 +162,16 @@ def get_map(
     request = requests.get(url, stream=True)
     if request.status_code == 200:
         image = Image.open(BytesIO(request.content))
+        if dark_mode:
+            new_image_data = []
+            for item in image.getdata():  # type: ignore
+                if item[0] == 255 and item[1] == 255 and item[2] == 255:
+                    new_image_data.append((0, 0, 0))
+                else:
+                    new_image_data.append(item)
+
+            # update image data
+            image.putdata(new_image_data)
         image = draw_marker(image, ImageBoundaries(minx, maxx, miny, maxy), markers)
         return image
 
@@ -186,6 +201,7 @@ class ImageLoop:
         image_width: int = 520,
         image_height: int = 580,
         markers: list[Marker] = [],
+        dark_mode: bool = False,
     ):
         if image_width > 1200 or image_height > 1400:
             raise ValueError(
@@ -203,6 +219,7 @@ class ImageLoop:
         self._image_width = image_width
         self._image_height = image_height
         self.markers = markers
+        self.dark_mode = dark_mode
         self._images = deque([], steps)
 
         self._full_reload()
@@ -246,11 +263,21 @@ class ImageLoop:
             layers = f"{self._background_type.value}, {self._map_type.value}"
         else:
             layers = f"{self._map_type.value}, {self._background_type.value}"
-        url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.1.0&request=GetMap&layers={layers}&bbox={self._minx},{self._miny},{self._maxx},{self._maxy}&width={self._image_width}&height={self._image_height}&srs=EPSG:4326&styles=&format=image/png&TIME={date.strftime("%Y-%m-%dT%H:%M:00.0Z")}"
+        url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.1.0&request=GetMap&layers={layers}&bbox={self._minx},{self._miny},{self._maxx},{self._maxy}&width={self._image_width}&height={self._image_height}&srs=EPSG:4326&styles=&format=image/png&TIME={date.strftime('%Y-%m-%dT%H:%M:00.0Z')}"
         request = requests.get(url, stream=True)
         if request.status_code != 200:
             raise ConnectionError("Error during image request from DWD servers")
         image = Image.open(BytesIO(request.content))
+        if self.dark_mode:
+            new_image_data = []
+            for item in image.getdata():  # type: ignore
+                if item[0] == 255 and item[1] == 255 and item[2] == 255:
+                    new_image_data.append((0, 0, 0))
+                else:
+                    new_image_data.append(item)
+
+            # update image data
+            image.putdata(new_image_data)
         image = draw_marker(
             image,
             ImageBoundaries(self._minx, self._maxx, self._miny, self._maxy),
