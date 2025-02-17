@@ -280,7 +280,7 @@ class ImageLoop:
 
         url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.1.0&request=GetMap&layers={layers}&bbox={self._minx},{self._miny},{self._maxx},{self._maxy}&width={self._image_width}&height={self._image_height}&srs=EPSG:4326&styles=&format=image/png&TIME={date.strftime('%Y-%m-%dT%H:%M:00.0Z')}"
         request = requests.get(url, stream=True)
-        if request.status_code != 200:
+        if request.status_code != 200 or request.headers["content-type"] != "image/png":
             raise ConnectionError("Error during image request from DWD servers")
         image = Image.open(BytesIO(request.content))
         if self.dark_mode:
