@@ -9,7 +9,8 @@ from datetime import datetime, timedelta, timezone
 
 
 class WeatherMapType(Enum):
-    NIEDERSCHLAGSRADAR = "dwd:Niederschlagsradar,dwd:NCEW_EU"
+    NIEDERSCHLAGSRADAR = "dwd:Niederschlagsradar"
+    BLITZSCHLAG = "dwd:NCEW_EU"
     MAXTEMP = "dwd:GefuehlteTempMax"
     UVINDEX = "dwd:UVI_CS"
     POLLENFLUG = "dwd:Pollenflug"
@@ -237,7 +238,13 @@ class ImageLoop:
 
         while now > self._last_update:
             self._last_update += timedelta(minutes=5)
-            self._images.append(self._get_image(self._last_update))
+            # Lightning in the NCEW_EU layer is only available in the last 5 minutes
+            self._images.append(
+                self._get_image(
+                    self._last_update,
+                    with_lightning=(now - self._last_update) < timedelta(minutes=5),
+                )
+            )
 
     def update(self):
         now = get_time_last_5_min(datetime.now(timezone.utc))
@@ -249,20 +256,28 @@ class ImageLoop:
         else:
             while now > self._last_update:
                 self._last_update += timedelta(minutes=5)
-                self._images.append(self._get_image(self._last_update))
+                self._images.append(
+                    self._get_image(self._last_update, with_lightning=True)
+                )
 
     def _get_image(
         self,
         date: datetime,
+        with_lightning: bool = False,
     ) -> ImageFile.ImageFile:
+        # Lightning in the NCEW_EU layer is only available in the last 5 minutes
+        layer = self._map_type.value
+        if with_lightning:
+            layer += ",dwd:NCEW_EU"
         if self._background_type in [
             WeatherBackgroundMapType.SATELLIT,
             WeatherBackgroundMapType.KREISE,
             WeatherBackgroundMapType.GEMEINDEN,
         ]:
-            layers = f"{self._background_type.value}, {self._map_type.value}"
+            layers = f"{self._background_type.value}, {layer}"
         else:
-            layers = f"{self._map_type.value}, {self._background_type.value}"
+            layers = f"{layer}, {self._background_type.value}"
+
         url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.1.0&request=GetMap&layers={layers}&bbox={self._minx},{self._miny},{self._maxx},{self._maxy}&width={self._image_width}&height={self._image_height}&srs=EPSG:4326&styles=&format=image/png&TIME={date.strftime('%Y-%m-%dT%H:%M:00.0Z')}"
         request = requests.get(url, stream=True)
         if request.status_code != 200:
