@@ -34,7 +34,7 @@ class Weather_get_daily_min(unittest.TestCase):
         test_time = datetime(2020, 11, 6, 10, 0)
         self.assertEqual(
             self.dwd_weather.get_daily_min(WeatherDataType.PRECIPITATION, test_time),
-            0.01,
+            0.0,
         )
 
     @patch("simple_dwd_weatherforecast.dwdforecast.Weather.update", return_value=None)

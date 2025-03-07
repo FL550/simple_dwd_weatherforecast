@@ -14,14 +14,22 @@ import arrow
 import requests
 from lxml import etree
 
-with importlib.resources.files("simple_dwd_weatherforecast").joinpath(  # type: ignore
-    "stations.json"
-).open("r", encoding="utf-8") as file:
+with (
+    importlib.resources.files("simple_dwd_weatherforecast")
+    .joinpath(  # type: ignore
+        "stations.json"
+    )
+    .open("r", encoding="utf-8") as file
+):
     stations = json.load(file)
 
-with importlib.resources.files("simple_dwd_weatherforecast").joinpath(  # type: ignore
-    "uv_stations.json"
-).open("r", encoding="utf-8") as file:
+with (
+    importlib.resources.files("simple_dwd_weatherforecast")
+    .joinpath(  # type: ignore
+        "uv_stations.json"
+    )
+    .open("r", encoding="utf-8") as file
+):
     uv_stations = json.load(file)
 
 
@@ -483,12 +491,13 @@ class Weather:
         value = None
         for item in weather_data:
             value_new = item[weatherDataType.value[0]]
-            if value_new:
-                if not value:
+            if value_new is not None:
+                if value is None:
                     value = -9999999
                 if value_new > value:
                     value = value_new
-        if value:
+
+        if value is not None:
             return round(value, 2)
         return None
 
@@ -520,13 +529,13 @@ class Weather:
         value = None
         for item in weather_data:
             value_new = item[weatherDataType.value[0]]
-            if value_new:
-                if not value:
+            if value_new is not None:
+                if value is None:
                     value = 9999999
                 if value_new < value:
                     value = value_new
 
-        if value:
+        if value is not None:
             return round(value, 2)
         return None
 
@@ -558,7 +567,7 @@ class Weather:
         value_sum = 0.0
         for item in weather_data:
             value = item[weatherDataType.value[0]]
-            if value:
+            if value is not None:
                 value_sum += float(value)
         return round(value_sum, 2)
 
