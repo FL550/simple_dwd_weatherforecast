@@ -167,7 +167,9 @@ def get_map(
             new_image_data = []
             for item in image.getdata():  # type: ignore
                 if item[0] == 255 and item[1] == 255 and item[2] == 255:
-                    new_image_data.append((0, 0, 0))
+                    new_image_data.append((28, 28, 28))
+                elif item[0] == 85 and item[1] == 85 and item[2] == 85:
+                    new_image_data.append((155, 155, 155))
                 else:
                     new_image_data.append(item)
 
@@ -287,7 +289,9 @@ class ImageLoop:
             new_image_data = []
             for item in image.getdata():  # type: ignore
                 if item[0] == 255 and item[1] == 255 and item[2] == 255:
-                    new_image_data.append((0, 0, 0))
+                    new_image_data.append((28, 28, 28))
+                elif item[0] == 85 and item[1] == 85 and item[2] == 85:
+                    new_image_data.append((155, 155, 155))
                 else:
                     new_image_data.append(item)
 
