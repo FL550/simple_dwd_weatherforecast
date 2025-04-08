@@ -38,8 +38,8 @@ class MapTestCase(unittest.TestCase):
                 46.4,
                 16.1,
                 55.6,
-                dwdmap.WeatherMapType.NIEDERSCHLAGSRADAR,
-                dwdmap.WeatherBackgroundMapType.BUNDESLAENDER,
+                [dwdmap.WeatherMapType.NIEDERSCHLAGSRADAR],
+                [dwdmap.WeatherBackgroundMapType.BUNDESLAENDER],
                 1300,
                 1700,
             )
@@ -53,8 +53,8 @@ class ImageLoopTestCase(unittest.TestCase):
             0.2,
             0.3,
             0.4,
-            dwdmap.WeatherMapType.NIEDERSCHLAGSRADAR,
-            dwdmap.WeatherBackgroundMapType.BUNDESLAENDER,
+            [dwdmap.WeatherMapType.NIEDERSCHLAGSRADAR],
+            [dwdmap.WeatherBackgroundMapType.BUNDESLAENDER],
             1,
         )
         self.assertEqual(
@@ -74,12 +74,12 @@ class ImageLoopTestCase(unittest.TestCase):
             0.4,
         )
         self.assertEqual(
-            maploop._map_type,
-            dwdmap.WeatherMapType.NIEDERSCHLAGSRADAR,
+            maploop._map_types,
+            [dwdmap.WeatherMapType.NIEDERSCHLAGSRADAR],
         )
         self.assertEqual(
-            maploop._background_type,
-            dwdmap.WeatherBackgroundMapType.BUNDESLAENDER,
+            maploop._background_types,
+            [dwdmap.WeatherBackgroundMapType.BUNDESLAENDER],
         )
         mock_function.assert_called_once()
 
@@ -90,8 +90,8 @@ class ImageLoopTestCase(unittest.TestCase):
             0.2,
             0.3,
             0.4,
-            dwdmap.WeatherMapType.NIEDERSCHLAGSRADAR,
-            dwdmap.WeatherBackgroundMapType.BUNDESLAENDER,
+            [dwdmap.WeatherMapType.NIEDERSCHLAGSRADAR],
+            [dwdmap.WeatherBackgroundMapType.BUNDESLAENDER],
             5,
         )
         self.assertEqual(mock_function.call_count, 5)
@@ -103,8 +103,8 @@ class ImageLoopTestCase(unittest.TestCase):
             0.2,
             0.3,
             0.4,
-            dwdmap.WeatherMapType.NIEDERSCHLAGSRADAR,
-            dwdmap.WeatherBackgroundMapType.BUNDESLAENDER,
+            [dwdmap.WeatherMapType.NIEDERSCHLAGSRADAR],
+            [dwdmap.WeatherBackgroundMapType.BUNDESLAENDER],
             10,
         )
         self.assertEqual(mock_function.call_count, 10)
@@ -116,8 +116,8 @@ class ImageLoopTestCase(unittest.TestCase):
             0.2,
             0.3,
             0.4,
-            dwdmap.WeatherMapType.NIEDERSCHLAGSRADAR,
-            dwdmap.WeatherBackgroundMapType.BUNDESLAENDER,
+            [dwdmap.WeatherMapType.NIEDERSCHLAGSRADAR],
+            [dwdmap.WeatherBackgroundMapType.BUNDESLAENDER],
             5,
         )
         maploop._last_update = datetime(year=2024, month=9, day=4, hour=5, minute=50)
@@ -130,8 +130,8 @@ class ImageLoopTestCase(unittest.TestCase):
             0.2,
             0.3,
             0.4,
-            dwdmap.WeatherMapType.NIEDERSCHLAGSRADAR,
-            dwdmap.WeatherBackgroundMapType.BUNDESLAENDER,
+            [dwdmap.WeatherMapType.NIEDERSCHLAGSRADAR],
+            [dwdmap.WeatherBackgroundMapType.BUNDESLAENDER],
             5,
         )
         now = dwdmap.get_time_last_5_min(datetime.now(timezone.utc))

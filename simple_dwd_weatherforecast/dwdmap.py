@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 
 
 class WeatherMapType(Enum):
-    NIEDERSCHLAGSRADAR = "dwd:Niederschlagsradar"
+    NIEDERSCHLAGSRADAR = "dwd:Radar_rv_product_1x1km_ger"
     BLITZSCHLAG = "dwd:NCEW_EU"
     MAXTEMP = "dwd:GefuehlteTempMax"
     UVINDEX = "dwd:UVI_CS"
@@ -85,8 +85,10 @@ def get_from_location(
     longitude,
     latitude,
     radius_km,
-    map_type: WeatherMapType,
-    background_type: WeatherBackgroundMapType = WeatherBackgroundMapType.BUNDESLAENDER,
+    map_types: list[WeatherMapType],
+    background_types: list[WeatherBackgroundMapType] = [
+        WeatherBackgroundMapType.BUNDESLAENDER
+    ],
     image_width=520,
     image_height=580,
     markers: list[Marker] = [],
@@ -104,8 +106,8 @@ def get_from_location(
         latitude - radius,
         longitude + radius,
         latitude + radius,
-        map_type,
-        background_type,
+        map_types,
+        background_types,
         image_width,
         image_height,
         markers,
@@ -114,8 +116,10 @@ def get_from_location(
 
 
 def get_germany(
-    map_type: WeatherMapType,
-    background_type: WeatherBackgroundMapType = WeatherBackgroundMapType.BUNDESLAENDER,
+    map_types: list[WeatherMapType],
+    background_types: list[WeatherBackgroundMapType] = [
+        WeatherBackgroundMapType.BUNDESLAENDER
+    ],
     image_width=520,
     image_height=580,
     markers: list[Marker] = [],
@@ -126,8 +130,8 @@ def get_germany(
         germany_boundaries.miny,
         germany_boundaries.maxx,
         germany_boundaries.maxy,
-        map_type,
-        background_type,
+        map_types,
+        background_types,
         image_width,
         image_height,
         markers,
@@ -140,8 +144,8 @@ def get_map(
     miny,
     maxx,
     maxy,
-    map_type: WeatherMapType,
-    background_type: WeatherBackgroundMapType,
+    map_types: list[WeatherMapType],
+    background_types: list[WeatherBackgroundMapType],
     image_width=520,
     image_height=580,
     markers: list[Marker] = [],
@@ -151,15 +155,36 @@ def get_map(
         raise ValueError(
             "Width and height must not exceed 1200 and 1400 respectively. Please be kind to the DWD servers."
         )
-    if background_type in [
-        WeatherBackgroundMapType.SATELLIT,
-        WeatherBackgroundMapType.KREISE,
-        WeatherBackgroundMapType.GEMEINDEN,
-    ]:
-        layers = f"{background_type.value}, {map_type.value}"
-    else:
-        layers = f"{map_type.value}, {background_type.value}"
-    url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.1.1&request=GetMap&layers={layers}&bbox={minx},{miny},{maxx},{maxy}&width={image_width}&height={image_height}&srs=EPSG:4326&styles=&format=image/png"
+    # Separate special layers and others for background types
+    special_layers = [
+        layer.value
+        for layer in background_types
+        if layer
+        in [
+            WeatherBackgroundMapType.SATELLIT,
+            WeatherBackgroundMapType.KREISE,
+            WeatherBackgroundMapType.GEMEINDEN,
+        ]
+    ]
+    other_layers = [
+        layer.value
+        for layer in background_types
+        if layer
+        not in [
+            WeatherBackgroundMapType.SATELLIT,
+            WeatherBackgroundMapType.KREISE,
+            WeatherBackgroundMapType.GEMEINDEN,
+        ]
+    ]
+    # Combine map types into a single string
+    map_layers = ",".join(map_type.value for map_type in map_types)
+    # Combine layers with special layers first, then map types, then other layers
+    layers = f"{','.join(special_layers)},{map_layers},{','.join(other_layers)}".lstrip(
+        ","
+    )
+
+    url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.3.0&request=GetMap&layers={layers}&bbox={miny},{minx},{maxy},{maxx}&width={image_width}&height={image_height}&srs=EPSG:4326&styles=&format=image/png"
+    print(url)
     request = requests.get(url, stream=True)
     if request.status_code == 200:
         image = Image.open(BytesIO(request.content))
@@ -187,8 +212,8 @@ class ImageLoop:
     _miny: float
     _maxx: float
     _maxy: float
-    _map_type: WeatherMapType
-    _background_type: WeatherBackgroundMapType
+    _map_types: list[WeatherMapType]
+    _background_types: list[WeatherBackgroundMapType]
     _image_width: int
     _image_height: int
 
@@ -198,14 +223,16 @@ class ImageLoop:
         miny: float,
         maxx: float,
         maxy: float,
-        map_type: WeatherMapType,
-        background_type: WeatherBackgroundMapType,
+        map_types: list[WeatherMapType],
+        background_types: list[WeatherBackgroundMapType],
         steps: int = 6,
         image_width: int = 520,
         image_height: int = 580,
         markers: list[Marker] = [],
         dark_mode: bool = False,
     ):
+        if WeatherMapType.NIEDERSCHLAGSRADAR not in map_types:
+            raise ValueError("Only NIEDERSCHLAGSRADAR is supported in a loop")
         if image_width > 1200 or image_height > 1400:
             raise ValueError(
                 "Width and height must not exceed 1200 and 1400 respectively. Please be kind to the DWD servers."
@@ -214,10 +241,8 @@ class ImageLoop:
         self._miny = miny
         self._maxx = maxx
         self._maxy = maxy
-        if map_type != WeatherMapType.NIEDERSCHLAGSRADAR:
-            raise ValueError("Only NIEDERSCHLAGSRADAR is supported in a loop")
-        self._map_type = map_type
-        self._background_type = background_type
+        self._map_types = map_types
+        self._background_types = background_types
         self._steps = steps
         self._image_width = image_width
         self._image_height = image_height
@@ -267,20 +292,39 @@ class ImageLoop:
         date: datetime,
         with_lightning: bool = False,
     ) -> ImageFile.ImageFile:
-        # Lightning in the NCEW_EU layer is only available in the last 5 minutes
-        layer = self._map_type.value
+        # Combine map types into a single string
+        map_layers = ",".join(map_type.value for map_type in self._map_types)
         if with_lightning:
-            layer += ",dwd:NCEW_EU"
-        if self._background_type in [
-            WeatherBackgroundMapType.SATELLIT,
-            WeatherBackgroundMapType.KREISE,
-            WeatherBackgroundMapType.GEMEINDEN,
-        ]:
-            layers = f"{self._background_type.value}, {layer}"
-        else:
-            layers = f"{layer}, {self._background_type.value}"
-
-        url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.1.1&request=GetMap&layers={layers}&bbox={self._minx},{self._miny},{self._maxx},{self._maxy}&width={self._image_width}&height={self._image_height}&srs=EPSG:4326&styles=&format=image/png&TIME={date.strftime('%Y-%m-%dT%H:%M:00.0Z')}"
+            map_layers += ",dwd:NCEW_EU"
+        # Separate special layers and others for background types
+        special_layers = [
+            layer.value
+            for layer in self._background_types
+            if layer
+            in [
+                WeatherBackgroundMapType.SATELLIT,
+                WeatherBackgroundMapType.KREISE,
+                WeatherBackgroundMapType.GEMEINDEN,
+            ]
+        ]
+        other_layers = [
+            layer.value
+            for layer in self._background_types
+            if layer
+            not in [
+                WeatherBackgroundMapType.SATELLIT,
+                WeatherBackgroundMapType.KREISE,
+                WeatherBackgroundMapType.GEMEINDEN,
+            ]
+        ]
+        # Combine layers with special layers first, then map types, then other layers
+        layers = (
+            f"{','.join(special_layers)},{map_layers},{','.join(other_layers)}".lstrip(
+                ","
+            )
+        )
+        url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.3.0&request=GetMap&layers={layers}&bbox={self._miny},{self._minx},{self._maxy},{self._maxx}&width={self._image_width}&height={self._image_height}&srs=EPSG:4326&styles=&format=image/png&TIME={date.strftime('%Y-%m-%dT%H:%M:00.0Z')}"
+        print(url)
         request = requests.get(url, stream=True)
         if request.status_code != 200 or request.headers["content-type"] != "image/png":
             raise ConnectionError("Error during image request from DWD servers")
