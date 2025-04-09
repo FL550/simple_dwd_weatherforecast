@@ -18,6 +18,7 @@ class WeatherMapType(Enum):
     SATELLITE_IR = "dwd:Satellite_worldmosaic_3km_world_ir108_3h"
     WARNUNGEN_GEMEINDEN = "dwd:Warnungen_Gemeinden"
     WARNUNGEN_KREISE = "dwd:Warnungen_Landkreise"
+    LUFTDRUCK = "dwd:Icon-eu_reg00625_fd_sl_QFF"
 
 
 class WeatherBackgroundMapType(Enum):
@@ -27,6 +28,7 @@ class WeatherBackgroundMapType(Enum):
     GEMEINDEN = "dwd:Warngebiete_Gemeinden"
     SATELLIT = "dwd:bluemarble"
     GEWAESSER = "dwd:Gewaesser"
+    KARTE = "dwd:Natural_Earth_Map"
 
 
 class germany_boundaries:
