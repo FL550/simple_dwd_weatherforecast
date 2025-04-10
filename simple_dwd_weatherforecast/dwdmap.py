@@ -182,8 +182,10 @@ def get_map(
     layers = f"{','.join(special_layers)},{map_layers},{','.join(other_layers)}".lstrip(
         ","
     ).rstrip(",")
-
-    url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.3.0&request=GetMap&layers={layers}&bbox={miny},{minx},{maxy},{maxx}&width={image_width}&height={image_height}&srs=EPSG:4326&styles=&format=image/png"
+    bgcolor = "0xFFFFFF"
+    if dark_mode:
+        bgcolor = "0x1C1C1C"
+    url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.3.0&request=GetMap&layers={layers}&bbox={miny},{minx},{maxy},{maxx}&width={image_width}&height={image_height}&srs=EPSG:4326&styles=&format=image/png&bgcolor={bgcolor}"
 
     request = requests.get(url, stream=True)
     if request.status_code == 200:
@@ -193,12 +195,11 @@ def get_map(
             raise RuntimeError(
                 f"Error during image request from DWD servers: {url}"
             ) from e
+        # Dark mode of borders
         if dark_mode:
             new_image_data = []
             for item in image.getdata():  # type: ignore
-                if item[0] == 255 and item[1] == 255 and item[2] == 255:
-                    new_image_data.append((28, 28, 28))
-                elif item[0] == 85 and item[1] == 85 and item[2] == 85:
+                if item[0] == 85 and item[1] == 85 and item[2] == 85:
                     new_image_data.append((155, 155, 155))
                 else:
                     new_image_data.append(item)
@@ -330,7 +331,10 @@ class ImageLoop:
                 ","
             ).rstrip(",")
         )
-        url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.3.0&request=GetMap&layers={layers}&bbox={self._miny},{self._minx},{self._maxy},{self._maxx}&width={self._image_width}&height={self._image_height}&srs=EPSG:4326&styles=&format=image/png&TIME={date.strftime('%Y-%m-%dT%H:%M:00.0Z')}"
+        bgcolor = "0xFFFFFF"
+        if self.dark_mode:
+            bgcolor = "0x1C1C1C"
+        url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.3.0&request=GetMap&layers={layers}&bbox={self._miny},{self._minx},{self._maxy},{self._maxx}&width={self._image_width}&height={self._image_height}&srs=EPSG:4326&styles=&format=image/png&TIME={date.strftime('%Y-%m-%dT%H:%M:00.0Z')}&bgcolor={bgcolor}"
         request = requests.get(url, stream=True)
         if request.status_code != 200 or request.headers["content-type"] != "image/png":
             raise ConnectionError(f"Error during image request from DWD servers: {url}")
@@ -340,16 +344,14 @@ class ImageLoop:
             raise RuntimeError(
                 f"Error during image request from DWD servers: {url}"
             ) from e
+        # Dark mode of borders
         if self.dark_mode:
             new_image_data = []
             for item in image.getdata():  # type: ignore
-                if item[0] == 255 and item[1] == 255 and item[2] == 255:
-                    new_image_data.append((28, 28, 28))
-                elif item[0] == 85 and item[1] == 85 and item[2] == 85:
+                if item[0] == 85 and item[1] == 85 and item[2] == 85:
                     new_image_data.append((155, 155, 155))
                 else:
                     new_image_data.append(item)
-
             # update image data
             image.putdata(new_image_data)
         image = draw_marker(
