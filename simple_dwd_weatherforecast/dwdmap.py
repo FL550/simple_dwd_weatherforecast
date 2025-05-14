@@ -195,17 +195,6 @@ def get_map(
             raise RuntimeError(
                 f"Error during image request from DWD servers: {url}"
             ) from e
-        # Dark mode of borders
-        if dark_mode:
-            new_image_data = []
-            for item in image.getdata():  # type: ignore
-                if item[0] == 85 and item[1] == 85 and item[2] == 85:
-                    new_image_data.append((155, 155, 155))
-                else:
-                    new_image_data.append(item)
-
-            # update image data
-            image.putdata(new_image_data)
         image = draw_marker(image, ImageBoundaries(minx, maxx, miny, maxy), markers)
         return image
     else:
@@ -344,16 +333,6 @@ class ImageLoop:
             raise RuntimeError(
                 f"Error during image request from DWD servers: {url}"
             ) from e
-        # Dark mode of borders
-        if self.dark_mode:
-            new_image_data = []
-            for item in image.getdata():  # type: ignore
-                if item[0] == 85 and item[1] == 85 and item[2] == 85:
-                    new_image_data.append((155, 155, 155))
-                else:
-                    new_image_data.append(item)
-            # update image data
-            image.putdata(new_image_data)
         image = draw_marker(
             image,
             ImageBoundaries(self._minx, self._maxx, self._miny, self._maxy),
