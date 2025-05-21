@@ -260,6 +260,19 @@ class ImageLoop:
         now = get_time_last_5_min(datetime.now(timezone.utc))
         self._last_update = now - timedelta(minutes=5) * self._steps
 
+        self._load_images(now)
+
+    def update(self):
+        now = get_time_last_5_min(datetime.now(timezone.utc))
+
+        # If last update is older than the buffer can hold, reload the whole buffer
+        if now - self._last_update > self._steps * timedelta(minutes=5):
+            self._full_reload()
+        # Update the buffer and fetch only the new images
+        else:
+            self._load_images(now)
+
+    def _load_images(self, now):
         while now > self._last_update:
             self._last_update += timedelta(minutes=5)
             # Lightning in the NCEW_EU layer is only available in the last 5 minutes
@@ -289,20 +302,6 @@ class ImageLoop:
                         f"Unexpected content type: {e}. Please check the DWD map servers."
                     ) from e
             self._images.append(image)
-
-    def update(self):
-        now = get_time_last_5_min(datetime.now(timezone.utc))
-
-        # If last update is older than the buffer can hold, reload the whole buffer
-        if now - self._last_update > self._steps * timedelta(minutes=5):
-            self._full_reload()
-        # Update the buffer and fetch only the new images
-        else:
-            while now > self._last_update:
-                self._last_update += timedelta(minutes=5)
-                self._images.append(
-                    self._get_image(self._last_update, with_lightning=True)
-                )
 
     def _get_image(
         self,
