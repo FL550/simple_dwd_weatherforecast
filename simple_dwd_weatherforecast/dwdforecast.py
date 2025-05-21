@@ -421,8 +421,7 @@ class Weather:
 
     def get_reported_weather(self, weatherDataType: WeatherDataType, shouldUpdate=True):
         if not self.has_measurement(self.station_id):
-            print("no report for this station available")
-            return None
+            raise ValueError("No report for this station available")
         if shouldUpdate:
             self.update(with_measurements=True)
         if self.report_data is not None:
