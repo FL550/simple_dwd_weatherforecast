@@ -1,5 +1,6 @@
 import csv
 import importlib
+import importlib.resources
 import json
 import math
 from collections import OrderedDict, defaultdict
@@ -900,7 +901,7 @@ class Weather:
         }
 
     def get_weather_report(self, shouldUpdate=False):
-        if (shouldUpdate or self.weather_report is None) and self.region is not None:
+        if shouldUpdate and self.region is not None:
             self.update(with_report=True)
         return self.weather_report
 
