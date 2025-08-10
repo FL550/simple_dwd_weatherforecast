@@ -16,8 +16,8 @@ ignore = [
     "D212", # multi-line-summary-first-line (incompatible with formatter)
     "COM812", # incompatible with formatter
     "ISC001", # incompatible with formatter
-    "RUF012" # Mutable class attributes should be annotated with `typing.ClassVar`
-    "FBT002", # Boolean default positional argument in function definition
+    "RUF012", # Mutable class attributes should be annotated with `typing.ClassVar`
+    "FBT002" # Boolean default positional argument in function definition
 ]
 
 [lint.flake8-pytest-style]
