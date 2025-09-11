@@ -300,27 +300,44 @@ class Weather:
         return self.station["name"]  # type: ignore
 
     def is_in_timerange(self, timestamp: datetime):
+        # Convert timestamp to UTC for comparison with forecast data keys
+        timestamp_utc = (
+            timestamp.astimezone(timezone.utc)
+            if timestamp.tzinfo
+            else timestamp.replace(tzinfo=timezone.utc)
+        )
         return (
             list(self.forecast_data.keys())[0]  # type: ignore
-            <= self.strip_to_hour_str(timestamp)
+            <= self.strip_to_hour_str(timestamp_utc)
             <= list(self.forecast_data.keys())[-1]  # type: ignore
         )
 
     def is_in_timerange_day(self, timestamp: datetime):
+        # Get the caller's timezone
+        caller_tz = timestamp.tzinfo or timezone.utc
+
+        # Convert forecast data boundaries to caller's timezone for comparison
+        first_entry_utc = arrow.get(
+            list(self.forecast_data.keys())[0],  # type: ignore
+            "YYYY-MM-DDTHH:mm:ss.SSSZ",  # type: ignore
+        ).datetime
+        last_entry_utc = arrow.get(
+            list(self.forecast_data.keys())[-1],  # type: ignore
+            "YYYY-MM-DDTHH:mm:ss.SSSZ",  # type: ignore
+        ).datetime
+
+        first_entry_local = first_entry_utc.astimezone(caller_tz)
+        last_entry_local = last_entry_utc.astimezone(caller_tz)
+        timestamp_local = (
+            timestamp.astimezone(caller_tz)
+            if timestamp.tzinfo
+            else timestamp.replace(tzinfo=caller_tz)
+        )
+
         return (
-            self.strip_to_day(
-                arrow.get(
-                    list(self.forecast_data.keys())[0],  # type: ignore
-                    "YYYY-MM-DDTHH:mm:ss.SSSZ",  # type: ignore
-                ).datetime
-            )
-            <= self.strip_to_day(timestamp)
-            <= self.strip_to_day(
-                arrow.get(
-                    list(self.forecast_data.keys())[-1],  # type: ignore
-                    "YYYY-MM-DDTHH:mm:ss.SSSZ",  # type: ignore
-                ).datetime
-            )
+            self.strip_to_day(first_entry_local)
+            <= self.strip_to_day(timestamp_local)
+            <= self.strip_to_day(last_entry_local)
         )
 
     def is_valid_timeframe(self, timeframe: int) -> bool:
@@ -339,7 +356,12 @@ class Weather:
         if shouldUpdate:
             self.update()
         if self.is_in_timerange(timestamp):
-            return self.forecast_data[self.strip_to_hour_str(timestamp)][  # type: ignore
+            timestamp_utc = (
+                timestamp.astimezone(timezone.utc)
+                if timestamp.tzinfo
+                else timestamp.replace(tzinfo=timezone.utc)
+            )
+            return self.forecast_data[self.strip_to_hour_str(timestamp_utc)][  # type: ignore
                 weatherDataType.value[0]
             ]
         return None
@@ -349,9 +371,14 @@ class Weather:
             self.update()
 
         if self.is_in_timerange(timestamp):
+            timestamp_utc = (
+                timestamp.astimezone(timezone.utc)
+                if timestamp.tzinfo
+                else timestamp.replace(tzinfo=timezone.utc)
+            )
             return str(
                 self.weather_codes[
-                    self.forecast_data[self.strip_to_hour_str(timestamp)][  # type: ignore
+                    self.forecast_data[self.strip_to_hour_str(timestamp_utc)][  # type: ignore
                         WeatherDataType.CONDITION.value[0]
                     ]
                 ][0]
@@ -610,7 +637,13 @@ class Weather:
     def get_timeframe_values(self, timestamp: datetime, timeframe: int):
         "timestamp has to be checked prior to be in timerange"
         result = []
-        time_step = self.strip_to_hour(timestamp)
+        # Convert to UTC for internal operations since forecast data is stored in UTC
+        timestamp_utc = (
+            timestamp.astimezone(timezone.utc)
+            if timestamp.tzinfo
+            else timestamp.replace(tzinfo=timezone.utc)
+        )
+        time_step = self.strip_to_hour(timestamp_utc)
         for _ in range(timeframe):
             hour_str = self.strip_to_hour_str(time_step)
             time_step += timedelta(hours=1)

@@ -1,5 +1,6 @@
 import unittest
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from simple_dwd_weatherforecast import dwdforecast
 from dummy_data import parsed_data
 
@@ -31,4 +32,12 @@ class Weather_is_in_timerange(unittest.TestCase):
 
     def test_is_in_timerange_day_future(self):
         test_time = datetime(2102, 11, 5, 7, 30)
+        self.assertFalse(self.dwd_weather.is_in_timerange(test_time))
+
+    def test_is_in_timerange_timezone(self):
+        test_time = datetime(2020, 11, 6, 5, 0, tzinfo=ZoneInfo("Europe/Berlin"))
+        self.assertTrue(self.dwd_weather.is_in_timerange(test_time))
+
+    def test_is_not_in_timerange_timezone(self):
+        test_time = datetime(2020, 11, 6, 4, 0, tzinfo=ZoneInfo("Europe/Berlin"))
         self.assertFalse(self.dwd_weather.is_in_timerange(test_time))
