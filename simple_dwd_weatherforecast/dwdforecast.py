@@ -626,29 +626,41 @@ class Weather:
             next(iter(self.forecast_data)),  # type: ignore
             "YYYY-MM-DDTHH:mm:ss.SSSZ",  # type: ignore
         ).datetime  # type: ignore
-        if timestamp.day != first_entry_date.day:
-            time_step = self.strip_to_day(timestamp)
+
+        # Convert to caller's timezone for comparison
+        caller_tz = timestamp.tzinfo or timezone.utc
+        first_entry_local = first_entry_date.astimezone(caller_tz)
+        timestamp_local = (
+            timestamp.astimezone(caller_tz)
+            if timestamp.tzinfo
+            else timestamp.replace(tzinfo=caller_tz)
+        )
+
+        if timestamp_local.date() != first_entry_local.date():
+            # Start from midnight in caller's timezone and convert to UTC for lookup
+            time_step_local = timestamp_local.replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
             for _ in range(24):
+                time_step_utc = time_step_local.astimezone(timezone.utc)
+                hour_str = self.strip_to_hour_str(time_step_utc)
+                if hour_str not in self.forecast_data:  # type: ignore
+                    break
+                result.append(self.forecast_data[hour_str])  # type: ignore
+                time_step_local += timedelta(hours=1)
+        else:
+            # Use the first entry date and calculate until end of day in caller's timezone
+            time_step = first_entry_date
+            endtime_local = first_entry_local.replace(
+                hour=0, minute=0, second=0, microsecond=0
+            ) + timedelta(days=1)
+            endtime_utc = endtime_local.astimezone(timezone.utc)
+
+            while time_step < endtime_utc:
                 hour_str = self.strip_to_hour_str(time_step)
                 if hour_str not in self.forecast_data:  # type: ignore
                     break
                 result.append(self.forecast_data[hour_str])  # type: ignore
-                time_step += timedelta(hours=1)
-        else:
-            time_step = first_entry_date
-            endtime = datetime(
-                time_step.year,
-                time_step.month,
-                time_step.day,
-                0,
-                0,
-                0,
-                0,
-                timezone.utc,
-            ) + timedelta(days=1)
-            timediff = endtime - time_step
-            for _ in range(round(timediff.total_seconds() / 3600)):
-                result.append(self.forecast_data[self.strip_to_hour_str(time_step)])  # type: ignore
                 time_step += timedelta(hours=1)
         return result
 
