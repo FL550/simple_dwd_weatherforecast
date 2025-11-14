@@ -141,6 +141,7 @@ class Weather:
         "dwd": "https://opendata.dwd.de/weather/lib/pointforecast_dwd_extension_V1_0.xsd",
     }
 
+    # Weather codes mapping to (condition_text, priority)
     weather_codes = {
         "1": ("sunny", 29),
         "0": ("sunny", 28),
@@ -171,6 +172,7 @@ class Weather:
         "85": ("snowy-rainy", 7),
         "86": ("snowy-rainy", 6),
         "95": ("lightning-rainy", 1),
+        "-": ("unknown", 99),
     }
 
     actual_report_codes = {
