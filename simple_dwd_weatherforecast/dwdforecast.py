@@ -173,6 +173,7 @@ class Weather:
         "86": ("snowy-rainy", 6),
         "95": ("lightning-rainy", 1),
         "-": ("unknown", 99),
+        "-": ("unknown", 99),
     }
 
     actual_report_codes = {
@@ -1134,3 +1135,6 @@ class Weather:
                 print(f"Failed to download report. Status code: {response.status_code}")
         except Exception as error:
             print(f"Error in download_latest_report: {type(error)} args: {error.args}")
+
+
+# https://opendata.dwd.de/climate_environment/health/forecasts/air_quality/
