@@ -1,23 +1,39 @@
+import json
+import math
 import requests
 import csv
 from typing import Literal
+from datetime import datetime, timedelta, timezone
+
+
+airquality_data_types = Literal["hourly", "daily"]
 
 
 class AirQuality:
-    def __init__(self, data_type: Literal["hourly", "daily"]) -> None:
+    @staticmethod
+    def get_station_from_location(
+        latitude: float, longitude: float, data_type: airquality_data_types
+    ) -> "AirQuality":
+        station_id = get_nearest_airquality_station_id(latitude, longitude)
+        return AirQuality(station_id, data_type)
+
+    def __init__(self, station_id: str, data_type: airquality_data_types) -> None:
         self.etags = {}
+        self.station_id = station_id
         self.data_type = data_type
         self.data = {}
 
     def update(self):
         if self.data_type == "hourly":
-            self._download_hourly()
+            self._fetch_hourly()
         elif self.data_type == "daily":
-            self._download_daily()
+            self._fetch_daily()
 
-    def _download_hourly(self):
-        # TODO change to real date
-        now = "2025121911"
+    def _fetch_hourly(self, hourly_before=False):
+        if hourly_before:
+            now = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime("%Y%m%d%H")
+        else:
+            now = datetime.now(timezone.utc).strftime("%Y%m%d%H")
         url = f"https://opendata.dwd.de/climate_environment/health/forecasts/air_quality/lq_forecast_{now}.csv"
         headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}  # type: ignore
         try:
@@ -27,11 +43,14 @@ class AirQuality:
                 reader = csv.DictReader(
                     content.decode("utf-8").splitlines(), delimiter=";"
                 )
-                self.data = self._parse_hourly(reader)
-
+                data = self._parse_hourly(reader)
+                if self.station_id in data:
+                    self.data = data[self.station_id]
+            elif response.status_code == requests.codes.not_found:
+                self._fetch_hourly(hourly_before=True)
             elif response.status_code == requests.codes.not_modified:
                 # The report is already up to date
-                print("Report is already up to date")
+                pass
             else:
                 # Handle other status codes
                 print(f"Failed to download report. Status code: {response.status_code}")
@@ -55,9 +74,11 @@ class AirQuality:
                 result[station][i][component] = value
         return result
 
-    def _download_daily(self):
-        # TODO change to real date
-        now = "2025121911"
+    def _fetch_daily(self, hourly_before=False):
+        if hourly_before:
+            now = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime("%Y%m%d%H")
+        else:
+            now = datetime.now(timezone.utc).strftime("%Y%m%d%H")
         url = f"https://opendata.dwd.de/climate_environment/health/forecasts/air_quality/lq_average_allstats_{now}.csv"
         headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}  # type: ignore
         try:
@@ -67,11 +88,14 @@ class AirQuality:
                 reader = csv.DictReader(
                     content.decode("utf-8").splitlines(), delimiter=";"
                 )
-                self.data = self._parse_daily(reader)
-
+                data = self._parse_daily(reader)
+            if self.station_id in data:
+                self.data = data[self.station_id]
+            elif response.status_code == requests.codes.not_found:
+                self._fetch_daily(hourly_before=True)
             elif response.status_code == requests.codes.not_modified:
                 # The report is already up to date
-                print("Report is already up to date")
+                pass
             else:
                 # Handle other status codes
                 print(
@@ -92,3 +116,35 @@ class AirQuality:
             result[row["Station"]]["tomorrow"][component] = row["Mittel2"]
             result[row["Station"]]["day_after"][component] = row["Mittel3"]
         return result
+
+
+def get_nearest_airquality_station_id(latitude: float, longitude: float) -> str:
+    sorted_stations = get_stations_sort_by_distance(latitude, longitude)
+    return sorted_stations[0]["station_id"]
+
+
+def get_stations_sort_by_distance(latitude: float, longitude: float) -> list[dict]:
+    stationen = _load_stations()
+    for station_id, station in stationen.items():
+        station["station_id"] = station_id
+        lon_diff = (
+            111.3
+            * math.cos((station["lat"] + latitude) / 2 * 0.01745)
+            * (station["lon"] - longitude)
+        )
+        lat_diff = 111.3 * (station["lat"] - latitude)
+
+        station["distance"] = round(
+            math.sqrt(math.pow(lon_diff, 2) + math.pow(lat_diff, 2)), 1
+        )
+    sorted_stations = sorted(stationen.values(), key=lambda x: x["distance"])
+    print(sorted_stations[0])
+    return sorted_stations
+
+
+def _load_stations() -> dict:
+    with open(
+        "simple_dwd_weatherforecast/airquality_stations.json", "r", encoding="utf-8"
+    ) as f:
+        stationen = json.load(f)
+    return stationen

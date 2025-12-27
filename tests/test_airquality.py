@@ -80,3 +80,11 @@ class AirQualityTestParsingDaily(unittest.TestCase):
                 "PM2_5": "  13.3",
             },
         }
+
+
+class AirQualityTestGetStationFromLocation(unittest.TestCase):
+    def test_get_station(self):
+        station = AirQuality.get_station_from_location(50.536266, 9.975635, "daily")
+        assert station.station_id == "DEHE051"
+        station = AirQuality.get_station_from_location(53.092022, 8.127382, "hourly")
+        assert station.station_id == "DENI143"
