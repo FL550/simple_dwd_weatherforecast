@@ -259,7 +259,8 @@ station = AirQuality.get_station_from_location(53.092022, 8.127382, "hourly")
 
 station.update()
 
-print(station.data)
+print(station.get_current())
+print(station.get_forecast())
 ```
 
 ## Help and Contribution

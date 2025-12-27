@@ -7,7 +7,7 @@ from datetime import datetime
 
 class AirQualityTestParsingHourly(unittest.TestCase):
     def setUp(self):
-        self.station = AirQuality("hourly")
+        self.station = AirQuality("", "hourly")
         with open("tests/lq_forecast_2025122409.csv", encoding="utf-8") as f:
             content = f.read()
             content = csv.DictReader(content.splitlines(), delimiter=";")
@@ -20,7 +20,7 @@ class AirQualityTestParsingHourly(unittest.TestCase):
         assert len(self.data["DEBE056"]) == 96
 
     def test_firstentry(self):
-        assert self.data["DERP011"][0] == {
+        assert self.data["DERP011"][1] == {
             "Stickstoffdioxid": 7.4,
             "Ozon": 55.4,
             "PM10": 73.1,
@@ -28,7 +28,7 @@ class AirQualityTestParsingHourly(unittest.TestCase):
             "Gleitendes 24h Mittel PM10": 33.5,
             "Gleitendes 24h Mittel PM2_5": 16.8,
         }
-        assert self.data["DEBE056"][0] == {
+        assert self.data["DEBE056"][1] == {
             "Stickstoffdioxid": 1.7,
             "Ozon": None,
             "PM10": None,

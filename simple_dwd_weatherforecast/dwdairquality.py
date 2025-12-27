@@ -23,11 +23,17 @@ class AirQuality:
         self.data_type = data_type
         self.data = {}
 
-    def update(self):
-        if self.data_type == "hourly":
+    def update(self, with_current=False):
+        if self.data_type == "hourly" or with_current:
             self._fetch_hourly()
-        elif self.data_type == "daily":
+        if self.data_type == "daily":
             self._fetch_daily()
+
+    def get_current(self):
+        return self.data[0]
+
+    def get_forecast(self):
+        return self.data[1:]
 
     def _fetch_hourly(self, hourly_before=False):
         if hourly_before:
@@ -62,8 +68,14 @@ class AirQuality:
         for row in reader:
             station = row["Station"].replace("'", "")
             if station not in result:
-                result[station] = [{} for i in range(96)]
+                result[station] = [{} for i in range(97)]
             component = row["Komponente"].strip().replace("'", "")
+            value = row.get("-01h")
+            if value is not None:
+                value = float(value)
+            if value == -999.0:
+                value = None
+            result[station][0][component] = value
             for i in range(96):
                 key = f"+0{i + 1}h" if i < 10 else f"+{i + 1}h"
                 value = row.get(key)
@@ -71,7 +83,7 @@ class AirQuality:
                     value = float(value)
                 if value == -999.0:
                     value = None
-                result[station][i][component] = value
+                result[station][i + 1][component] = value
         return result
 
     def _fetch_daily(self, hourly_before=False):
