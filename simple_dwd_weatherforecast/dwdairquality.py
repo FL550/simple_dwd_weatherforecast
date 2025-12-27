@@ -6,6 +6,7 @@ import csv
 from typing import Literal
 from datetime import datetime, timedelta, timezone
 
+MISSING_VALUE = -999.0
 
 airquality_data_types = Literal["hourly", "daily"]
 
@@ -31,7 +32,7 @@ class AirQuality:
         self.data_type = data_type
         self.data = {}
 
-    def update(self, with_current=False):
+    def update(self, with_current: bool = False):
         if self.data_type == "hourly" or with_current:
             self._fetch_hourly()
         if self.data_type == "daily":
@@ -41,10 +42,7 @@ class AirQuality:
         return self.data[0][air_quality_data_type.value]
 
     def get_forecast(self, air_quality_data_type: AirQualityDataType):
-        result = []
-        for entry in self.data[1:]:
-            result.append(entry[air_quality_data_type.value])
-        return result
+        return [entry[air_quality_data_type.value] for entry in self.data[1:]]
 
     def _fetch_hourly(self, hourly_before=False):
         if hourly_before:
@@ -52,7 +50,7 @@ class AirQuality:
         else:
             now = datetime.now(timezone.utc).strftime("%Y%m%d%H")
         url = f"https://opendata.dwd.de/climate_environment/health/forecasts/air_quality/lq_forecast_{now}.csv"
-        headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}  # type: ignore
+        headers = {"If-None-Match": self.etags.get(url, "")}
         try:
             response = requests.get(url, headers=headers, timeout=30)
             if response.status_code == requests.codes.ok:
@@ -69,7 +67,6 @@ class AirQuality:
                 # The report is already up to date
                 pass
             else:
-                # Handle other status codes
                 print(f"Failed to download report. Status code: {response.status_code}")
         except Exception as error:
             print(f"Error in download_latest_report: {type(error)} args: {error.args}")
@@ -84,7 +81,7 @@ class AirQuality:
             value = row.get("-01h")
             if value is not None:
                 value = float(value)
-            if value == -999.0:
+            if value == MISSING_VALUE:
                 value = None
             result[station][0][component] = value
             for i in range(96):
@@ -97,13 +94,13 @@ class AirQuality:
                 result[station][i + 1][component] = value
         return result
 
-    def _fetch_daily(self, hourly_before=False):
+    def _fetch_daily(self, hourly_before: bool = False):
         if hourly_before:
             now = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime("%Y%m%d%H")
         else:
             now = datetime.now(timezone.utc).strftime("%Y%m%d%H")
         url = f"https://opendata.dwd.de/climate_environment/health/forecasts/air_quality/lq_average_allstats_{now}.csv"
-        headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}  # type: ignore
+        headers = {"If-None-Match": self.etags.get(url, "")}
         try:
             response = requests.get(url, headers=headers, timeout=30)
             if response.status_code == requests.codes.ok:
@@ -136,13 +133,13 @@ class AirQuality:
                 result[row["Station"]] = {"today": {}, "tomorrow": {}, "day_after": {}}
             component = row["Komponente"].strip()
             result[row["Station"]]["today"][component] = (
-                row["Mittel1"] if row["Mittel1"] != "-999.0" else None
+                row["Mittel1"] if row["Mittel1"] != str(MISSING_VALUE) else None
             )
             result[row["Station"]]["tomorrow"][component] = (
-                row["Mittel2"] if row["Mittel2"] != "-999.0" else None
+                row["Mittel2"] if row["Mittel2"] != str(MISSING_VALUE) else None
             )
             result[row["Station"]]["day_after"][component] = (
-                row["Mittel3"] if row["Mittel3"] != "-999.0" else None
+                row["Mittel3"] if row["Mittel3"] != str(MISSING_VALUE) else None
             )
         return result
 
@@ -166,14 +163,11 @@ def get_stations_sort_by_distance(latitude: float, longitude: float) -> list[dic
         station["distance"] = round(
             math.sqrt(math.pow(lon_diff, 2) + math.pow(lat_diff, 2)), 1
         )
-    sorted_stations = sorted(stationen.values(), key=lambda x: x["distance"])
-    print(sorted_stations[0])
-    return sorted_stations
+    return sorted(stationen.values(), key=lambda x: x["distance"])
 
 
 def _load_stations() -> dict:
     with open(
-        "simple_dwd_weatherforecast/airquality_stations.json", "r", encoding="utf-8"
+        "simple_dwd_weatherforecast/airquality_stations.json", encoding="utf-8"
     ) as f:
-        stationen = json.load(f)
-    return stationen
+        return json.load(f)
