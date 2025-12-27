@@ -15,6 +15,8 @@ import arrow
 import requests
 from lxml import etree
 
+from .dwdairquality import AirQuality as AirQuality
+
 with (
     importlib.resources.files("simple_dwd_weatherforecast")
     .joinpath(  # type: ignore
@@ -1137,80 +1139,3 @@ class Weather:
                 print(f"Failed to download report. Status code: {response.status_code}")
         except Exception as error:
             print(f"Error in download_latest_report: {type(error)} args: {error.args}")
-
-    def download_airquality_hourly(self):
-        # TODO change to real date
-        now = "2025121911"
-        url = f"https://opendata.dwd.de/climate_environment/health/forecasts/air_quality/lq_forecast_{now}.csv"
-        headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}  # type: ignore
-        try:
-            response = requests.get(url, headers=headers, timeout=30)
-            if response.status_code == 200:
-                content = response.content
-                reader = csv.DictReader(
-                    content.decode("utf-8").splitlines(), delimiter=";"
-                )
-                self.parse_airquality_hourly(reader)
-
-            elif response.status_code == 304:
-                # The report is already up to date
-                print("Report is already up to date")
-            else:
-                # Handle other status codes
-                print(f"Failed to download report. Status code: {response.status_code}")
-        except Exception as error:
-            print(f"Error in download_latest_report: {type(error)} args: {error.args}")
-
-    def parse_airquality_hourly(self, reader: csv.DictReader[str]):
-        result = {}
-        for row in reader:
-            station = row["Station"].replace("'", "")
-            if station not in result:
-                result[station] = [{} for i in range(96)]
-            component = row["Komponente"].strip().replace("'", "")
-            for i in range(96):
-                key = f"+0{i + 1}h" if i < 10 else f"+{i + 1}h"
-                value = row.get(key)
-                if value is not None:
-                    value = float(value)
-                result[station][i][component] = value
-
-        print(result["DEST133"])
-
-    def download_airquality_daily(self):
-        # TODO change to real date
-        now = "2025121911"
-        url = f"https://opendata.dwd.de/climate_environment/health/forecasts/air_quality/lq_average_allstats_{now}.csv"
-        headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}  # type: ignore
-        try:
-            response = requests.get(url, headers=headers, timeout=30)
-            if response.status_code == 200:
-                content = response.content
-                reader = csv.DictReader(
-                    content.decode("utf-8").splitlines(), delimiter=";"
-                )
-                self.parse_airquality_daily(reader)
-
-            elif response.status_code == 304:
-                # The report is already up to date
-                print("Report is already up to date")
-            else:
-                # Handle other status codes
-                print(
-                    f"Failed to download airquality daily. Status code: {response.status_code}"
-                )
-        except Exception as error:
-            print(
-                f"Error in download_airquality_dailyes: {type(error)} args: {error.args}"
-            )
-
-    def parse_airquality_daily(self, reader: csv.DictReader[str]):
-        result = {}
-        for row in reader:
-            if row["Station"] not in result:
-                result[row["Station"]] = {"today": {}, "tomorrow": {}, "day_after": {}}
-            component = row["Komponente"].strip()
-            result[row["Station"]]["today"][component] = row["Mittel1"]
-            result[row["Station"]]["tomorrow"][component] = row["Mittel2"]
-            result[row["Station"]]["day_after"][component] = row["Mittel3"]
-        self.airquality_daily = result
