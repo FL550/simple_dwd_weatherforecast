@@ -1,3 +1,4 @@
+from enum import Enum
 import json
 import math
 import requests
@@ -7,6 +8,13 @@ from datetime import datetime, timedelta, timezone
 
 
 airquality_data_types = Literal["hourly", "daily"]
+
+
+class AirQualityDataType(Enum):
+    STICKSTOFFDIOXID = "Stickstoffdioxid"
+    OZON = "Ozon"
+    PM10 = "PM10"
+    PM2_5 = "PM2_5"
 
 
 class AirQuality:
@@ -29,11 +37,14 @@ class AirQuality:
         if self.data_type == "daily":
             self._fetch_daily()
 
-    def get_current(self):
-        return self.data[0]
+    def get_current(self, air_quality_data_type: AirQualityDataType):
+        return self.data[0][air_quality_data_type.value]
 
-    def get_forecast(self):
-        return self.data[1:]
+    def get_forecast(self, air_quality_data_type: AirQualityDataType):
+        result = []
+        for entry in self.data[1:]:
+            result.append(entry[air_quality_data_type.value])
+        return result
 
     def _fetch_hourly(self, hourly_before=False):
         if hourly_before:

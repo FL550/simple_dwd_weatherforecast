@@ -259,8 +259,17 @@ station = AirQuality.get_station_from_location(53.092022, 8.127382, "hourly")
 
 station.update()
 
-print(station.get_current())
-print(station.get_forecast())
+print(station.get_current(AirQualityDataType.OZON))
+print(station.get_forecast(AirQualityDataType.PM10))
+```
+
+```python
+class AirQualityDataType(Enum):
+    STICKSTOFFDIOXID = "Stickstoffdioxid"
+    OZON = "Ozon"
+    PM10 = "PM10"
+    PM2_5 = "PM2_5"
+
 ```
 
 ## Help and Contribution
