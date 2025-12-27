@@ -32,6 +32,10 @@ The weather report for the region which is available on the DWD homepage (see an
 
 You can also retrieve weather maps from the DWD GeoServer with this package.
 
+## Airquality data
+
+Airquality stations are also available. Values are reported for Stickstoffdioxid', 'Ozon', 'PM10', 'PM2_5' if available.
+
 ## Installation
 
 ```python
@@ -144,7 +148,7 @@ access_forecast_dict = dwd_weather.forecast_data # dwd_weather.forecast_data con
 
 Keep in mind that the weather condition is stored as the original digit value as provided by DWD. So if you want to use them, you have to convert these yourself. You can use my simplified conversion from the source code in the variable `weather_codes` or the original conversion available [here](https://www.dwd.de/DE/leistungen/opendata/help/schluessel_datenformate/kml/mosmix_element_weather_xls.xlsx?__blob=publicationFile&v=4).
 
-## Weather maps
+### Weather maps
 
 You can download weather maps from the DWD GeoServer with this package. There are different options for the displayed foreground and background data. See below for further information.
 
@@ -240,6 +244,22 @@ get_images() -> Iterable[ImageFile.ImageFile] # Returns the image loop
 
 update() # Updates the loop to the most recent files
 
+```
+
+
+### Airquality stations
+
+You can download airquality measurements and forecasts with this package. You can get daily and hourly forecast data.
+
+#### Usage example
+```python
+from simple_dwd_weatherforecast.dwdairquality import AirQuality
+
+station = AirQuality.get_station_from_location(53.092022, 8.127382, "hourly")
+
+station.update()
+
+print(station.data)
 ```
 
 ## Help and Contribution
