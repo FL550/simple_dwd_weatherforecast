@@ -135,9 +135,15 @@ class AirQuality:
             if row["Station"] not in result:
                 result[row["Station"]] = {"today": {}, "tomorrow": {}, "day_after": {}}
             component = row["Komponente"].strip()
-            result[row["Station"]]["today"][component] = row["Mittel1"]
-            result[row["Station"]]["tomorrow"][component] = row["Mittel2"]
-            result[row["Station"]]["day_after"][component] = row["Mittel3"]
+            result[row["Station"]]["today"][component] = (
+                row["Mittel1"] if row["Mittel1"] != "-999.0" else None
+            )
+            result[row["Station"]]["tomorrow"][component] = (
+                row["Mittel2"] if row["Mittel2"] != "-999.0" else None
+            )
+            result[row["Station"]]["day_after"][component] = (
+                row["Mittel3"] if row["Mittel3"] != "-999.0" else None
+            )
         return result
 
 
