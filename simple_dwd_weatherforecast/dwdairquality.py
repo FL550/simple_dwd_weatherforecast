@@ -1,4 +1,6 @@
 from enum import Enum
+import importlib
+import importlib.resources
 import json
 import math
 import requests
@@ -180,7 +182,9 @@ def get_station(station_id: str) -> dict | None:
 
 
 def _load_stations() -> dict:
-    with open(
-        "simple_dwd_weatherforecast/airquality_stations.json", encoding="utf-8"
-    ) as f:
-        return json.load(f)
+    with (
+        importlib.resources.files("simple_dwd_weatherforecast")
+        .joinpath("airquality_stations.json")
+        .open("r", encoding="utf-8") as file
+    ):
+        return json.load(file)

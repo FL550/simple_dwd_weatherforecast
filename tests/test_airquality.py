@@ -7,7 +7,7 @@ from datetime import datetime
 
 class AirQualityTestParsingHourly(unittest.TestCase):
     def setUp(self):
-        self.station = AirQuality("", "hourly")
+        self.station = AirQuality("DERP011", "hourly")
         with open("tests/lq_forecast_2025122409.csv", encoding="utf-8") as f:
             content = f.read()
             content = csv.DictReader(content.splitlines(), delimiter=";")
@@ -50,7 +50,7 @@ class AirQualityTestParsingHourly(unittest.TestCase):
 
 class AirQualityTestParsingDaily(unittest.TestCase):
     def setUp(self):
-        self.station = AirQuality("", "daily")
+        self.station = AirQuality("DERP011", "daily")
         with open("tests/lq_average_allstats_2025122409.csv", encoding="utf-8") as f:
             content = f.read()
             content = csv.DictReader(content.splitlines(), delimiter=";")
