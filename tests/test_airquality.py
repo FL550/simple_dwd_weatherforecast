@@ -88,3 +88,13 @@ class AirQualityTestGetStationFromLocation(unittest.TestCase):
         assert station.station_id == "DEHE051"
         station = AirQuality.get_station_from_location(53.092022, 8.127382, "hourly")
         assert station.station_id == "DENI143"
+
+
+class AirQualityTestGetStationFromId(unittest.TestCase):
+    def test_get_station(self):
+        station = AirQuality("DEHE051", "daily")
+        assert station.station_id == "DEHE051"
+        assert station.station_name == "Wasserkuppe"
+        assert station.lat == 50.497711
+        assert station.lon == 9.935862
+        assert station.altitude == 950

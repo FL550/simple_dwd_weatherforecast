@@ -32,6 +32,14 @@ class AirQuality:
         self.data_type = data_type
         self.data = {}
 
+        station = get_station(station_id)
+        if station is None:
+            raise ValueError(f"Station ID {station_id} not found.")
+        self.station_name = station["name"]
+        self.lat = station["lat"]
+        self.lon = station["lon"]
+        self.altitude = station["altitude"]
+
     def update(self, with_current: bool = False):
         if self.data_type == "hourly" or with_current:
             self._fetch_hourly()
@@ -164,6 +172,11 @@ def get_stations_sort_by_distance(latitude: float, longitude: float) -> list[dic
             math.sqrt(math.pow(lon_diff, 2) + math.pow(lat_diff, 2)), 1
         )
     return sorted(stationen.values(), key=lambda x: x["distance"])
+
+
+def get_station(station_id: str) -> dict | None:
+    stationen = _load_stations()
+    return stationen.get(station_id, None)
 
 
 def _load_stations() -> dict:
