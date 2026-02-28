@@ -28,7 +28,7 @@ setuptools.setup(
         "Pillow",
         "arrow",
         "stream-inflate==0.0.41",
-        "stream-unzip==0.0.98",
+        "stream-unzip==0.0.100",
         "httpx",
     ],
 )
