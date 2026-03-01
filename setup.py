@@ -27,7 +27,6 @@ setuptools.setup(
         "requests",
         "Pillow",
         "arrow",
-        "stream-unzip==0.0.100",
         "httpx",
     ],
 )
