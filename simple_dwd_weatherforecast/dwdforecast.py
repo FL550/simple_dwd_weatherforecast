@@ -9,6 +9,7 @@ from enum import Enum
 from io import BytesIO
 from zipfile import ZipFile
 import httpx
+from stream_unzip import stream_unzip
 
 import arrow
 import requests
@@ -1083,7 +1084,9 @@ class Weather:
 
     def download_latest_kml(self, stationid, force_hourly=False):
         kml = (
-            self.download_small_kml(stationid)
+            self.download_large_kml(stationid)
+            if force_hourly
+            else self.download_small_kml(stationid)
         )
         if kml is not None:
             self.parse_kml(kml)
