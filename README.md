@@ -131,7 +131,9 @@ class Weather:
 
     get_uv_index(int day_from_today (values: 0-2)) # Returns the UV index for the nearest station available for today, tomorrow or the day after tomorrow
 
-    update(self, optional bool force_hourly (default: False), optional bool with_forecast (default: True), optional bool with_measurements (default: False), optional bool with_report (default: False), optional bool with_uv (default: True)) # Updates the weather data
+    get_apparent_temperature(datetime, optional bool shouldUpdate) # Returns apparent/perceived temperature (gefuehlte Temperatur) in °C for the given UTC timestamp
+
+    update(self, optional bool force_hourly (default: False), optional bool with_forecast (default: True), optional bool with_measurements (default: False), optional bool with_report (default: False), optional bool with_uv (default: True), optional bool with_apparent_temperature (default: False)) # Updates the weather data
 ```
 
 #### Advanced Usage

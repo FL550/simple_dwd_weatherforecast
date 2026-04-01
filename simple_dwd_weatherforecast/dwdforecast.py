@@ -3,6 +3,8 @@ import importlib
 import importlib.resources
 import json
 import math
+import re
+import struct
 from collections import OrderedDict, defaultdict
 from datetime import datetime, timedelta, timezone
 from enum import Enum
@@ -12,6 +14,7 @@ import httpx
 from stream_unzip import stream_unzip
 
 import arrow
+import eccodes
 import requests
 from lxml import etree
 
@@ -141,6 +144,7 @@ class Weather:
     etags = None
     airquality_daily = None
     airquality_hourly = None
+    apparent_temperature_data = None
 
     namespaces = {
         "kml": "http://www.opengis.net/kml/2.2",
@@ -500,6 +504,40 @@ class Weather:
             else None
         )
 
+    def get_apparent_temperature(
+        self, timestamp: datetime, shouldUpdate=True
+    ) -> float | None:
+        """Get apparent/perceived temperature (gefühlte Temperatur) for a given timestamp.
+
+        Downloads the latest apparent temperature GRIB2 forecast from the DWD health
+        service and returns the value (in °C) for the grid point nearest to the station.
+
+        Args:
+            timestamp: The datetime for which to retrieve the apparent temperature.
+            shouldUpdate: If True, download fresh data when not yet available.
+
+        Returns:
+            Apparent temperature in degrees Celsius, or None if not available.
+        """
+        if self.apparent_temperature_data is None and shouldUpdate:
+            self.update(
+                force_hourly=False,
+                with_forecast=False,
+                with_measurements=False,
+                with_report=False,
+                with_uv=False,
+                with_apparent_temperature=True,
+            )
+        if not self.apparent_temperature_data:
+            return None
+        timestamp_utc = (
+            timestamp.astimezone(timezone.utc)
+            if timestamp.tzinfo
+            else timestamp.replace(tzinfo=timezone.utc)
+        )
+        time_str = self.strip_to_hour_str(timestamp_utc)
+        return self.apparent_temperature_data.get(time_str)
+
     def get_radar_precipitation_forecast(
         self,
         lat: float | None = None,
@@ -798,6 +836,7 @@ class Weather:
         with_measurements=False,
         with_report=False,
         with_uv=True,
+        with_apparent_temperature=False,
     ):
         if with_measurements and self.has_measurement(self.station_id):
             self.download_latest_report()
@@ -813,6 +852,8 @@ class Weather:
             self.download_latest_kml(self.station_id, force_hourly)
         if with_uv:
             self.download_uv_index()
+        if with_apparent_temperature:
+            self.download_apparent_temperature()
 
     def get_weather_type(self, kmlTree, weatherDataType: WeatherDataType):
         """Parses the kml-File to the requested value and returns the items as array"""
@@ -1059,6 +1100,142 @@ class Weather:
                 self.uv_reports[station[0]] = uv_report  # type: ignore
         except Exception as error:
             print(f"Error in download_uv_index: {type(error)} args: {error.args}")
+
+    def download_apparent_temperature(self):
+        """Download and parse the latest apparent temperature (gefühlte Temperatur) forecast.
+
+        Fetches the latest GRIB2 file from the DWD health forecast service, parses it
+        using eccodes, and stores apparent temperature values (°C) keyed by UTC hour
+        string in ``self.apparent_temperature_data``.
+        """
+        base_url = "https://opendata.dwd.de/climate_environment/health/forecasts/"
+        try:
+            # Fetch directory listing to find the latest apparent temperature file
+            response = requests.get(base_url, timeout=30)
+            if response.status_code != 200:
+                raise Exception(
+                    f"Unexpected status code {response.status_code} for directory listing"
+                )
+            # Parse HTML directory listing; look for gft (gefühlte Temperatur) GRIB2 files
+            href_pattern = re.compile(r'href="(Z__C_EDZW_[^"]*_gft_[^"]*HPC\.bin)"')
+            matches = href_pattern.findall(response.text)
+            if not matches:
+                raise Exception(
+                    "No apparent temperature GRIB2 file found in directory listing"
+                )
+            # Sort by creation timestamp embedded in the filename and take the latest
+            latest_file = sorted(matches)[-1]
+            file_url = base_url + latest_file
+
+            # Use ETag for caching
+            headers = {
+                "If-None-Match": self.etags.get(file_url, "")  # type: ignore
+            }
+            with requests.get(
+                file_url, headers=headers, stream=True, timeout=60
+            ) as file_response:
+                if file_response.status_code == 304:
+                    return
+                if file_response.status_code != 200:
+                    raise Exception(
+                        f"Unexpected status code {file_response.status_code} for {file_url}"
+                    )
+                if "ETag" in file_response.headers:
+                    self.etags[file_url] = file_response.headers["ETag"]  # type: ignore
+
+                self.apparent_temperature_data = self._parse_apparent_temperature_grib(
+                    file_response.iter_content(chunk_size=1048576)
+                )
+        except Exception as error:
+            print(
+                f"Error in download_apparent_temperature: {type(error)} args: {error.args}"
+            )
+
+    def _parse_apparent_temperature_grib(self, chunks) -> dict:
+        """Parse a GRIB2 stream and extract apparent temperature at the station.
+
+        Reads GRIB2 messages one at a time from *chunks* (an iterable of byte
+        chunks), framing each message using the total length encoded in GRIB2
+        Section 0. Uses ``eccodes.codes_new_from_message()`` to decode each
+        message in-memory — no temp file is written to disk.
+
+        Args:
+            chunks: An iterable of ``bytes`` chunks forming a GRIB2 file.
+
+        Returns:
+            Dict mapping timestamp string to apparent temperature value in °C.
+        """
+        result = {}
+        station_lat = float(self.station["lat"])  # type: ignore
+        station_lon = float(self.station["lon"])  # type: ignore
+
+        buf = bytearray()
+        pos = 0
+        aligned = False
+        for chunk in chunks:
+            buf.extend(chunk)
+
+            while True:
+                # Only scan for the GRIB marker once at stream start; after that
+                # messages are contiguous so pos already points at the next one.
+                if not aligned:
+                    start = buf.find(b"GRIB", pos)
+                    if start == -1:
+                        buf.clear()
+                        pos = 0
+                        break
+                    pos = start
+                    aligned = True
+
+                # Section 0 is 16 bytes; the 8-byte total length sits at offset 8
+                if len(buf) - pos < 16:
+                    break
+
+                msg_len = struct.unpack_from(">Q", buf, pos + 8)[0]
+                if len(buf) - pos < msg_len:
+                    break  # wait for more chunks
+
+                msg_bytes = bytes(memoryview(buf)[pos : pos + msg_len])
+                pos += msg_len
+
+                msg_id = eccodes.codes_new_from_message(msg_bytes)
+                try:
+                    # Determine the validity date/time of this GRIB2 message
+                    validity_date = eccodes.codes_get(msg_id, "validityDate")
+                    validity_time = eccodes.codes_get(msg_id, "validityTime")
+
+                    year = validity_date // 10000
+                    month = (validity_date % 10000) // 100
+                    day = validity_date % 100
+                    hour = validity_time // 100
+                    minute = validity_time % 100
+
+                    valid_dt = datetime(
+                        year, month, day, hour, minute, tzinfo=timezone.utc
+                    )
+
+                    # Find the nearest grid point to the station
+                    nearest = eccodes.codes_grib_find_nearest(
+                        msg_id, station_lat, station_lon
+                    )[0]
+                    value = nearest.value
+
+                    # Skip missing values
+                    if value == eccodes.CODES_MISSING_DOUBLE:
+                        continue
+
+                    time_str = self.strip_to_hour_str(valid_dt)
+                    result[time_str] = round(value, 1)
+                finally:
+                    eccodes.codes_release(msg_id)
+
+            # Compact once per chunk instead of once per message:
+            # discard already-consumed bytes and reset the offset.
+            if pos > 0:
+                del buf[:pos]
+                pos = 0
+
+        return result
 
     def download_weather_report(self, region_code):
         url = f"https://www.dwd.de/DWD/wetter/wv_allg/deutschland/text/vhdl13_{region_code}.html"
