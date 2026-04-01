@@ -1,0 +1,6 @@
+Pillow
+arrow
+httpx
+lxml
+requests
+stream-unzip==0.0.101

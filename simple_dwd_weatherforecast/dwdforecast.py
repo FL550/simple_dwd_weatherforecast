@@ -16,6 +16,8 @@ import requests
 from lxml import etree
 
 from .dwdairquality import AirQuality as AirQuality
+from .dwdradar import DWDRadar as DWDRadar
+from .dwdradar import NotInAreaError, RadarNotAvailableError
 
 with (
     importlib.resources.files("simple_dwd_weatherforecast")
@@ -281,6 +283,7 @@ class Weather:
             self.station_id = station_id
             self.region = get_region(station_id)
             self.nearest_uv_index_station = self.get_nearest_station_id_with_uv()
+            self._radar = DWDRadar()
         else:
             msg = "Not a valid station_id"
             raise ValueError(msg)
@@ -496,6 +499,81 @@ class Weather:
             if self.uv_reports
             else None
         )
+
+    def get_radar_precipitation_forecast(
+        self,
+        lat: float | None = None,
+        lon: float | None = None,
+        shouldUpdate: bool = True,
+    ) -> dict[datetime, float] | None:
+        """Get radar-based precipitation forecast for the next ~2 hours.
+
+        Retrieves precipitation intensities (mm/h) from the DWD rain radar
+        composite in 5-minute steps. The data covers approximately the next
+        2 hours and is updated every 5 minutes.
+
+        Args:
+            lat: Latitude in decimal degrees. Defaults to the station's
+                latitude when not provided.
+            lon: Longitude in decimal degrees. Defaults to the station's
+                longitude when not provided.
+            shouldUpdate: Whether to download fresh radar data. Defaults
+                to ``True``.
+
+        Returns:
+            Ordered dictionary mapping UTC datetime objects to precipitation
+            intensity in mm/h, or ``None`` if the location is outside the
+            radar coverage area or data is unavailable.
+
+        """
+        if shouldUpdate:
+            self._radar.update()
+        _lat = lat if lat is not None else float(self.station["lat"])  # type: ignore[index]
+        _lon = lon if lon is not None else float(self.station["lon"])  # type: ignore[index]
+        try:
+            return self._radar.get_precipitation_values(_lat, _lon)
+        except (NotInAreaError, RadarNotAvailableError):
+            return None
+
+    def get_radar_next_precipitation(
+        self,
+        lat: float | None = None,
+        lon: float | None = None,
+        shouldUpdate: bool = True,
+    ) -> dict[str, datetime | timedelta | float | None] | None:
+        """Get details about the next precipitation event from radar data.
+
+        Scans the available radar forecast and returns information about the
+        first upcoming precipitation event.
+
+        Args:
+            lat: Latitude in decimal degrees. Defaults to the station's
+                latitude when not provided.
+            lon: Longitude in decimal degrees. Defaults to the station's
+                longitude when not provided.
+            shouldUpdate: Whether to download fresh radar data. Defaults
+                to ``True``.
+
+        Returns:
+            Dictionary with the following keys, or ``None`` if the location
+            is outside the radar coverage area or data is unavailable:
+
+            - ``start``: UTC datetime when precipitation begins, or ``None``.
+            - ``end``: UTC datetime when precipitation ends, or ``None`` if
+              rain persists until the end of the forecast window.
+            - ``length``: timedelta of precipitation duration, or ``None``.
+            - ``max``: Maximum precipitation intensity in mm/h.
+            - ``sum``: Total precipitation amount in mm.
+
+        """
+        if shouldUpdate:
+            self._radar.update()
+        _lat = lat if lat is not None else float(self.station["lat"])  # type: ignore[index]
+        _lon = lon if lon is not None else float(self.station["lon"])  # type: ignore[index]
+        try:
+            return self._radar.get_next_precipitation(_lat, _lon)
+        except (NotInAreaError, RadarNotAvailableError):
+            return None
 
     def get_timeframe_max(
         self,
