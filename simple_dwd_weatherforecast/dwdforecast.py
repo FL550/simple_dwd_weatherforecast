@@ -530,15 +530,16 @@ class Weather:
 
     def get_apparent_temperature_forecast(
         self, shouldUpdate=True
-    ) -> list[float] | None:
+    ) -> dict[str, float] | None:
         """Get the hourly apparent temperature forecast starting from now.
 
         Args:
             shouldUpdate: If True, download fresh data when not yet available.
 
         Returns:
-            List of hourly apparent temperature values in °C from the current UTC
-            hour onward, or None if not available.
+            Dict of entries in the form
+            {"YYYY-MM-DDTHH:00:00.000Z": float} from the current UTC hour onward,
+            or None if not available.
         """
         if self.apparent_temperature_data is None and shouldUpdate:
             self.update(
@@ -555,7 +556,7 @@ class Weather:
         future_keys = sorted(
             key for key in self.apparent_temperature_data.keys() if key >= now_key
         )
-        return [self.apparent_temperature_data[key] for key in future_keys]
+        return {key: self.apparent_temperature_data[key] for key in future_keys}
 
     def get_timeframe_max(
         self,
