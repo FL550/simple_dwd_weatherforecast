@@ -117,13 +117,21 @@ class ApparentTemperatureTestCase(unittest.TestCase):
     # ------------------------------------------------------------------
     def test_get_apparent_temperature_forecast_returns_data(self):
         now_hour = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+        now_key = self.dwd_weather.strip_to_hour_str(now_hour)
+        next_key = self.dwd_weather.strip_to_hour_str(now_hour + timedelta(hours=1))
         self.dwd_weather.apparent_temperature_data = {
             self.dwd_weather.strip_to_hour_str(now_hour - timedelta(hours=1)): 9.0,
-            self.dwd_weather.strip_to_hour_str(now_hour): 10.0,
-            self.dwd_weather.strip_to_hour_str(now_hour + timedelta(hours=1)): 12.0,
+            now_key: 10.0,
+            next_key: 12.0,
         }
         result = self.dwd_weather.get_apparent_temperature_forecast(shouldUpdate=False)
-        self.assertEqual(result, [10.0, 12.0])
+        self.assertEqual(
+            result,
+            {
+                now_key: 10.0,
+                next_key: 12.0,
+            },
+        )
 
     def test_get_apparent_temperature_forecast_no_data_no_update(self):
         self.dwd_weather.apparent_temperature_data = None
