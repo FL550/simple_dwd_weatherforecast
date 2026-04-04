@@ -501,20 +501,18 @@ class Weather:
             else None
         )
 
-    def get_apparent_temperature(
-        self, timestamp: datetime, shouldUpdate=True
-    ) -> float | None:
-        """Get apparent/perceived temperature (gefühlte Temperatur) for a given timestamp.
+    def get_apparent_temperature(self, shouldUpdate=True) -> float | None:
+        """Get the current apparent/perceived temperature (gefühlte Temperatur).
 
         Downloads the latest apparent temperature GRIB2 forecast from the DWD health
-        service and returns the value (in °C) for the grid point nearest to the station.
+        service and returns the value (in °C) for the current UTC hour at the grid
+        point nearest to the station.
 
         Args:
-            timestamp: The datetime for which to retrieve the apparent temperature.
             shouldUpdate: If True, download fresh data when not yet available.
 
         Returns:
-            Apparent temperature in degrees Celsius, or None if not available.
+            Current apparent temperature in degrees Celsius, or None if not available.
         """
         if self.apparent_temperature_data is None and shouldUpdate:
             self.update(
@@ -527,13 +525,37 @@ class Weather:
             )
         if not self.apparent_temperature_data:
             return None
-        timestamp_utc = (
-            timestamp.astimezone(timezone.utc)
-            if timestamp.tzinfo
-            else timestamp.replace(tzinfo=timezone.utc)
-        )
-        time_str = self.strip_to_hour_str(timestamp_utc)
+        time_str = self.strip_to_hour_str(datetime.now(timezone.utc))
         return self.apparent_temperature_data.get(time_str)
+
+    def get_apparent_temperature_forecast(
+        self, shouldUpdate=True
+    ) -> list[float] | None:
+        """Get the hourly apparent temperature forecast starting from now.
+
+        Args:
+            shouldUpdate: If True, download fresh data when not yet available.
+
+        Returns:
+            List of hourly apparent temperature values in °C from the current UTC
+            hour onward, or None if not available.
+        """
+        if self.apparent_temperature_data is None and shouldUpdate:
+            self.update(
+                force_hourly=False,
+                with_forecast=False,
+                with_measurements=False,
+                with_report=False,
+                with_uv=False,
+                with_apparent_temperature=True,
+            )
+        if not self.apparent_temperature_data:
+            return None
+        now_key = self.strip_to_hour_str(datetime.now(timezone.utc))
+        future_keys = sorted(
+            key for key in self.apparent_temperature_data.keys() if key >= now_key
+        )
+        return [self.apparent_temperature_data[key] for key in future_keys]
 
     def get_timeframe_max(
         self,

@@ -57,6 +57,8 @@ from datetime import datetime, timedelta, timezone
 dwd_weather = dwdforecast.Weather("10385") # Station-ID For BERLIN-SCHOENEFELD
 time_now = datetime.now(timezone.utc)
 temperature_now = dwd_weather.get_forecast_data(dwdforecast.WeatherDataType.TEMPERATURE, time_now)
+apparent_temperature_now = dwd_weather.get_apparent_temperature()
+apparent_temperature_hourly = dwd_weather.get_apparent_temperature_forecast()
 time_tomorrow = datetime.now(timezone.utc)+timedelta(days=1)
 temperature_tomorrow = dwd_weather.get_forecast_data(dwdforecast.WeatherDataType.TEMPERATURE, time_tomorrow)
 ```
@@ -131,7 +133,9 @@ class Weather:
 
     get_uv_index(int day_from_today (values: 0-2)) # Returns the UV index for the nearest station available for today, tomorrow or the day after tomorrow
 
-    get_apparent_temperature(datetime, optional bool shouldUpdate) # Returns apparent/perceived temperature (gefuehlte Temperatur) in °C for the given UTC timestamp
+    get_apparent_temperature(optional bool shouldUpdate) # Returns current apparent/perceived temperature (gefuehlte Temperatur) in °C
+
+    get_apparent_temperature_forecast(optional bool shouldUpdate) # Returns hourly apparent/perceived temperature forecast as array[value_celsius] starting from current UTC hour
 
     update(self, optional bool force_hourly (default: False), optional bool with_forecast (default: True), optional bool with_measurements (default: False), optional bool with_report (default: False), optional bool with_uv (default: True), optional bool with_apparent_temperature (default: False)) # Updates the weather data
 ```
