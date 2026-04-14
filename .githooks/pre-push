@@ -1,0 +1,28 @@
+#!/usr/bin/env sh
+
+echo "Running test suite before push..."
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+REPO_ROOT=$(dirname "$SCRIPT_DIR")
+
+if [ -x "$REPO_ROOT/.venv/bin/python" ]; then
+  PYTHON_CMD="$REPO_ROOT/.venv/bin/python"
+elif command -v python >/dev/null 2>&1; then
+  PYTHON_CMD=python
+elif command -v python3 >/dev/null 2>&1; then
+  PYTHON_CMD=python3
+else
+  echo "No Python executable found. Push aborted."
+  exit 1
+fi
+
+"$PYTHON_CMD" -m unittest discover -q -f tests
+status=$?
+
+if [ "$status" -ne 0 ]; then
+  echo "Tests failed. Push aborted."
+  exit "$status"
+fi
+
+echo "Tests passed. Continuing push."
+exit 0
