@@ -8,12 +8,13 @@ on:
 
 jobs:
   tests:
-    name: "Test package"
+    name: "Test package (${{ matrix.install-profile }})"
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 3
       matrix:
         python-version: ['3.12']
+        install-profile: ['core', 'apparent-temperature']
     steps:
       - name: "Checkout code"
         uses: actions/checkout@v3
@@ -39,6 +40,13 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requires.txt
           pip install pytest-xdist
+
+      - name: "Install optional apparent temperature dependencies"
+        if: matrix.install-profile == 'apparent-temperature'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libeccodes0 libeccodes-dev
+          python -m pip install "./[apparent-temperature]"
 
       - name: "Run tests with unittest"
         run: |

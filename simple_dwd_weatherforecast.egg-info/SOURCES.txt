@@ -6,6 +6,7 @@ simple_dwd_weatherforecast/airquality_stations.json
 simple_dwd_weatherforecast/dwdairquality.py
 simple_dwd_weatherforecast/dwdforecast.py
 simple_dwd_weatherforecast/dwdmap.py
+simple_dwd_weatherforecast/dwdradar.py
 simple_dwd_weatherforecast/stations.json
 simple_dwd_weatherforecast/uv_stations.json
 simple_dwd_weatherforecast.egg-info/PKG-INFO
@@ -18,6 +19,7 @@ tests/dummy_data.py
 tests/dummy_data_full.py
 tests/dummy_uv.py
 tests/test_airquality.py
+tests/test_apparent_temperature.py
 tests/test_get_daily_avg.py
 tests/test_get_daily_condition.py
 tests/test_get_daily_max.py
@@ -38,6 +40,7 @@ tests/test_is_valid_timeframe.py
 tests/test_location_tools.py
 tests/test_map.py
 tests/test_parsekml.py
+tests/test_radar.py
 tests/test_region.py
 tests/test_reported_weather.py
 tests/test_station.py

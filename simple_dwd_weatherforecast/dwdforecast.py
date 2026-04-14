@@ -14,9 +14,16 @@ import httpx
 from stream_unzip import stream_unzip
 
 import arrow
-import eccodes
 import requests
 from lxml import etree
+
+try:
+    import eccodes
+
+    _ECCODES_AVAILABLE = True
+except Exception:
+    eccodes = None  # type: ignore
+    _ECCODES_AVAILABLE = False
 
 from .dwdairquality import AirQuality as AirQuality
 from .dwdradar import DWDRadar as DWDRadar
@@ -145,6 +152,22 @@ class Weather:
     airquality_daily = None
     airquality_hourly = None
     apparent_temperature_data = None
+
+    _ECCODES_HINT = (
+        "Apparent temperature requires the optional dependency 'eccodes' and the "
+        "native ecCodes library. Install package extra 'apparent-temperature' "
+        "for platforms where supported."
+    )
+
+    @staticmethod
+    def supports_apparent_temperature() -> bool:
+        """Return whether apparent temperature support is available."""
+        return _ECCODES_AVAILABLE
+
+    @staticmethod
+    def get_apparent_temperature_unavailable_reason() -> str | None:
+        """Return a hint when apparent temperature support is unavailable."""
+        return None if _ECCODES_AVAILABLE else Weather._ECCODES_HINT
 
     namespaces = {
         "kml": "http://www.opengis.net/kml/2.2",
@@ -1131,6 +1154,10 @@ class Weather:
         using eccodes, and stores apparent temperature values (°C) keyed by UTC hour
         string in ``self.apparent_temperature_data``.
         """
+        if not _ECCODES_AVAILABLE:
+            print(self._ECCODES_HINT)
+            return
+
         base_url = "https://opendata.dwd.de/climate_environment/health/forecasts/"
         try:
             # Fetch directory listing to find the latest apparent temperature file
@@ -1188,6 +1215,9 @@ class Weather:
         Returns:
             Dict mapping timestamp string to apparent temperature value in °C.
         """
+        if not _ECCODES_AVAILABLE:
+            raise RuntimeError(self._ECCODES_HINT)
+
         result = {}
         station_lat = float(self.station["lat"])  # type: ignore
         station_lon = float(self.station["lon"])  # type: ignore

@@ -4,7 +4,13 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
-import eccodes
+try:
+    import eccodes
+
+    _ECCODES_AVAILABLE = True
+except Exception:
+    eccodes = None
+    _ECCODES_AVAILABLE = False
 
 from simple_dwd_weatherforecast import dwdforecast
 
@@ -53,9 +59,10 @@ def _make_grib2_data():
     return b"".join(messages)
 
 
-_GRIB2_DATA = _make_grib2_data()
+_GRIB2_DATA = _make_grib2_data() if _ECCODES_AVAILABLE else b""
 
 
+@unittest.skipUnless(_ECCODES_AVAILABLE, "eccodes backend is not available")
 class ApparentTemperatureTestCase(unittest.TestCase):
     def setUp(self):
         self.dwd_weather = dwdforecast.Weather("10438")  # Kassel

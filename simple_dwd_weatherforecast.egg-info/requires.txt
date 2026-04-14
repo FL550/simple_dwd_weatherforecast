@@ -1,6 +1,9 @@
-Pillow
-arrow
-httpx
 lxml
 requests
+Pillow
+arrow
 stream-unzip==0.0.101
+httpx
+
+[apparent-temperature]
+eccodes

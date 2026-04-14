@@ -42,6 +42,19 @@ Airquality stations are also available. Values are reported for Stickstoffdioxid
 python3 -m pip install simple_dwd_weatherforecast
 ```
 
+This installs the portable core features and works on platforms where native
+ecCodes libraries are not available (for example many Home Assistant OS setups).
+
+If you also need apparent/perceived temperature parsing from GRIB2 files, install
+the optional extra:
+
+```python
+python3 -m pip install "simple_dwd_weatherforecast[apparent-temperature]"
+```
+
+If the platform does not provide a compatible ecCodes runtime, the core package
+still works and apparent temperature methods will return no value.
+
 ## Usage
 
 ### Weather data
@@ -138,6 +151,10 @@ class Weather:
 
     get_uv_index(int day_from_today (values: 0-2)) # Returns the UV index for the nearest station available for today, tomorrow or the day after tomorrow
 
+    supports_apparent_temperature() # Returns True if GRIB/eccodes backend is available
+
+    get_apparent_temperature_unavailable_reason() # Returns None when available, otherwise a human-readable reason
+
     get_apparent_temperature(optional bool shouldUpdate) # Returns current apparent/perceived temperature (gefuehlte Temperatur) in °C
 
     get_apparent_temperature_forecast(optional bool shouldUpdate) # Returns hourly apparent/perceived temperature forecast as dict[{timestamp_utc: value_celsius}] starting from current UTC hour
@@ -153,6 +170,24 @@ class Weather:
 
     # Override coordinates to any German location
     get_radar_precipitation_forecast(lat=52.52, lon=13.41)
+```
+
+#### Home Assistant style capability check
+
+Use the capability helpers to expose apparent temperature only when the optional
+GRIB backend is available on the target platform.
+
+```python
+from simple_dwd_weatherforecast import dwdforecast
+
+weather = dwdforecast.Weather("10385")
+
+if weather.supports_apparent_temperature():
+    value = weather.get_apparent_temperature()
+    # publish apparent temperature sensor state
+else:
+    reason = weather.get_apparent_temperature_unavailable_reason()
+    # skip creating the sensor or mark it unavailable with `reason`
 ```
 
 #### Advanced Usage
