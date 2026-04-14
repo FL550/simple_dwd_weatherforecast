@@ -1,3 +1,16 @@
+Metadata-Version: 2.1
+Name: simple-dwd-weatherforecast
+Version: 0.0.0.dev0
+Summary: A simple tool to retrieve a weather forecast from DWD OpenData
+Home-page: https://github.com/FL550/simple_dwd_weatherforecast.git
+Author: Max Fermor
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+License-File: LICENCE
+
 # Simple DWD weather forecast
 
 [![BuyMeCoffee][buymecoffeebadge]][buymecoffee]
@@ -57,13 +70,6 @@ from datetime import datetime, timedelta, timezone
 dwd_weather = dwdforecast.Weather("10385") # Station-ID For BERLIN-SCHOENEFELD
 time_now = datetime.now(timezone.utc)
 temperature_now = dwd_weather.get_forecast_data(dwdforecast.WeatherDataType.TEMPERATURE, time_now)
-apparent_temperature_now = dwd_weather.get_apparent_temperature()
-apparent_temperature_hourly = dwd_weather.get_apparent_temperature_forecast()
-# Example format:
-# {
-#   "2026-04-04T15:00:00.000Z": 16.5,
-#   "2026-04-04T16:00:00.000Z": 16.5,
-# }
 time_tomorrow = datetime.now(timezone.utc)+timedelta(days=1)
 temperature_tomorrow = dwd_weather.get_forecast_data(dwdforecast.WeatherDataType.TEMPERATURE, time_tomorrow)
 ```
@@ -138,21 +144,7 @@ class Weather:
 
     get_uv_index(int day_from_today (values: 0-2)) # Returns the UV index for the nearest station available for today, tomorrow or the day after tomorrow
 
-    get_apparent_temperature(optional bool shouldUpdate) # Returns current apparent/perceived temperature (gefuehlte Temperatur) in °C
-
-    get_apparent_temperature_forecast(optional bool shouldUpdate) # Returns hourly apparent/perceived temperature forecast as dict[{timestamp_utc: value_celsius}] starting from current UTC hour
-
-    update(self, optional bool force_hourly (default: False), optional bool with_forecast (default: True), optional bool with_measurements (default: False), optional bool with_report (default: False), optional bool with_uv (default: True), optional bool with_apparent_temperature (default: False)) # Updates the weather data
-
-    # {datetime(2025,4,1,12,0,UTC): 3.6, datetime(2025,4,1,12,5,UTC): 0.0, ...}
-    get_radar_precipitation_forecast()
-
-    # {'start': datetime(...), 'end': datetime(...), 'length': timedelta(minutes=25),
-    #  'max': 7.2, 'sum': 1.4}
-    get_radar_next_precipitation()
-
-    # Override coordinates to any German location
-    get_radar_precipitation_forecast(lat=52.52, lon=13.41)
+    update(self, optional bool force_hourly (default: False), optional bool with_forecast (default: True), optional bool with_measurements (default: False), optional bool with_report (default: False), optional bool with_uv (default: True)) # Updates the weather data
 ```
 
 #### Advanced Usage
@@ -296,22 +288,6 @@ class AirQualityDataType(Enum):
 ## Help and Contribution
 
 Feel free to open an issue if you find one and I will do my best to help you. If you want to contribute, your help is appreciated! If you want to add a new feature, add a pull request first so we can chat about the details.
-
-Before pushing changes, tests must pass locally.
-
-1. Enable the repository hooks once:
-
-    ```bash
-    git config core.hooksPath .githooks
-    ```
-
-2. Push as usual. The pre-push hook runs:
-
-    ```bash
-    python -m unittest discover -q -f tests
-    ```
-
-If tests fail, the push is blocked.
 
 ## Licenses
 

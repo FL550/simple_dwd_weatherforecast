@@ -10,3 +10,4 @@ htmlcov
 __init__.pyc
 pyvenv.cfg
 run.py
+*.egg-info
