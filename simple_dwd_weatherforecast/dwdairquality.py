@@ -6,7 +6,7 @@ import math
 import requests
 import csv
 from typing import Literal
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 MISSING_VALUE = -999.0
 
@@ -42,11 +42,11 @@ class AirQuality:
         self.lon = station["lon"]
         self.altitude = station["altitude"]
 
-    def update(self, with_current: bool = False):
-        if self.data_type == "hourly" or with_current:
+    def update(self, with_current_day: bool = False):
+        if self.data_type == "hourly":
             self._fetch_hourly()
         if self.data_type == "daily":
-            self._fetch_daily()
+            self._fetch_daily(with_current_day)
 
     def get_current(self, air_quality_data_type: AirQualityDataType):
         return self.data[0][air_quality_data_type.value]
@@ -54,11 +54,9 @@ class AirQuality:
     def get_forecast(self, air_quality_data_type: AirQualityDataType):
         return [entry[air_quality_data_type.value] for entry in self.data[1:]]
 
-    def _fetch_hourly(self, hourly_before=False):
-        if hourly_before:
-            now = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime("%Y%m%d%H")
-        else:
-            now = datetime.now(timezone.utc).strftime("%Y%m%d%H")
+    def _fetch_hourly(self, average_current_day: bool = False):
+
+        now = datetime.now(timezone.utc).strftime("%Y%m%d%H")
         url = f"https://opendata.dwd.de/climate_environment/health/forecasts/air_quality/lq_forecast_{now}.csv"
         headers = {"If-None-Match": self.etags.get(url, "")}
         try:
@@ -69,10 +67,32 @@ class AirQuality:
                     content.decode("utf-8").splitlines(), delimiter=";"
                 )
                 data = self._parse_hourly(reader)
-                if self.station_id in data:
+                if average_current_day:
+                    if self.station_id in data:
+                        remaining_hours = data[self.station_id][
+                            1 : 1 + max(0, 23 - datetime.now(timezone.utc).hour)
+                        ]
+                        components = {
+                            key
+                            for hour_data in data[self.station_id]
+                            for key in hour_data
+                        }
+                        return {
+                            component: (
+                                round(sum(values) / len(values), 1) if values else None
+                            )
+                            for component in components
+                            for values in (
+                                [
+                                    hour_data.get(component)
+                                    for hour_data in remaining_hours
+                                    if hour_data.get(component) is not None
+                                ],
+                            )
+                        }
+
+                elif self.station_id in data:
                     self.data = data[self.station_id]
-            elif response.status_code == requests.codes.not_found:
-                self._fetch_hourly(hourly_before=True)
             elif response.status_code == requests.codes.not_modified:
                 # The report is already up to date
                 pass
@@ -104,11 +124,8 @@ class AirQuality:
                 result[station][i + 1][component] = value
         return result
 
-    def _fetch_daily(self, hourly_before: bool = False):
-        if hourly_before:
-            now = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime("%Y%m%d%H")
-        else:
-            now = datetime.now(timezone.utc).strftime("%Y%m%d%H")
+    def _fetch_daily(self, with_current_day: bool = False):
+        now = datetime.now(timezone.utc).strftime("%Y%m%d%H")
         url = f"https://opendata.dwd.de/climate_environment/health/forecasts/air_quality/lq_average_allstats_{now}.csv"
         headers = {"If-None-Match": self.etags.get(url, "")}
         try:
@@ -119,10 +136,10 @@ class AirQuality:
                     content.decode("utf-8").splitlines(), delimiter=";"
                 )
                 data = self._parse_daily(reader)
-            if self.station_id in data:
-                self.data = data[self.station_id]
-            elif response.status_code == requests.codes.not_found:
-                self._fetch_daily(hourly_before=True)
+                if self.station_id in data:
+                    self.data = data[self.station_id]
+                if with_current_day:
+                    self.data["today"] = self._fetch_hourly(average_current_day=True)
             elif response.status_code == requests.codes.not_modified:
                 # The report is already up to date
                 pass
@@ -140,15 +157,19 @@ class AirQuality:
         result = {}
         for row in reader:
             if row["Station"] not in result:
-                result[row["Station"]] = {"today": {}, "tomorrow": {}, "day_after": {}}
+                result[row["Station"]] = {
+                    "tomorrow": {},
+                    "day_after": {},
+                    "three_days": {},
+                }
             component = row["Komponente"].strip()
-            result[row["Station"]]["today"][component] = (
+            result[row["Station"]]["tomorrow"][component] = (
                 row["Mittel1"] if row["Mittel1"] != str(MISSING_VALUE) else None
             )
-            result[row["Station"]]["tomorrow"][component] = (
+            result[row["Station"]]["day_after"][component] = (
                 row["Mittel2"] if row["Mittel2"] != str(MISSING_VALUE) else None
             )
-            result[row["Station"]]["day_after"][component] = (
+            result[row["Station"]]["three_days"][component] = (
                 row["Mittel3"] if row["Mittel3"] != str(MISSING_VALUE) else None
             )
         return result
