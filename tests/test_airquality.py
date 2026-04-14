@@ -61,19 +61,19 @@ class AirQualityTestParsingDaily(unittest.TestCase):
 
     def test_station(self):
         assert self.data["DEBE056"] == {
-            "today": {
+            "tomorrow": {
                 "Stickstoffdioxid": "   9.9",
                 "Ozon": None,
                 "PM10": None,
                 "PM2_5": "  21.1",
             },
-            "tomorrow": {
+            "day_after": {
                 "Stickstoffdioxid": "  25.0",
                 "Ozon": None,
                 "PM10": None,
                 "PM2_5": "  19.4",
             },
-            "day_after": {
+            "three_days": {
                 "Stickstoffdioxid": "  18.1",
                 "Ozon": None,
                 "PM10": None,
