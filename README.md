@@ -143,6 +143,16 @@ class Weather:
     get_apparent_temperature_forecast(optional bool shouldUpdate) # Returns hourly apparent/perceived temperature forecast as dict[{timestamp_utc: value_celsius}] starting from current UTC hour
 
     update(self, optional bool force_hourly (default: False), optional bool with_forecast (default: True), optional bool with_measurements (default: False), optional bool with_report (default: False), optional bool with_uv (default: True), optional bool with_apparent_temperature (default: False)) # Updates the weather data
+
+    # {datetime(2025,4,1,12,0,UTC): 3.6, datetime(2025,4,1,12,5,UTC): 0.0, ...}
+    get_radar_precipitation_forecast()
+
+    # {'start': datetime(...), 'end': datetime(...), 'length': timedelta(minutes=25),
+    #  'max': 7.2, 'sum': 1.4}
+    get_radar_next_precipitation()
+
+    # Override coordinates to any German location
+    get_radar_precipitation_forecast(lat=52.52, lon=13.41)
 ```
 
 #### Advanced Usage
