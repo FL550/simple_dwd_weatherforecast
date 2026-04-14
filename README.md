@@ -287,6 +287,22 @@ class AirQualityDataType(Enum):
 
 Feel free to open an issue if you find one and I will do my best to help you. If you want to contribute, your help is appreciated! If you want to add a new feature, add a pull request first so we can chat about the details.
 
+Before pushing changes, tests must pass locally.
+
+1. Enable the repository hooks once:
+
+    ```bash
+    git config core.hooksPath .githooks
+    ```
+
+2. Push as usual. The pre-push hook runs:
+
+    ```bash
+    python -m unittest discover -q -f tests
+    ```
+
+If tests fail, the push is blocked.
+
 ## Licenses
 
 This package uses public data from [DWD OpenData](https://www.dwd.de/DE/leistungen/opendata/opendata.html). The Copyright can be viewed [here](https://www.dwd.de/DE/service/copyright/copyright_node.html).
