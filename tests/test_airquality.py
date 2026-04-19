@@ -1,3 +1,4 @@
+import asyncio
 from simple_dwd_weatherforecast.dwdforecast import AirQuality
 import csv
 import unittest
@@ -7,7 +8,7 @@ from datetime import datetime
 
 class AirQualityTestParsingHourly(unittest.TestCase):
     def setUp(self):
-        self.station = AirQuality("DERP011", "hourly")
+        self.station = asyncio.run(AirQuality.create("DERP011", "hourly"))
         with open("tests/lq_forecast_2025122409.csv", encoding="utf-8") as f:
             content = f.read()
             content = csv.DictReader(content.splitlines(), delimiter=";")
@@ -50,7 +51,7 @@ class AirQualityTestParsingHourly(unittest.TestCase):
 
 class AirQualityTestParsingDaily(unittest.TestCase):
     def setUp(self):
-        self.station = AirQuality("DERP011", "daily")
+        self.station = asyncio.run(AirQuality.create("DERP011", "daily"))
         with open("tests/lq_average_allstats_2025122409.csv", encoding="utf-8") as f:
             content = f.read()
             content = csv.DictReader(content.splitlines(), delimiter=";")
@@ -84,15 +85,19 @@ class AirQualityTestParsingDaily(unittest.TestCase):
 
 class AirQualityTestGetStationFromLocation(unittest.TestCase):
     def test_get_station(self):
-        station = AirQuality.get_station_from_location(50.536266, 9.975635, "daily")
+        station = asyncio.run(
+            AirQuality.get_station_from_location(50.536266, 9.975635, "daily")
+        )
         assert station.station_id == "DEHE051"
-        station = AirQuality.get_station_from_location(53.092022, 8.127382, "hourly")
+        station = asyncio.run(
+            AirQuality.get_station_from_location(53.092022, 8.127382, "hourly")
+        )
         assert station.station_id == "DENI143"
 
 
 class AirQualityTestGetStationFromId(unittest.TestCase):
     def test_get_station(self):
-        station = AirQuality("DEHE051", "daily")
+        station = asyncio.run(AirQuality.create("DEHE051", "daily"))
         assert station.station_id == "DEHE051"
         assert station.station_name == "Wasserkuppe"
         assert station.lat == 50.497711

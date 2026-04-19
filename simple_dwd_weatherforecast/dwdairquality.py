@@ -1,3 +1,4 @@
+import asyncio
 from enum import Enum
 import importlib
 import importlib.resources
@@ -22,19 +23,34 @@ class AirQualityDataType(Enum):
 
 class AirQuality:
     @staticmethod
-    def get_station_from_location(
+    async def get_station_from_location(
         latitude: float, longitude: float, data_type: airquality_data_types
     ) -> "AirQuality":
-        station_id = get_nearest_airquality_station_id(latitude, longitude)
-        return AirQuality(station_id, data_type)
+        station_id = await get_nearest_airquality_station_id(latitude, longitude)
+        return await AirQuality.create(station_id, data_type)
 
-    def __init__(self, station_id: str, data_type: airquality_data_types) -> None:
+    @classmethod
+    async def create(
+        cls, station_id: str, data_type: airquality_data_types
+    ) -> "AirQuality":
+        station = await get_station(station_id)
+        return cls(station_id, data_type, station=station)
+
+    def __init__(
+        self,
+        station_id: str,
+        data_type: airquality_data_types,
+        station: dict | None = None,
+    ) -> None:
         self.etags = {}
         self.station_id = station_id
         self.data_type = data_type
         self.data = {}
 
-        station = get_station(station_id)
+        if station is None:
+            raise ValueError(
+                "Station metadata must be preloaded. Use AirQuality.create() instead."
+            )
         if station is None:
             raise ValueError(f"Station ID {station_id} not found.")
         self.station_name = station["name"]
@@ -175,13 +191,13 @@ class AirQuality:
         return result
 
 
-def get_nearest_airquality_station_id(latitude: float, longitude: float) -> str:
-    sorted_stations = get_stations_sort_by_distance(latitude, longitude)
+async def get_nearest_airquality_station_id(latitude: float, longitude: float) -> str:
+    sorted_stations = await get_stations_sort_by_distance(latitude, longitude)
     return sorted_stations[0]["station_id"]
 
 
-def get_stations_sort_by_distance(latitude: float, longitude: float) -> list[dict]:
-    stationen = _load_stations()
+async def get_stations_sort_by_distance(latitude: float, longitude: float) -> list[dict]:
+    stationen = await _load_stations()
     for station_id, station in stationen.items():
         station["station_id"] = station_id
         lon_diff = (
@@ -197,12 +213,16 @@ def get_stations_sort_by_distance(latitude: float, longitude: float) -> list[dic
     return sorted(stationen.values(), key=lambda x: x["distance"])
 
 
-def get_station(station_id: str) -> dict | None:
-    stationen = _load_stations()
+async def get_station(station_id: str) -> dict | None:
+    stationen = await _load_stations()
     return stationen.get(station_id, None)
 
 
-def _load_stations() -> dict:
+async def _load_stations() -> dict:
+    return await asyncio.to_thread(_load_stations_sync)
+
+
+def _load_stations_sync() -> dict:
     with (
         importlib.resources.files("simple_dwd_weatherforecast")
         .joinpath("airquality_stations.json")

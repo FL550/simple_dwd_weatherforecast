@@ -309,9 +309,13 @@ You can download airquality measurements and forecasts with this package. You ca
 
 #### Usage example
 ```python
+import asyncio
+
 from simple_dwd_weatherforecast.dwdairquality import AirQuality
 
-station = AirQuality.get_station_from_location(53.092022, 8.127382, "hourly")
+station = asyncio.run(
+    AirQuality.get_station_from_location(53.092022, 8.127382, "hourly")
+)
 
 station.update()
 
