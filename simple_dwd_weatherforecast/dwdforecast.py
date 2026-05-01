@@ -253,10 +253,12 @@ class Weather:
         "ST": "dwlh",  # Sachsen-Anhalt
         "TH": "dwli",  # Thueringen
         "BY": "dwmg",  # Bayern
+        "BYN": "dwmo", # Nordbayern
+        "BYS": "dwmp", # Südbayern
         "BW": "dwsg",  # Baden-Württemberg
-        "HE": "dwoh",  # Hessen
-        "RP": "dwoi",  # Rheinland-Pfalz
-        "SL": "dwoi",  # Saarland
+        "HE": "dweg",  # Hessen
+        "RP": "dwei",  # Rheinland-Pfalz
+        "SL": "dwei",  # Saarland
         "BB": "dwpg",  # Brandenburg
         "BE": "dwpg",  # Berlin
         "MV": "dwph",  # Mecklenburg-Vorpommern
