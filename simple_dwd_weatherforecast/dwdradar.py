@@ -17,7 +17,9 @@ from io import BytesIO
 
 import requests
 
-RADAR_URL = "https://opendata.dwd.de/weather/radar/composite/rv/DE1200_RV_LATEST.tar.bz2"
+RADAR_URL = (
+    "https://opendata.dwd.de/weather/radar/composite/rv/DE1200_RV_LATEST.tar.bz2"
+)
 
 _XSIZE = 1100
 _YSIZE = 1200
@@ -83,11 +85,15 @@ class DWDRadar:
     def __init__(self) -> None:
         """Initialize the DWDRadar instance."""
         self._radars: dict[datetime, bytes] | None = None
+        self._etag: str | None = None
 
     def update(self) -> None:
         """Download and parse the latest radar composite data from DWD OpenData."""
         try:
-            response = requests.get(RADAR_URL, timeout=30)
+            headers = {"If-None-Match": self._etag} if self._etag else None
+            response = requests.get(RADAR_URL, timeout=30, headers=headers)
+            if response.status_code == 304:
+                return
             response.raise_for_status()
             with tarfile.open(fileobj=BytesIO(response.content), mode="r:bz2") as tar:
                 radars: dict[datetime, bytes] = {}
@@ -107,6 +113,7 @@ class DWDRadar:
                     except (ValueError, IndexError):
                         continue
                 self._radars = radars
+                self._etag = response.headers.get("ETag")
         except Exception as error:  # noqa: BLE001
             print(f"Error in DWDRadar.update: {type(error)} args: {error.args}")  # noqa: T201
 
@@ -165,9 +172,7 @@ class DWDRadar:
             return 0.0
         return float(raw & 0b0000111111111111) / 100 * 12
 
-    def get_precipitation_values(
-        self, lat: float, lon: float
-    ) -> dict[datetime, float]:
+    def get_precipitation_values(self, lat: float, lon: float) -> dict[datetime, float]:
         """
         Get precipitation values for a location at all available time steps.
 
@@ -256,9 +261,7 @@ class DWDRadar:
         rain_max = 0.0
         rain_sum = 0.0
 
-        for rain_time, precipitation in self.get_precipitation_values(
-            lat, lon
-        ).items():
+        for rain_time, precipitation in self.get_precipitation_values(lat, lon).items():
             if rain_start is None and precipitation > 0:
                 rain_start = rain_time
                 rain_max = precipitation

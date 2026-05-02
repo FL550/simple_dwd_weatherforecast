@@ -252,6 +252,39 @@ class TestDWDRadarUpdate(unittest.TestCase):
             radar.update()  # should not raise
         self.assertIsNone(radar._radars)
 
+    def test_update_uses_etag_and_handles_304(self):
+        """Test that update() sends If-None-Match and keeps cached data on 304."""
+        frames = {
+            "DE1200_RV_2404011200_000": bytes(1100 * 1200 * 2),
+        }
+        tar_data = _make_tar_bz2(frames)
+
+        first_response = MagicMock()
+        first_response.status_code = 200
+        first_response.content = tar_data
+        first_response.raise_for_status = MagicMock()
+        first_response.headers = {"ETag": '"abc123"'}
+
+        second_response = MagicMock()
+        second_response.status_code = 304
+        second_response.raise_for_status = MagicMock()
+
+        with patch("simple_dwd_weatherforecast.dwdradar.requests.get") as mock_get:
+            mock_get.side_effect = [first_response, second_response]
+            radar = DWDRadar()
+            radar.update()
+            original_radars = radar._radars
+            radar.update()
+
+        self.assertEqual(mock_get.call_count, 2)
+        self.assertEqual(mock_get.call_args_list[0].kwargs.get("headers"), None)
+        self.assertEqual(
+            mock_get.call_args_list[1].kwargs.get("headers"),
+            {"If-None-Match": '"abc123"'},
+        )
+        self.assertEqual(radar._etag, '"abc123"')
+        self.assertIs(radar._radars, original_radars)
+
 
 class TestWeatherRadarMethods(unittest.TestCase):
     def setUp(self):
@@ -265,8 +298,8 @@ class TestWeatherRadarMethods(unittest.TestCase):
         )
         t1 = datetime(2024, 4, 1, 12, 0, tzinfo=UTC)
         t2 = datetime(2024, 4, 1, 12, 5, tzinfo=UTC)
-        frame1 = _make_radar_frame(bx, by, 50)   # some rain
-        frame2 = _make_radar_frame(bx, by, 0)    # no rain
+        frame1 = _make_radar_frame(bx, by, 50)  # some rain
+        frame2 = _make_radar_frame(bx, by, 0)  # no rain
         self.dwd_weather._radar._radars = {t1: frame1, t2: frame2}
         self.t1 = t1
         self.t2 = t2
