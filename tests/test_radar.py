@@ -10,6 +10,9 @@ from simple_dwd_weatherforecast.dwdradar import (
     DWDRadar,
     NotInAreaError,
     RadarNotAvailableError,
+    _DIRECTION_DEGREES,
+    _DIRECTION_SCAN_RADIUS,
+    _DIRECTIONS,
     _linear_interp,
 )
 
@@ -22,6 +25,22 @@ def _make_radar_frame(x_cart: int, y_cart: int, value_raw: int) -> bytes:
     data = bytearray(num_values * 2)
     idx = (y_cart * xsize + x_cart) * 2
     struct.pack_into("<H", data, idx, value_raw)
+    return bytes(data)
+
+
+def _make_radar_frame_direction(
+    x_cart: int, y_cart: int, dx: int, dy: int, radius: int, value_raw: int
+) -> bytes:
+    """Build a radar frame with rain pixels along (dx, dy) from the origin."""
+    xsize = 1100
+    ysize = 1200
+    num_values = xsize * ysize
+    data = bytearray(num_values * 2)
+    for step in range(1, radius + 1):
+        nx = x_cart + dx * step
+        ny = y_cart + dy * step
+        if 0 <= nx < xsize and 0 <= ny < ysize:
+            struct.pack_into("<H", data, (ny * xsize + nx) * 2, value_raw)
     return bytes(data)
 
 
@@ -355,3 +374,121 @@ class TestWeatherRadarMethods(unittest.TestCase):
         mock_update.return_value = None
         self.dwd_weather.get_radar_next_precipitation(shouldUpdate=True)
         mock_update.assert_called_once()
+
+
+class TestDWDRadarDirection(unittest.TestCase):
+    """Tests for the rain-direction helpers in DWDRadar."""
+
+    def _make_radar(self, pre_frames, rain_frame, berlin_x, berlin_y):
+        """Return a DWDRadar with look-back frames followed by rain at location."""
+        radar = DWDRadar()
+        base = datetime(2024, 4, 1, 12, 0, tzinfo=UTC)
+        radars = {}
+        for i, frame in enumerate(pre_frames):
+            radars[base + timedelta(minutes=5 * i)] = frame
+        rain_t = base + timedelta(minutes=5 * len(pre_frames))
+        radars[rain_t] = rain_frame
+        radar._radars = radars
+        return radar, rain_t
+
+    def setUp(self):
+        tmp = DWDRadar()
+        tmp._radars = {datetime(2024, 1, 1, tzinfo=UTC): bytes(1100 * 1200 * 2)}
+        self.bx, self.by = tmp._get_grid_index(52.52, 13.41)
+
+    def test_no_lookback_returns_none(self):
+        """When rain starts at the first frame there is no look-back data."""
+        rain_frame = _make_radar_frame(self.bx, self.by, 100)
+        radar = DWDRadar()
+        base = datetime(2024, 4, 1, 12, 0, tzinfo=UTC)
+        radar._radars = {base: rain_frame}
+        deg, label = radar._determine_rain_direction(self.bx, self.by, base)
+        self.assertIsNone(deg)
+        self.assertIsNone(label)
+
+    def test_direction_north(self):
+        """Rain pixels north of the location → direction should be N."""
+        # North: dx=0, dy=-1
+        dx, dy = 0, -1
+        pre_frame = _make_radar_frame_direction(
+            self.bx, self.by, dx, dy, _DIRECTION_SCAN_RADIUS, 100
+        )
+        rain_frame = _make_radar_frame(self.bx, self.by, 100)
+        radar, rain_t = self._make_radar([pre_frame], rain_frame, self.bx, self.by)
+        deg, label = radar._determine_rain_direction(self.bx, self.by, rain_t)
+        self.assertEqual(label, "N")
+        self.assertAlmostEqual(deg, _DIRECTION_DEGREES["N"])
+
+    def test_direction_southwest(self):
+        """Rain pixels southwest → direction should be SW."""
+        dx, dy = -1, 1
+        pre_frame = _make_radar_frame_direction(
+            self.bx, self.by, dx, dy, _DIRECTION_SCAN_RADIUS, 100
+        )
+        rain_frame = _make_radar_frame(self.bx, self.by, 100)
+        radar, rain_t = self._make_radar([pre_frame], rain_frame, self.bx, self.by)
+        deg, label = radar._determine_rain_direction(self.bx, self.by, rain_t)
+        self.assertEqual(label, "SW")
+        self.assertAlmostEqual(deg, _DIRECTION_DEGREES["SW"])
+
+    def test_get_next_precipitation_includes_direction_keys(self):
+        """get_next_precipitation result must always contain direction keys."""
+        # Build a radar with no rain at all
+        radar = DWDRadar()
+        base = datetime(2024, 4, 1, 12, 0, tzinfo=UTC)
+        radar._radars = {
+            base: _make_radar_frame(self.bx, self.by, 0),
+            base + timedelta(minutes=5): _make_radar_frame(self.bx, self.by, 0),
+        }
+        result = radar.get_next_precipitation(52.52, 13.41)
+        self.assertIn("direction_deg", result)
+        self.assertIn("direction", result)
+        self.assertIsNone(result["direction_deg"])
+        self.assertIsNone(result["direction"])
+
+    def test_get_next_precipitation_direction_when_rain_from_east(self):
+        """Direction is detected correctly in the full get_next_precipitation flow."""
+        dx, dy = 1, 0  # East
+        pre_frame = _make_radar_frame_direction(
+            self.bx, self.by, dx, dy, _DIRECTION_SCAN_RADIUS, 100
+        )
+        rain_frame = _make_radar_frame(self.bx, self.by, 100)
+        radar, _ = self._make_radar([pre_frame], rain_frame, self.bx, self.by)
+        result = radar.get_next_precipitation(52.52, 13.41)
+        self.assertEqual(result["direction"], "E")
+        self.assertAlmostEqual(result["direction_deg"], 90.0)
+
+    def test_scan_directions_all_zero(self):
+        """_scan_directions returns 0 for all directions on an empty frame."""
+        empty_frame = bytes(1100 * 1200 * 2)
+        radar = DWDRadar()
+        radar._radars = {datetime(2024, 1, 1, tzinfo=UTC): empty_frame}
+        scan = radar._scan_directions(self.bx, self.by, empty_frame, 5)
+        for label, *_ in _DIRECTIONS:
+            self.assertEqual(scan[label], 0.0)
+
+    def test_get_grid_value_out_of_bounds(self):
+        """_get_grid_value returns 0 for coordinates outside the grid."""
+        radar = DWDRadar()
+        frame = bytes(1100 * 1200 * 2)
+        self.assertEqual(radar._get_grid_value(-1, 0, frame), 0.0)
+        self.assertEqual(radar._get_grid_value(0, -1, frame), 0.0)
+        self.assertEqual(radar._get_grid_value(1100, 0, frame), 0.0)
+        self.assertEqual(radar._get_grid_value(0, 1200, frame), 0.0)
+
+    def test_get_radar_next_precipitation_includes_direction_keys(self):
+        """dwdforecast.get_radar_next_precipitation exposes direction keys."""
+        dwd_weather = dwdforecast.Weather("L821")
+        tmp = DWDRadar()
+        tmp._radars = {datetime(2024, 1, 1, tzinfo=UTC): bytes(1100 * 1200 * 2)}
+        bx, by = tmp._get_grid_index(
+            float(dwd_weather.station["lat"]),
+            float(dwd_weather.station["lon"]),
+        )
+        base = datetime(2024, 4, 1, 12, 0, tzinfo=UTC)
+        dwd_weather._radar._radars = {
+            base: _make_radar_frame(bx, by, 0),
+        }
+        result = dwd_weather.get_radar_next_precipitation(shouldUpdate=False)
+        self.assertIn("direction_deg", result)
+        self.assertIn("direction", result)

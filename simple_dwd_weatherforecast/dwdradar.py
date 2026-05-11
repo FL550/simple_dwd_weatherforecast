@@ -24,6 +24,36 @@ RADAR_URL = (
 _XSIZE = 1100
 _YSIZE = 1200
 
+# Compass directions (name, dx, dy) – dx positive = East, dy positive = South
+# The grid's y-axis increases southward, so "north" means negative dy.
+_DIRECTIONS = [
+    ("N", 0, -1),
+    ("NE", 1, -1),
+    ("E", 1, 0),
+    ("SE", 1, 1),
+    ("S", 0, 1),
+    ("SW", -1, 1),
+    ("W", -1, 0),
+    ("NW", -1, -1),
+]
+
+# Meteorological bearing (degrees from north, clockwise) for each compass label.
+_DIRECTION_DEGREES: dict[str, float] = {
+    "N": 0.0,
+    "NE": 45.0,
+    "E": 90.0,
+    "SE": 135.0,
+    "S": 180.0,
+    "SW": 225.0,
+    "W": 270.0,
+    "NW": 315.0,
+}
+
+# How many 5-minute look-back frames to examine when determining direction.
+_DIRECTION_LOOKBACK_STEPS = 3
+# Radius in grid cells (≈ km) to scan in each compass direction.
+_DIRECTION_SCAN_RADIUS = 20
+
 
 class NotInAreaError(Exception):
     """Raised when a location is outside the DWD radar coverage area (Germany)."""
@@ -172,6 +202,95 @@ class DWDRadar:
             return 0.0
         return float(raw & 0b0000111111111111) / 100 * 12
 
+    def _get_grid_value(self, x: int, y: int, content: bytes) -> float:
+        """
+        Read a decoded precipitation value from a radar frame at grid position (x, y).
+
+        Args:
+            x: Grid x-index (0 … _XSIZE-1).
+            y: Grid y-index (0 … _YSIZE-1).
+            content: Raw binary radar frame.
+
+        Returns:
+            Precipitation intensity in mm/h, or 0.0 if the position is out of bounds.
+
+        """
+        if not (0 <= x < _XSIZE) or not (0 <= y < _YSIZE):
+            return 0.0
+        idx = y * _XSIZE + x
+        (raw,) = struct.unpack_from("<H", content, idx * 2)
+        return self._decode_value(raw)
+
+    def _scan_directions(
+        self, x_cart: int, y_cart: int, content: bytes, radius: int
+    ) -> dict[str, float]:
+        """
+        Scan precipitation in 8 compass directions around a grid point.
+
+        For each direction a line of *radius* pixels is sampled and the
+        average intensity is returned.
+
+        Args:
+            x_cart: Grid x-index of the location.
+            y_cart: Grid y-index of the location.
+            content: Raw binary radar frame.
+            radius: Number of pixels to scan in each direction.
+
+        Returns:
+            Dictionary mapping compass label (e.g. ``"N"``) to average
+            precipitation intensity in mm/h along that direction.
+
+        """
+        result: dict[str, float] = {}
+        for label, dx, dy in _DIRECTIONS:
+            total = 0.0
+            for step in range(1, radius + 1):
+                total += self._get_grid_value(
+                    x_cart + dx * step, y_cart + dy * step, content
+                )
+            result[label] = total / radius
+        return result
+
+    def _determine_rain_direction(
+        self, x_cart: int, y_cart: int, rain_start: datetime
+    ) -> tuple[float, str] | tuple[None, None]:
+        """
+        Estimate the compass direction from which precipitation is approaching.
+
+        Analyses the radar frames *before* ``rain_start`` and identifies
+        the direction that shows the highest average precipitation signal
+        (i.e. the region the rain cell is coming from).
+
+        Args:
+            x_cart: Grid x-index of the location.
+            y_cart: Grid y-index of the location.
+            rain_start: UTC datetime when precipitation was detected at the
+                location.
+
+        Returns:
+            A ``(degrees, label)`` tuple where *degrees* is the meteorological
+            bearing (0 = N, 90 = E, …) and *label* is the compass string
+            (``"N"``, ``"NE"``, …).  Returns ``(None, None)`` when there are
+            no look-back frames available.
+
+        """
+        assert self._radars is not None  # guaranteed by callers
+        sorted_times = sorted(self._radars)
+        pre_start = [t for t in sorted_times if t < rain_start]
+        if not pre_start:
+            return None, None
+        frames = pre_start[-_DIRECTION_LOOKBACK_STEPS:]
+        # Accumulate directional precipitation across look-back frames.
+        totals: dict[str, float] = {label: 0.0 for label, *_ in _DIRECTIONS}
+        for t in frames:
+            scan = self._scan_directions(
+                x_cart, y_cart, self._radars[t], _DIRECTION_SCAN_RADIUS
+            )
+            for label, value in scan.items():
+                totals[label] += value
+        best_label = max(totals, key=lambda k: totals[k])
+        return _DIRECTION_DEGREES[best_label], best_label
+
     def get_precipitation_values(self, lat: float, lon: float) -> dict[datetime, float]:
         """
         Get precipitation values for a location at all available time steps.
@@ -229,12 +348,12 @@ class DWDRadar:
 
     def get_next_precipitation(
         self, lat: float, lon: float
-    ) -> dict[str, datetime | timedelta | float | None]:
+    ) -> dict[str, datetime | timedelta | float | str | None]:
         """
         Get details about the next precipitation event.
 
         Scans the forecast time steps and identifies the first rain event
-        (start, end, duration, intensity).
+        (start, end, duration, intensity, direction).
 
         Args:
             lat: Latitude in decimal degrees.
@@ -250,6 +369,12 @@ class DWDRadar:
             - ``length``: timedelta of the precipitation duration, or ``None``.
             - ``max``: Maximum precipitation intensity in mm/h.
             - ``sum``: Total precipitation amount in mm.
+            - ``direction_deg``: Meteorological bearing (float, 0 = N clockwise)
+              of the direction from which the rain is approaching, or ``None``
+              if it cannot be determined (no look-back frames available or no
+              rain forecast).
+            - ``direction``: Compass label (e.g. ``"NW"``) corresponding to
+              ``direction_deg``, or ``None``.
 
         Raises:
             NotInAreaError: If the location is outside the radar coverage area.
@@ -260,6 +385,8 @@ class DWDRadar:
         rain_end: datetime | None = None
         rain_max = 0.0
         rain_sum = 0.0
+
+        x_cart, y_cart = self._get_grid_index(lat, lon)
 
         for rain_time, precipitation in self.get_precipitation_values(lat, lon).items():
             if rain_start is None and precipitation > 0:
@@ -286,10 +413,19 @@ class DWDRadar:
             # Each sample covers 5 minutes (1/12 of an hour); convert sum to mm
             rain_sum = rain_sum / 12
 
+        direction_deg: float | None = None
+        direction: str | None = None
+        if rain_start is not None:
+            direction_deg, direction = self._determine_rain_direction(
+                x_cart, y_cart, rain_start
+            )
+
         return {
             "start": rain_start,
             "end": rain_end,
             "length": rain_length,
             "max": rain_max,
             "sum": rain_sum,
+            "direction_deg": direction_deg,
+            "direction": direction,
         }
