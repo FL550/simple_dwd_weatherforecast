@@ -39,6 +39,7 @@ tests/test_is_in_timerange.py
 tests/test_is_valid_timeframe.py
 tests/test_location_tools.py
 tests/test_map.py
+tests/test_optional_capabilities.py
 tests/test_parsekml.py
 tests/test_radar.py
 tests/test_region.py

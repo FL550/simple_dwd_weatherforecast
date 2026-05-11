@@ -1,9 +1,9 @@
-lxml
-requests
 Pillow
 arrow
-stream-unzip==0.0.101
 httpx
+lxml
+requests
+stream-unzip==0.0.101
 
 [apparent-temperature]
 eccodes
