@@ -206,7 +206,6 @@ class Weather:
         "86": ("snowy-rainy", 6),
         "95": ("lightning-rainy", 1),
         "-": ("unknown", 99),
-        "-": ("unknown", 99),
     }
 
     actual_report_codes = {
