@@ -48,10 +48,6 @@ class AirQuality:
         self.data = {}
 
         if station is None:
-            raise ValueError(
-                "Station metadata must be preloaded. Use AirQuality.create() instead."
-            )
-        if station is None:
             raise ValueError(f"Station ID {station_id} not found.")
         self.station_name = station["name"]
         self.lat = station["lat"]
