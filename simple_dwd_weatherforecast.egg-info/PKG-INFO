@@ -1,5 +1,5 @@
-Metadata-Version: 2.4
-Name: simple_dwd_weatherforecast
+Metadata-Version: 2.1
+Name: simple-dwd-weatherforecast
 Version: 0.0.0.dev0
 Summary: A simple tool to retrieve a weather forecast from DWD OpenData
 Home-page: https://github.com/FL550/simple_dwd_weatherforecast.git
@@ -9,25 +9,8 @@ Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
 Requires-Python: >=3.6
 Description-Content-Type: text/markdown
-License-File: LICENCE
-Requires-Dist: lxml
-Requires-Dist: requests
-Requires-Dist: Pillow
-Requires-Dist: arrow
-Requires-Dist: stream-unzip==0.0.101
-Requires-Dist: httpx
 Provides-Extra: apparent-temperature
-Requires-Dist: eccodes; extra == "apparent-temperature"
-Dynamic: author
-Dynamic: classifier
-Dynamic: description
-Dynamic: description-content-type
-Dynamic: home-page
-Dynamic: license-file
-Dynamic: provides-extra
-Dynamic: requires-dist
-Dynamic: requires-python
-Dynamic: summary
+License-File: LICENCE
 
 # Simple DWD weather forecast
 
@@ -182,6 +165,10 @@ class Weather:
 
     get_uv_index(int day_from_today (values: 0-2)) # Returns the UV index for the nearest station available for today, tomorrow or the day after tomorrow
 
+    supports_apparent_temperature() # Returns True if GRIB/eccodes backend is available
+
+    get_apparent_temperature_unavailable_reason() # Returns None when available, otherwise a human-readable reason
+
     get_apparent_temperature(optional bool shouldUpdate) # Returns current apparent/perceived temperature (gefuehlte Temperatur) in °C
 
     get_apparent_temperature_forecast(optional bool shouldUpdate) # Returns hourly apparent/perceived temperature forecast as dict[{timestamp_utc: value_celsius}] starting from current UTC hour
@@ -197,6 +184,24 @@ class Weather:
 
     # Override coordinates to any German location
     get_radar_precipitation_forecast(lat=52.52, lon=13.41)
+```
+
+#### Home Assistant style capability check
+
+Use the capability helpers to expose apparent temperature only when the optional
+GRIB backend is available on the target platform.
+
+```python
+from simple_dwd_weatherforecast import dwdforecast
+
+weather = dwdforecast.Weather("10385")
+
+if weather.supports_apparent_temperature():
+    value = weather.get_apparent_temperature()
+    # publish apparent temperature sensor state
+else:
+    reason = weather.get_apparent_temperature_unavailable_reason()
+    # skip creating the sensor or mark it unavailable with `reason`
 ```
 
 #### Advanced Usage
@@ -318,9 +323,13 @@ You can download airquality measurements and forecasts with this package. You ca
 
 #### Usage example
 ```python
+import asyncio
+
 from simple_dwd_weatherforecast.dwdairquality import AirQuality
 
-station = AirQuality.get_station_from_location(53.092022, 8.127382, "hourly")
+station = asyncio.run(
+    AirQuality.get_station_from_location(53.092022, 8.127382, "hourly")
+)
 
 station.update()
 
