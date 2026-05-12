@@ -14,7 +14,6 @@ import httpx
 from stream_unzip import stream_unzip
 
 import arrow
-import requests
 from lxml import etree
 
 try:
@@ -205,7 +204,6 @@ class Weather:
         "85": ("snowy-rainy", 7),
         "86": ("snowy-rainy", 6),
         "95": ("lightning-rainy", 1),
-        "-": ("unknown", 99),
         "-": ("unknown", 99),
     }
 
@@ -1131,7 +1129,7 @@ class Weather:
         }
         headers["If-None-Match"] = self.etags[url] if url in self.etags else ""  # type: ignore
         try:
-            request = requests.get(url, headers=headers, timeout=30)
+            request = httpx.get(url, headers=headers, timeout=30)
             # If resource has not been modified, return
             if request.status_code == 304:
                 return
@@ -1163,7 +1161,7 @@ class Weather:
         base_url = "https://opendata.dwd.de/climate_environment/health/forecasts/"
         try:
             # Fetch directory listing to find the latest apparent temperature file
-            response = requests.get(base_url, timeout=30)
+            response = httpx.get(base_url, timeout=30)
             if response.status_code != 200:
                 raise Exception(
                     f"Unexpected status code {response.status_code} for directory listing"
@@ -1183,8 +1181,8 @@ class Weather:
             headers = {
                 "If-None-Match": self.etags.get(file_url, "")  # type: ignore
             }
-            with requests.get(
-                file_url, headers=headers, stream=True, timeout=60
+            with httpx.stream(
+                "GET", file_url, headers=headers, timeout=60
             ) as file_response:
                 if file_response.status_code == 304:
                     return
@@ -1196,7 +1194,7 @@ class Weather:
                     self.etags[file_url] = file_response.headers["ETag"]  # type: ignore
 
                 self.apparent_temperature_data = self._parse_apparent_temperature_grib(
-                    file_response.iter_content(chunk_size=1048576)
+                    file_response.iter_bytes(chunk_size=1048576)
                 )
         except Exception as error:
             print(
@@ -1299,7 +1297,7 @@ class Weather:
         }
         headers["If-None-Match"] = self.etags[url] if url in self.etags else ""  # type: ignore
         try:
-            request = requests.get(url, headers=headers, timeout=30)
+            request = httpx.get(url, headers=headers, timeout=30)
             # If resource has not been modified, return
             if request.status_code == 304:
                 return
@@ -1316,7 +1314,7 @@ class Weather:
         url = f"https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_L/single_stations/{stationid}/kml/MOSMIX_L_LATEST_{stationid}.kmz"
         headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}  # type: ignore
         try:
-            request = requests.get(url, headers=headers, timeout=30)
+            request = httpx.get(url, headers=headers, timeout=30)
             # If resource has not been modified, return
             if request.status_code == 304:
                 return
@@ -1410,7 +1408,7 @@ class Weather:
         )
         headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}  # type: ignore
         try:
-            response = requests.get(url, headers=headers, timeout=30)
+            response = httpx.get(url, headers=headers, timeout=30)
             if response.status_code == 200:
                 content = response.content
                 reader = csv.DictReader(
