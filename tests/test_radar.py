@@ -18,13 +18,28 @@ from simple_dwd_weatherforecast.dwdradar import (
 
 
 def _make_radar_frame(x_cart: int, y_cart: int, value_raw: int) -> bytes:
-    """Build a minimal binary radar frame with a single non-zero value."""
+    """Build a radar frame with a compact 2x2 wet patch around a grid cell."""
+    return _make_radar_frame_points(
+        [
+            (x_cart, y_cart),
+            (x_cart + 1, y_cart),
+            (x_cart, y_cart + 1),
+            (x_cart + 1, y_cart + 1),
+        ],
+        value_raw,
+    )
+
+
+def _make_radar_frame_points(points: list[tuple[int, int]], value_raw: int) -> bytes:
+    """Build a binary radar frame with rain values at specific coordinates."""
     xsize = 1100
     ysize = 1200
     num_values = xsize * ysize
     data = bytearray(num_values * 2)
-    idx = (y_cart * xsize + x_cart) * 2
-    struct.pack_into("<H", data, idx, value_raw)
+    for x_cart, y_cart in points:
+        if 0 <= x_cart < xsize and 0 <= y_cart < ysize:
+            idx = (y_cart * xsize + x_cart) * 2
+            struct.pack_into("<H", data, idx, value_raw)
     return bytes(data)
 
 
@@ -152,6 +167,15 @@ class TestDWDRadarGetPrecipitationValues(unittest.TestCase):
     def test_out_of_area_raises(self):
         with self.assertRaises(NotInAreaError):
             self.radar.get_precipitation_values(40.71, -74.01)
+
+    def test_single_pixel_noise_is_filtered(self):
+        radar = DWDRadar()
+        t1 = datetime(2024, 4, 1, 12, 0, tzinfo=UTC)
+        radar._radars = {
+            t1: _make_radar_frame_points([(self.berlin_x, self.berlin_y)], 100)
+        }
+        values = radar.get_precipitation_values(52.52, 13.41)
+        self.assertAlmostEqual(values[t1], 0.0)
 
 
 class TestDWDRadarGetCurrentPrecipitation(unittest.TestCase):

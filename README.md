@@ -172,6 +172,9 @@ class Weather:
     get_radar_precipitation_forecast(lat=52.52, lon=13.41)
 ```
 
+Radar precipitation values include a built-in local noise suppression that filters
+small isolated echoes.
+
 #### Home Assistant style capability check
 
 Use the capability helpers to expose apparent temperature only when the optional

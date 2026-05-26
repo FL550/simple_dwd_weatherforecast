@@ -53,6 +53,10 @@ _DIRECTION_DEGREES: dict[str, float] = {
 _DIRECTION_LOOKBACK_STEPS = 3
 # Radius in grid cells (≈ km) to scan in each compass direction.
 _DIRECTION_SCAN_RADIUS = 20
+# Local noise filter defaults for isolated false echoes.
+_NOISE_WINDOW_RADIUS = 3
+_NOISE_MIN_CONNECTED_PIXELS = 4
+_NOISE_INTENSITY_THRESHOLD = 0.12
 
 
 class NotInAreaError(Exception):
@@ -221,6 +225,49 @@ class DWDRadar:
         (raw,) = struct.unpack_from("<H", content, idx * 2)
         return self._decode_value(raw)
 
+    def _is_valid_precipitation_pixel(self, x: int, y: int, content: bytes) -> bool:
+        """Return whether a pixel belongs to a sufficiently large local wet area."""
+        if self._get_grid_value(x, y, content) < _NOISE_INTENSITY_THRESHOLD:
+            return False
+
+        min_x = max(0, x - _NOISE_WINDOW_RADIUS)
+        max_x = min(_XSIZE - 1, x + _NOISE_WINDOW_RADIUS)
+        min_y = max(0, y - _NOISE_WINDOW_RADIUS)
+        max_y = min(_YSIZE - 1, y + _NOISE_WINDOW_RADIUS)
+
+        visited: set[tuple[int, int]] = set()
+        stack = [(x, y)]
+        connected = 0
+
+        while stack:
+            cx, cy = stack.pop()
+            if (cx, cy) in visited:
+                continue
+            visited.add((cx, cy))
+            if self._get_grid_value(cx, cy, content) < _NOISE_INTENSITY_THRESHOLD:
+                continue
+            connected += 1
+            if connected >= _NOISE_MIN_CONNECTED_PIXELS:
+                return True
+
+            for nx in range(max(min_x, cx - 1), min(max_x, cx + 1) + 1):
+                for ny in range(max(min_y, cy - 1), min(max_y, cy + 1) + 1):
+                    if nx == cx and ny == cy:
+                        continue
+                    if (nx, ny) not in visited:
+                        stack.append((nx, ny))
+
+        return False
+
+    def _get_filtered_grid_value(self, x: int, y: int, content: bytes) -> float:
+        """Return filtered precipitation value (suppresses isolated local echoes)."""
+        value = self._get_grid_value(x, y, content)
+        if value < _NOISE_INTENSITY_THRESHOLD:
+            return 0.0
+        if not self._is_valid_precipitation_pixel(x, y, content):
+            return 0.0
+        return value
+
     def _scan_directions(
         self, x_cart: int, y_cart: int, content: bytes, radius: int
     ) -> dict[str, float]:
@@ -245,7 +292,7 @@ class DWDRadar:
         for label, dx, dy in _DIRECTIONS:
             total = 0.0
             for step in range(1, radius + 1):
-                total += self._get_grid_value(
+                total += self._get_filtered_grid_value(
                     x_cart + dx * step, y_cart + dy * step, content
                 )
             result[label] = total / radius
@@ -313,9 +360,7 @@ class DWDRadar:
         x_cart, y_cart = self._get_grid_index(lat, lon)
         values: dict[datetime, float] = {}
         for radar_time, content in self._radars.items():
-            idx = y_cart * _XSIZE + x_cart
-            (raw,) = struct.unpack_from("<H", content, idx * 2)
-            values[radar_time] = self._decode_value(raw)
+            values[radar_time] = self._get_filtered_grid_value(x_cart, y_cart, content)
         return dict(sorted(values.items()))
 
     def get_current_precipitation(
