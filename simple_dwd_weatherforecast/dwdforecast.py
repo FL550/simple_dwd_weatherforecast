@@ -251,8 +251,8 @@ class Weather:
         "ST": "dwlh",  # Sachsen-Anhalt
         "TH": "dwli",  # Thueringen
         "BY": "dwmg",  # Bayern
-        "BYN": "dwmo", # Nordbayern
-        "BYS": "dwmp", # Südbayern
+        "BYN": "dwmo",  # Nordbayern
+        "BYS": "dwmp",  # Südbayern
         "BW": "dwsg",  # Baden-Württemberg
         "HE": "dweg",  # Hessen
         "RP": "dwei",  # Rheinland-Pfalz
