@@ -206,7 +206,7 @@ class WeatherDownload(unittest.TestCase):
         self.dwd_weather.update(with_report=True)
         self.assertIsNotNone(self.dwd_weather.weather_report)
 
-    @patch("simple_dwd_weatherforecast.dwdforecast.requests.get")
+    @patch("simple_dwd_weatherforecast.dwdforecast.httpx.get")
     def test_weather_report_utf8_umlauts(self, mock_get):
         class FakeResponse:
             status_code = 200
