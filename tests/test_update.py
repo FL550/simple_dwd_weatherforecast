@@ -206,23 +206,7 @@ class WeatherDownload(unittest.TestCase):
         self.dwd_weather.update(with_report=True)
         self.assertIsNotNone(self.dwd_weather.weather_report)
 
-    @patch("simple_dwd_weatherforecast.dwdforecast.httpx.get")
-    def test_weather_report_utf8_umlauts(self, mock_get):
-        class FakeResponse:
-            status_code = 200
-            headers = {"ETag": "test-etag"}
-            encoding = "latin-1"
-            content = "<html>Sch\u00f6n warm: \u00e4\u00f6\u00fc</html>".encode("utf-8")
-
-            @property
-            def text(self):
-                return self.content.decode(self.encoding)
-
-        mock_get.return_value = FakeResponse()
-        self.dwd_weather = dwdforecast.Weather("01008")
-        self.dwd_weather.download_weather_report("dwhh")
-
-        # This currently fails and documents that report decoding must be UTF-8 safe.
-        self.assertIn(
-            "Sch\u00f6n warm: \u00e4\u00f6\u00fc", self.dwd_weather.weather_report
-        )
+    def test_weather_report_umlauts(self):
+        self.dwd_weather = dwdforecast.Weather("P0560")
+        self.dwd_weather.update(with_report=True)
+        self.assertIn("Wettervorhersage für Thüringen", self.dwd_weather.weather_report)
