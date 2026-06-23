@@ -88,8 +88,20 @@ All methods return their values as string. The datetime value has to be in UTC. 
 There is also data available which is updated every hour by DWD. Be careful though, as this will download each time roughly 37MB of data. Furthermore, some elements are missing from this data:
 - PRECIPITATION_PROBABILITY
 - PRECIPITATION_DURATION
+- PRECIPITATION_MIN
+- PRECIPITATION_MAX
 
 You can use this data by using the optional parameter `force_hourly=True`.
+
+`PRECIPITATION_MIN` and `PRECIPITATION_MAX` are a likely range for the
+precipitation of one hour, comparable to met.no's
+`precipitation_amount_min`/`precipitation_amount_max`. DWD does not publish
+such a range. It is derived from the probabilities of more than 0.1 to 25 mm of
+precipitation per hour (`R101` to `RR1u1`) as their 10 % and 90 % quantiles.
+`PRECIPITATION_MIN` is `0.0` unless rain is near-certain. `PRECIPITATION_MAX`
+is `None` if the 90 % quantile lies above 25 mm, where DWD gives no further
+probabilities. Quantiles cannot be added up, so `get_timeframe_sum()` and
+`get_daily_sum()` do not give a meaningful range for them.
 
 ```python
 is_valid_station_id(station_id) #Checks if given station_id is valid
@@ -107,6 +119,8 @@ class WeatherDataType(Enum):
     WIND_DIRECTION = "DD" # Unit: Degrees
     WIND_GUSTS = "FX1" # Unit: m/s
     PRECIPITATION = "RR1c" # Unit: kg/m2
+    PRECIPITATION_MIN = "precipitation_min" # Unit: kg/m2, see above
+    PRECIPITATION_MAX = "precipitation_max" # Unit: kg/m2, see above
     PRECIPITATION_PROBABILITY = "wwP" # Unit: % (0..100)
     PRECIPITATION_DURATION = "DRR1" # Unit: s
     CLOUD_COVERAGE = "N" # Unit: % (0..100)
