@@ -136,6 +136,10 @@ class WeatherDataType(Enum):
     EVAPORATION = ("PEvap", "evaporation")  # Unit: kg/m2
 
 
+class ForecastDownloadError(RuntimeError):
+    """Raised when downloading forecast data from DWD fails."""
+
+
 class Weather:
     """A class for interacting with weather data from dwd.de."""
 
@@ -1322,9 +1326,14 @@ class Weather:
             with ZipFile(BytesIO(request.content), "r") as kmz:
                 with kmz.open(kmz.namelist()[0], "r") as kml:
                     return kml.read()
-
-        except Exception as error:
-            print(f"Error in download_latest_kml: {type(error)} args: {error.args}")
+        except httpx.TimeoutException as error:
+            raise ForecastDownloadError(
+                f"Timed out while downloading forecast data for station {stationid}."
+            ) from error
+        except httpx.HTTPError as error:
+            raise ForecastDownloadError(
+                f"Failed to download forecast data for station {stationid}."
+            ) from error
 
     def get_chunks(self, url):
         # Iterable that yields the bytes of a zip file
@@ -1340,55 +1349,78 @@ class Weather:
         url = "https://opendata.dwd.de/weather/local_forecasts/mos/MOSMIX_S/all_stations/kml/MOSMIX_S_LATEST_240.kmz"
         # Check if content has updated
         headers = {"If-None-Match": self.etags[url] if url in self.etags else ""}  # type: ignore
-        r = httpx.head(
-            url,
-            headers=headers,
-        )
+        try:
+            r = httpx.head(
+                url,
+                headers=headers,
+                timeout=30,
+            )
+        except httpx.TimeoutException as error:
+            raise ForecastDownloadError(
+                "Timed out while checking hourly forecast data from DWD."
+            ) from error
+        except httpx.HTTPError as error:
+            raise ForecastDownloadError(
+                "Failed to check hourly forecast data from DWD."
+            ) from error
+
         if r.status_code == 304:
             return
+        try:
+            for file_name, file_size, unzipped_chunks in stream_unzip(
+                self.get_chunks(url)
+            ):
+                header = b""
+                placemark = b""
 
-        for file_name, file_size, unzipped_chunks in stream_unzip(self.get_chunks(url)):
-            header = b""
-            placemark = b""
+                found_header = False
+                found_stationid = False
+                stop = False
+                # unzipped_chunks must be iterated to completion or UnfinishedIterationError will be raised
+                for chunk in unzipped_chunks:
+                    if stop:
+                        continue
 
-            found_header = False
-            found_stationid = False
-            stop = False
-            # unzipped_chunks must be iterated to completion or UnfinishedIterationError will be raised
-            for chunk in unzipped_chunks:
-                if stop:
-                    continue
+                    if not found_header:
+                        header += chunk
+                        if "<kml:Placemark>".encode() in chunk:
+                            found_header = True
 
-                if not found_header:
-                    header += chunk
-                    if "<kml:Placemark>".encode() in chunk:
-                        found_header = True
+                    if found_stationid:
+                        placemark += chunk
+                        if "</kml:Placemark>\n".encode() in chunk:
+                            stop = True
 
-                if found_stationid:
-                    placemark += chunk
-                    if "</kml:Placemark>\n".encode() in chunk:
-                        stop = True
+                    if f"<kml:name>{stationid}</kml:name>".encode() in chunk:
+                        placemark = chunk
+                        found_stationid = True
 
-                if f"<kml:name>{stationid}</kml:name>".encode() in chunk:
-                    placemark = chunk
-                    found_stationid = True
-
-            if not placemark:
-                raise BufferError("Station not found")
-            if header and placemark:
-                start = placemark.find(b"<kml:Placemark>\n")
-                if start == -1:
-                    raise BufferError(
-                        "Error during stream parsing of station {}".format(stationid)
+                if not placemark:
+                    raise BufferError("Station not found")
+                if header and placemark:
+                    start = placemark.find(b"<kml:Placemark>\n")
+                    if start == -1:
+                        raise BufferError(
+                            "Error during stream parsing of station {}".format(
+                                stationid
+                            )
+                        )
+                    result = (
+                        header[: header.find(b"<kml:Placemark>")]
+                        + placemark[
+                            start : placemark.find(b"</kml:Placemark>\n", start) + 17
+                        ]
+                        + b"</kml:Document></kml:kml>"
                     )
-                result = (
-                    header[: header.find(b"<kml:Placemark>")]
-                    + placemark[
-                        start : placemark.find(b"</kml:Placemark>\n", start) + 17
-                    ]
-                    + b"</kml:Document></kml:kml>"
-                )
-                return result
+                    return result
+        except httpx.TimeoutException as error:
+            raise ForecastDownloadError(
+                f"Timed out while downloading hourly forecast data for station {stationid}."
+            ) from error
+        except httpx.HTTPError as error:
+            raise ForecastDownloadError(
+                f"Failed to download hourly forecast data for station {stationid}."
+            ) from error
 
     def download_latest_kml(self, stationid, force_hourly=False):
         kml = (
