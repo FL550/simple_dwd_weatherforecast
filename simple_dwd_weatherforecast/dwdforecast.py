@@ -125,6 +125,8 @@ class WeatherDataType(Enum):
     )  # Unit: Degrees
     WIND_GUSTS = ("FX1", "maximum_wind_speed_last_hour")  # Unit: m/s
     PRECIPITATION = ("RR1c", "precipitation_amount_last_hour")  # Unit: kg/m^2
+    PRECIPITATION_MIN = ("RR1u1", "")  # Unit: kg/m^2 - lower bound 1h precipitation
+    PRECIPITATION_MAX = ("RR1o1", "")  # Unit: kg/m^2 - upper bound 1h precipitation
     PRECIPITATION_PROBABILITY = ("wwP", "")  # Unit: % (0..100)
     PRECIPITATION_DURATION = ("DRR1", "")  # Unit: s
     CLOUD_COVERAGE = ("N", "cloud_cover_total")  # Unit: % (0..100)
@@ -949,6 +951,8 @@ class Weather:
                 WeatherDataType.WIND_SPEED,
                 WeatherDataType.WIND_GUSTS,
                 WeatherDataType.PRECIPITATION,
+                WeatherDataType.PRECIPITATION_MIN,
+                WeatherDataType.PRECIPITATION_MAX,
                 WeatherDataType.PRECIPITATION_PROBABILITY,
                 WeatherDataType.PRECIPITATION_DURATION,
                 WeatherDataType.CLOUD_COVERAGE,
