@@ -896,7 +896,6 @@ class Weather:
 
         if with_forecast and (
             (self.issue_time is None)
-            or (datetime.now(timezone.utc) - self.issue_time >= timedelta(hours=6))
             or force_hourly
         ):
             self.download_latest_kml(self.station_id, force_hourly)

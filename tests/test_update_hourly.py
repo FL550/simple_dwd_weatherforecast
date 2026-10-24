@@ -3,7 +3,6 @@ from unittest.mock import patch
 from simple_dwd_weatherforecast import dwdforecast
 from dummy_data import parsed_data
 from datetime import datetime, timezone
-import time
 
 
 class WeatherUpdate(unittest.TestCase):
@@ -29,14 +28,10 @@ class WeatherUpdate(unittest.TestCase):
         "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_kml",
         return_value=None,
     )
-    def test_issue_time_old(self, mock_function):
-        self.dwd_weather.issue_time = datetime(
-            *(time.strptime("2020-11-06T03:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ")[0:6]),
-            0,
-            timezone.utc
-        )
+    def test_issue_time_stale_does_not_trigger_download(self, mock_function):
+        self.dwd_weather.issue_time = datetime(2020, 11, 6, 3, tzinfo=timezone.utc)
         self.dwd_weather.update()
-        mock_function.assert_called()
+        mock_function.assert_not_called()
 
     @patch(
         "simple_dwd_weatherforecast.dwdforecast.Weather.download_latest_kml",
