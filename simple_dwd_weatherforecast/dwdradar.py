@@ -10,16 +10,20 @@ Data source: DWD OpenData (https://opendata.dwd.de)
 from __future__ import annotations
 
 import math
+import re
 import struct
 import tarfile
 from datetime import UTC, datetime, timedelta
 from io import BytesIO
 
+import h5py
+import numpy as np
 import requests
 
-RADAR_URL = (
-    "https://opendata.dwd.de/weather/radar/composite/rv/DE1200_RV_LATEST.tar.bz2"
-)
+RADAR_URL = "https://opendata.dwd.de/weather/radar/composite/rv/composite_rv_LATEST.tar"
+
+# Member names look like ``composite_rv_20261020_0755_005-hd5``
+_MEMBER_PATTERN = re.compile(r"composite_rv_(\d{8}_\d{4})_(\d{3})-hd5$")
 
 _XSIZE = 1100
 _YSIZE = 1200
@@ -97,7 +101,7 @@ class DWDRadar:
     """
     Short-term precipitation forecasts from the DWD rain radar composite.
 
-    Downloads and parses the DE1200_RV radar composite, which provides
+    Downloads and parses the ODIM-HDF5 composite_rv radar composite, which provides
     precipitation intensities (mm/h) for the next ~2 hours in 5-minute steps
     on a 1 km grid covering Germany.
 
@@ -129,27 +133,59 @@ class DWDRadar:
             if response.status_code == 304:
                 return
             response.raise_for_status()
-            with tarfile.open(fileobj=BytesIO(response.content), mode="r:bz2") as tar:
+            with tarfile.open(fileobj=BytesIO(response.content), mode="r:*") as tar:
                 radars: dict[datetime, bytes] = {}
                 for member in tar.getmembers():
+                    match = _MEMBER_PATTERN.search(member.name)
+                    if match is None:
+                        continue
                     try:
-                        radar_minute_delta = int(member.name[-3:])
                         radar_time = datetime.strptime(
-                            member.name[-14:-4], "%y%m%d%H%M"
-                        ).replace(tzinfo=UTC) + timedelta(minutes=radar_minute_delta)
+                            match.group(1), "%Y%m%d_%H%M"
+                        ).replace(tzinfo=UTC) + timedelta(minutes=int(match.group(2)))
                         f = tar.extractfile(member)
                         if f is None:
                             continue
-                        raw = f.read()
-                        # Binary data follows the first ETX (\x03) separator
-                        content = raw.split(b"\x03", 1)[1]
-                        radars[radar_time] = content
-                    except (ValueError, IndexError):
+                        radars[radar_time] = self._parse_odim(f.read())
+                    except (ValueError, KeyError, OSError):
                         continue
                 self._radars = radars
                 self._etag = response.headers.get("ETag")
         except Exception as error:  # noqa: BLE001
             print(f"Error in DWDRadar.update: {type(error)} args: {error.args}")  # noqa: T201
+
+    @staticmethod
+    def _parse_odim(data: bytes) -> bytes:
+        """
+        Convert an ODIM-HDF5 radar frame to the internal uint16 grid format.
+
+        The physical rain rate (mm/h) is re-encoded as ``round(value / 0.12)``
+        (little endian uint16); nodata pixels get bit 13 set.
+
+        Raises:
+            ValueError: If the grid has an unexpected shape.
+
+        """
+        with h5py.File(BytesIO(data), "r") as h5:
+            dataset = h5["dataset1/data1"]
+            raw = dataset["data"][()]
+            what = dataset["what"].attrs
+            gain = float(what.get("gain", 1.0))
+            offset = float(what.get("offset", 0.0))
+            nodata = what.get("nodata")
+            undetect = what.get("undetect")
+        if raw.shape != (_YSIZE, _XSIZE):
+            raise ValueError("Unexpected radar grid shape")
+        invalid = np.zeros(raw.shape, dtype=bool)
+        if nodata is not None:
+            invalid |= raw == nodata
+        phys = raw.astype(np.float64) * gain + offset
+        if undetect is not None:
+            phys[raw == undetect] = 0.0
+        phys = np.nan_to_num(phys, nan=0.0)
+        encoded = np.clip(np.rint(np.maximum(phys, 0.0) / 0.12), 0, 4095).astype("<u2")
+        encoded[invalid] = 0b0010000000000000
+        return encoded.tobytes()
 
     def _get_grid_index(self, lat: float, lon: float) -> tuple[int, int]:
         """

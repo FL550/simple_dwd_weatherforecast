@@ -24,6 +24,8 @@ setuptools.setup(
     python_requires=">=3.6",
     install_requires=[
         "lxml",
+        "h5py",
+        "numpy",
         "requests",
         "Pillow",
         "arrow",

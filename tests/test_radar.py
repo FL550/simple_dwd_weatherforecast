@@ -59,12 +59,28 @@ def _make_radar_frame_direction(
     return bytes(data)
 
 
-def _make_tar_bz2(frames: dict) -> bytes:
-    """Build an in-memory tar.bz2 archive with radar frames."""
+def _make_odim(grid: bytes | None = None) -> bytes:
+    """Build an in-memory ODIM-HDF5 frame (all zeros unless grid is given)."""
+    import h5py
+    import numpy as np
+
+    arr = np.zeros((1200, 1100), dtype=np.uint16)
     buf = BytesIO()
-    with tarfile.open(fileobj=buf, mode="w:bz2") as tar:
-        for name, content in frames.items():
-            full = b"HEADER\x03" + content
+    with h5py.File(buf, "w") as h5:
+        ds = h5.create_group("dataset1/data1")
+        ds.create_dataset("data", data=arr)
+        ds.create_group("what").attrs.update(
+            {"gain": 0.12, "offset": 0.0, "nodata": 65535, "undetect": 0}
+        )
+    return buf.getvalue()
+
+
+def _make_tar_bz2(frames: dict) -> bytes:
+    """Build an in-memory tar archive with ODIM-HDF5 radar frames."""
+    buf = BytesIO()
+    with tarfile.open(fileobj=buf, mode="w") as tar:
+        for name in frames:
+            full = _make_odim()
             info = tarfile.TarInfo(name=name)
             info.size = len(full)
             tar.addfile(info, BytesIO(full))
@@ -262,10 +278,10 @@ class TestDWDRadarUpdate(unittest.TestCase):
     def test_update_populates_radars(self):
         """Test that update() correctly parses a tar.bz2 archive."""
         # Name format: last 14 chars before last 3 = timestamp, last 3 = delta
-        # e.g. "DE1200_RV_2404011200_000"
+        # e.g. "composite_rv_20240401_1200_000-hd5"
         frames = {
-            "DE1200_RV_2404011200_000": bytes(1100 * 1200 * 2),
-            "DE1200_RV_2404011200_005": bytes(1100 * 1200 * 2),
+            "composite_rv_20240401_1200_000-hd5": bytes(1100 * 1200 * 2),
+            "composite_rv_20240401_1200_005-hd5": bytes(1100 * 1200 * 2),
         }
         tar_data = _make_tar_bz2(frames)
         mock_response = MagicMock()
@@ -298,7 +314,7 @@ class TestDWDRadarUpdate(unittest.TestCase):
     def test_update_uses_etag_and_handles_304(self):
         """Test that update() sends If-None-Match and keeps cached data on 304."""
         frames = {
-            "DE1200_RV_2404011200_000": bytes(1100 * 1200 * 2),
+            "composite_rv_20240401_1200_000-hd5": bytes(1100 * 1200 * 2),
         }
         tar_data = _make_tar_bz2(frames)
 
