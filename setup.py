@@ -29,6 +29,8 @@ setuptools.setup(
         "arrow",
         "stream-unzip==0.0.101",
         "httpx",
+        "h5py",
+        "numpy",
     ],
     extras_require={
         "apparent-temperature": [

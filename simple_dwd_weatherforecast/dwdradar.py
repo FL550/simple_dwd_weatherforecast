@@ -11,18 +11,24 @@ from __future__ import annotations
 
 import logging
 import math
-import struct
+import re
 import tarfile
 from datetime import UTC, datetime, timedelta
 from io import BytesIO
 
+import h5py
+import numpy as np
 import requests
 
 _LOGGER = logging.getLogger(__name__)
 
-RADAR_URL = (
-    "https://opendata.dwd.de/weather/radar/composite/rv/DE1200_RV_LATEST.tar.bz2"
-)
+RADAR_URL = "https://opendata.dwd.de/weather/radar/composite/rv/composite_rv_LATEST.tar"
+
+# e.g. composite_rv_20261024_0950_005-hd5 (analysis date, time, forecast minutes)
+_MEMBER_RE = re.compile(r"composite_rv_(\d{8})_(\d{4})_(\d{3})-hd5$")
+
+# Each frame is a 5-minute accumulation in mm; convert to mm/h.
+_ACCUMULATION_TO_RATE = 12.0
 
 # Frames whose analysis time is older than this are considered unavailable.
 _MAX_DATA_AGE = timedelta(minutes=30)
@@ -103,7 +109,7 @@ class DWDRadar:
     """
     Short-term precipitation forecasts from the DWD rain radar composite.
 
-    Downloads and parses the DE1200_RV radar composite, which provides
+    Downloads and parses the composite_rv radar composite, which provides
     precipitation intensities (mm/h) for the next ~2 hours in 5-minute steps
     on a 1 km grid covering Germany.
 
@@ -124,7 +130,7 @@ class DWDRadar:
 
     def __init__(self) -> None:
         """Initialize the DWDRadar instance."""
-        self._radars: dict[datetime, bytes] | None = None
+        self._radars: dict[datetime, np.ndarray] | None = None
         self._etag: str | None = None
         self._analysis_time: datetime | None = None
 
@@ -141,27 +147,24 @@ class DWDRadar:
                     )
                 return
             response.raise_for_status()
-            with tarfile.open(fileobj=BytesIO(response.content), mode="r:bz2") as tar:
-                radars: dict[datetime, bytes] = {}
+            with tarfile.open(fileobj=BytesIO(response.content), mode="r:") as tar:
+                radars: dict[datetime, np.ndarray] = {}
                 analysis_time: datetime | None = None
                 for member in tar.getmembers():
-                    try:
-                        radar_minute_delta = int(member.name[-3:])
-                        radar_time = datetime.strptime(
-                            member.name[-14:-4], "%y%m%d%H%M"
-                        ).replace(tzinfo=UTC) + timedelta(minutes=radar_minute_delta)
-                        f = tar.extractfile(member)
-                        if f is None:
-                            continue
-                        raw = f.read()
-                        # Binary data follows the first ETX (\x03) separator
-                        content = raw.split(b"\x03", 1)[1]
-                        radars[radar_time] = content
-                        base_time = radar_time - timedelta(minutes=radar_minute_delta)
-                        if analysis_time is None or base_time > analysis_time:
-                            analysis_time = base_time
-                    except (ValueError, IndexError):
+                    match = _MEMBER_RE.search(member.name)
+                    f = tar.extractfile(member) if match else None
+                    if match is None or f is None:
                         continue
+                    try:
+                        base_time = datetime.strptime(
+                            match.group(1) + match.group(2), "%Y%m%d%H%M"
+                        ).replace(tzinfo=UTC)
+                        radar_time = base_time + timedelta(minutes=int(match.group(3)))
+                        radars[radar_time] = self._read_frame(f.read())
+                    except (ValueError, KeyError, OSError):
+                        continue
+                    if analysis_time is None or base_time > analysis_time:
+                        analysis_time = base_time
                 self._radars = radars
                 self._analysis_time = analysis_time
                 self._etag = response.headers.get("ETag")
@@ -169,6 +172,20 @@ class DWDRadar:
             _LOGGER.error(
                 "Error in DWDRadar.update: %s args: %s", type(error), error.args
             )
+
+    @staticmethod
+    def _read_frame(raw: bytes) -> np.ndarray:
+        """Decode an ODIM-HDF5 frame to mm/h, with row 0 at the southern edge."""
+        with h5py.File(BytesIO(raw), "r") as h5:
+            node = h5["dataset1/data1"]
+            data = node["data"][:]
+            gain = float(node["what"].attrs["gain"])
+            offset = float(node["what"].attrs["offset"])
+            nodata = node["what"].attrs["nodata"]
+        rate = (data * gain + offset) * _ACCUMULATION_TO_RATE
+        rate[data == nodata] = 0.0
+        # ODIM stores north first; the grid index below counts from the south.
+        return np.flipud(np.maximum(rate, 0.0)).astype(np.float32)
 
     def _is_stale(self) -> bool:
         """Return whether the newest analysis time is older than the maximum age."""
@@ -217,29 +234,14 @@ class DWDRadar:
             raise NotInAreaError
         return x_cart, y_cart
 
-    def _decode_value(self, raw: int) -> float:
-        """
-        Decode a raw uint16 radar value to precipitation intensity in mm/h.
-
-        The radar data uses the following encoding:
-
-        - Bits 0-11: raw value (0-4095)
-        - Bit 13 set: no valid data (treat as 0)
-        - Value in mm/h = raw_value / 100 * 12
-
-        """
-        if raw & 0b0010000000000000:
-            return 0.0
-        return float(raw & 0b0000111111111111) / 100 * 12
-
-    def _get_grid_value(self, x: int, y: int, content: bytes) -> float:
+    def _get_grid_value(self, x: int, y: int, content: np.ndarray) -> float:
         """
         Read a decoded precipitation value from a radar frame at grid position (x, y).
 
         Args:
             x: Grid x-index (0 … _XSIZE-1).
             y: Grid y-index (0 … _YSIZE-1).
-            content: Raw binary radar frame.
+            content: Decoded radar frame (mm/h, indexed [y, x]).
 
         Returns:
             Precipitation intensity in mm/h, or 0.0 if the position is out of bounds.
@@ -247,11 +249,11 @@ class DWDRadar:
         """
         if not (0 <= x < _XSIZE) or not (0 <= y < _YSIZE):
             return 0.0
-        idx = y * _XSIZE + x
-        (raw,) = struct.unpack_from("<H", content, idx * 2)
-        return self._decode_value(raw)
+        return float(content[y, x])
 
-    def _is_valid_precipitation_pixel(self, x: int, y: int, content: bytes) -> bool:
+    def _is_valid_precipitation_pixel(
+        self, x: int, y: int, content: np.ndarray
+    ) -> bool:
         """Return whether a pixel belongs to a sufficiently large local wet area."""
         if self._get_grid_value(x, y, content) < _NOISE_INTENSITY_THRESHOLD:
             return False
@@ -285,7 +287,7 @@ class DWDRadar:
 
         return False
 
-    def _get_filtered_grid_value(self, x: int, y: int, content: bytes) -> float:
+    def _get_filtered_grid_value(self, x: int, y: int, content: np.ndarray) -> float:
         """Return filtered precipitation value (suppresses isolated local echoes)."""
         value = self._get_grid_value(x, y, content)
         if value < _NOISE_INTENSITY_THRESHOLD:
@@ -295,7 +297,7 @@ class DWDRadar:
         return value
 
     def _scan_directions(
-        self, x_cart: int, y_cart: int, content: bytes, radius: int
+        self, x_cart: int, y_cart: int, content: np.ndarray, radius: int
     ) -> dict[str, float]:
         """
         Scan precipitation in 8 compass directions around a grid point.
@@ -306,7 +308,7 @@ class DWDRadar:
         Args:
             x_cart: Grid x-index of the location.
             y_cart: Grid y-index of the location.
-            content: Raw binary radar frame.
+            content: Decoded radar frame.
             radius: Number of pixels to scan in each direction.
 
         Returns:
@@ -416,6 +418,39 @@ class DWDRadar:
             [t.timestamp() for t in times],
             precip,
         )
+
+    def get_precipitation_next_5_minutes(
+        self, lat: float, lon: float, timestamp: datetime | None = None
+    ) -> dict[str, datetime | float] | None:
+        """
+        Get the precipitation expected in the next 5-minute radar step.
+
+        Uses the first radar frame later than ``timestamp`` (default: now).
+
+        Args:
+            lat: Latitude in decimal degrees.
+            lon: Longitude in decimal degrees.
+            timestamp: Reference time; defaults to the current UTC time.
+
+        Returns:
+            Dictionary with ``time`` (UTC datetime of the radar step),
+            ``intensity`` (mm/h) and ``amount`` (mm over 5 minutes), or
+            ``None`` if no radar step lies after ``timestamp``.
+
+        Raises:
+            NotInAreaError: If the location is outside the radar coverage area.
+            RadarNotAvailableError: If radar data has not been downloaded yet.
+
+        """
+        reference = timestamp or datetime.now(UTC)
+        for radar_time, intensity in self.get_precipitation_values(lat, lon).items():
+            if radar_time > reference:
+                return {
+                    "time": radar_time,
+                    "intensity": intensity,
+                    "amount": intensity / 12,
+                }
+        return None
 
     def get_next_precipitation(
         self, lat: float, lon: float

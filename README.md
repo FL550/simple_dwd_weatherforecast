@@ -168,6 +168,10 @@ class Weather:
     #  'max': 7.2, 'sum': 1.4}
     get_radar_next_precipitation()
 
+    # Precipitation of the next 5-minute radar step (intensity in mm/h, amount in mm)
+    # {'time': datetime(2025,4,1,12,5,UTC), 'intensity': 3.6, 'amount': 0.3}
+    get_radar_precipitation_next_5_minutes()
+
     # Override coordinates to any German location
     get_radar_precipitation_forecast(lat=52.52, lon=13.41)
 ```
