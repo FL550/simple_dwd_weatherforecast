@@ -9,6 +9,7 @@ Data source: DWD OpenData (https://opendata.dwd.de)
 
 from __future__ import annotations
 
+import logging
 import math
 import struct
 import tarfile
@@ -17,9 +18,14 @@ from io import BytesIO
 
 import requests
 
+_LOGGER = logging.getLogger(__name__)
+
 RADAR_URL = (
     "https://opendata.dwd.de/weather/radar/composite/rv/DE1200_RV_LATEST.tar.bz2"
 )
+
+# Frames whose analysis time is older than this are considered unavailable.
+_MAX_DATA_AGE = timedelta(minutes=30)
 
 _XSIZE = 1100
 _YSIZE = 1200
@@ -120,6 +126,7 @@ class DWDRadar:
         """Initialize the DWDRadar instance."""
         self._radars: dict[datetime, bytes] | None = None
         self._etag: str | None = None
+        self._analysis_time: datetime | None = None
 
     def update(self) -> None:
         """Download and parse the latest radar composite data from DWD OpenData."""
@@ -127,10 +134,16 @@ class DWDRadar:
             headers = {"If-None-Match": self._etag} if self._etag else None
             response = requests.get(RADAR_URL, timeout=30, headers=headers)
             if response.status_code == 304:
+                if self._is_stale():
+                    _LOGGER.warning(
+                        "DWD radar data is stale (analysis time %s)",
+                        self._analysis_time,
+                    )
                 return
             response.raise_for_status()
             with tarfile.open(fileobj=BytesIO(response.content), mode="r:bz2") as tar:
                 radars: dict[datetime, bytes] = {}
+                analysis_time: datetime | None = None
                 for member in tar.getmembers():
                     try:
                         radar_minute_delta = int(member.name[-3:])
@@ -144,12 +157,25 @@ class DWDRadar:
                         # Binary data follows the first ETX (\x03) separator
                         content = raw.split(b"\x03", 1)[1]
                         radars[radar_time] = content
+                        base_time = radar_time - timedelta(minutes=radar_minute_delta)
+                        if analysis_time is None or base_time > analysis_time:
+                            analysis_time = base_time
                     except (ValueError, IndexError):
                         continue
                 self._radars = radars
+                self._analysis_time = analysis_time
                 self._etag = response.headers.get("ETag")
         except Exception as error:  # noqa: BLE001
-            print(f"Error in DWDRadar.update: {type(error)} args: {error.args}")  # noqa: T201
+            _LOGGER.error(
+                "Error in DWDRadar.update: %s args: %s", type(error), error.args
+            )
+
+    def _is_stale(self) -> bool:
+        """Return whether the newest analysis time is older than the maximum age."""
+        return (
+            self._analysis_time is not None
+            and datetime.now(UTC) - self._analysis_time > _MAX_DATA_AGE
+        )
 
     def _get_grid_index(self, lat: float, lon: float) -> tuple[int, int]:
         """
@@ -169,7 +195,7 @@ class DWDRadar:
             RadarNotAvailableError: If radar data has not been downloaded yet.
 
         """
-        if self._radars is None:
+        if self._radars is None or self._is_stale():
             raise RadarNotAvailableError
         x_cart = int(
             6370.04
@@ -355,7 +381,7 @@ class DWDRadar:
             RadarNotAvailableError: If radar data has not been downloaded yet.
 
         """
-        if self._radars is None:
+        if self._radars is None or self._is_stale():
             raise RadarNotAvailableError
         x_cart, y_cart = self._get_grid_index(lat, lon)
         values: dict[datetime, float] = {}

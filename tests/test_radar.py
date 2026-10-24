@@ -516,3 +516,19 @@ class TestDWDRadarDirection(unittest.TestCase):
         result = dwd_weather.get_radar_next_precipitation(shouldUpdate=False)
         self.assertIn("direction_deg", result)
         self.assertIn("direction", result)
+
+
+class TestDWDRadarStaleData(unittest.TestCase):
+    def test_stale_data_raises(self):
+        radar = DWDRadar()
+        radar._radars = {datetime(2024, 1, 1, tzinfo=UTC): bytes(1100 * 1200 * 2)}
+        radar._analysis_time = datetime.now(UTC) - timedelta(hours=1)
+        with self.assertRaises(RadarNotAvailableError):
+            radar.get_precipitation_values(52.52, 13.41)
+
+    def test_fresh_data_ok(self):
+        radar = DWDRadar()
+        now = datetime.now(UTC)
+        radar._radars = {now: bytes(1100 * 1200 * 2)}
+        radar._analysis_time = now
+        self.assertEqual(len(radar.get_precipitation_values(52.52, 13.41)), 1)
