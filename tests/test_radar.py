@@ -1,9 +1,11 @@
-import struct
 import tarfile
 import unittest
 from datetime import UTC, datetime, timedelta
 from io import BytesIO
 from unittest.mock import MagicMock, patch
+
+import h5py
+import numpy as np
 
 from simple_dwd_weatherforecast import dwdforecast
 from simple_dwd_weatherforecast.dwdradar import (
@@ -16,8 +18,15 @@ from simple_dwd_weatherforecast.dwdradar import (
     _linear_interp,
 )
 
+_XSIZE = 1100
+_YSIZE = 1200
 
-def _make_radar_frame(x_cart: int, y_cart: int, value_raw: int) -> bytes:
+
+def _empty_frame() -> np.ndarray:
+    return np.zeros((_YSIZE, _XSIZE), dtype=np.float32)
+
+
+def _make_radar_frame(x_cart: int, y_cart: int, value_raw: int) -> np.ndarray:
     """Build a radar frame with a compact 2x2 wet patch around a grid cell."""
     return _make_radar_frame_points(
         [
@@ -30,44 +39,55 @@ def _make_radar_frame(x_cart: int, y_cart: int, value_raw: int) -> bytes:
     )
 
 
-def _make_radar_frame_points(points: list[tuple[int, int]], value_raw: int) -> bytes:
-    """Build a binary radar frame with rain values at specific coordinates."""
-    xsize = 1100
-    ysize = 1200
-    num_values = xsize * ysize
-    data = bytearray(num_values * 2)
+def _make_radar_frame_points(
+    points: list[tuple[int, int]], value_raw: int
+) -> np.ndarray:
+    """Build a radar frame; value_raw 100 corresponds to 12 mm/h."""
+    frame = _empty_frame()
     for x_cart, y_cart in points:
-        if 0 <= x_cart < xsize and 0 <= y_cart < ysize:
-            idx = (y_cart * xsize + x_cart) * 2
-            struct.pack_into("<H", data, idx, value_raw)
-    return bytes(data)
+        if 0 <= x_cart < _XSIZE and 0 <= y_cart < _YSIZE:
+            frame[y_cart, x_cart] = value_raw / 100 * 12
+    return frame
 
 
 def _make_radar_frame_direction(
     x_cart: int, y_cart: int, dx: int, dy: int, radius: int, value_raw: int
-) -> bytes:
+) -> np.ndarray:
     """Build a radar frame with rain pixels along (dx, dy) from the origin."""
-    xsize = 1100
-    ysize = 1200
-    num_values = xsize * ysize
-    data = bytearray(num_values * 2)
+    frame = _empty_frame()
     for step in range(1, radius + 1):
         nx = x_cart + dx * step
         ny = y_cart + dy * step
-        if 0 <= nx < xsize and 0 <= ny < ysize:
-            struct.pack_into("<H", data, (ny * xsize + nx) * 2, value_raw)
-    return bytes(data)
+        if 0 <= nx < _XSIZE and 0 <= ny < _YSIZE:
+            frame[ny, nx] = value_raw / 100 * 12
+    return frame
 
 
-def _make_tar_bz2(frames: dict) -> bytes:
-    """Build an in-memory tar.bz2 archive with radar frames."""
+def _make_hdf5(accumulation_raw: dict[tuple[int, int], int]) -> bytes:
+    """Build an ODIM-HDF5 frame; keys are (row, col) in file (north-first) order."""
+    data = np.zeros((_YSIZE, _XSIZE), dtype=np.uint32)
+    data[0, 1] = 0xFFFFFFFF
+    for (row, col), value in accumulation_raw.items():
+        data[row, col] = value
     buf = BytesIO()
-    with tarfile.open(fileobj=buf, mode="w:bz2") as tar:
+    with h5py.File(buf, "w") as h5:
+        ds = h5.create_dataset("dataset1/data1/data", data=data)
+        ds.parent["what"] = 0
+        what = ds.parent["what"]
+        what.attrs["gain"] = 0.001
+        what.attrs["offset"] = -0.001
+        what.attrs["nodata"] = 4294967295.0
+    return buf.getvalue()
+
+
+def _make_tar(frames: dict) -> bytes:
+    """Build an in-memory tar archive with radar frames."""
+    buf = BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:") as tar:
         for name, content in frames.items():
-            full = b"HEADER\x03" + content
             info = tarfile.TarInfo(name=name)
-            info.size = len(full)
-            tar.addfile(info, BytesIO(full))
+            info.size = len(content)
+            tar.addfile(info, BytesIO(content))
     return buf.getvalue()
 
 
@@ -88,31 +108,23 @@ class TestLinearInterp(unittest.TestCase):
         self.assertAlmostEqual(_linear_interp(1.5, [1.0, 2.0], [0.0, 1.0]), 0.5)
 
 
-class TestDWDRadarDecodeValue(unittest.TestCase):
-    def setUp(self):
-        self.radar = DWDRadar()
-
-    def test_no_data_flag(self):
-        # Bit 13 set => no data
-        self.assertEqual(self.radar._decode_value(0b0010000000000000), 0.0)
-
-    def test_zero(self):
-        self.assertEqual(self.radar._decode_value(0), 0.0)
-
-    def test_typical_value(self):
-        # raw=100 => 100/100*12 = 12.0 mm/h
-        self.assertAlmostEqual(self.radar._decode_value(100), 12.0)
-
-    def test_small_value(self):
-        # raw=10 => 10/100*12 = 1.2 mm/h
-        self.assertAlmostEqual(self.radar._decode_value(10), 1.2)
+class TestDWDRadarReadFrame(unittest.TestCase):
+    def test_decodes_rate_nodata_and_flips(self):
+        # 101 * 0.001 - 0.001 = 0.1 mm / 5 min => 1.2 mm/h
+        frame = DWDRadar._read_frame(_make_hdf5({(0, 5): 101, (_YSIZE - 1, 7): 101}))
+        self.assertEqual(frame.shape, (_YSIZE, _XSIZE))
+        self.assertAlmostEqual(float(frame[_YSIZE - 1, 5]), 1.2, places=4)
+        self.assertAlmostEqual(float(frame[0, 7]), 1.2, places=4)
+        # nodata pixel at file (0, 1) becomes 0
+        self.assertEqual(float(frame[_YSIZE - 1, 1]), 0.0)
+        self.assertEqual(float(frame[10, 10]), 0.0)
 
 
 class TestDWDRadarGridIndex(unittest.TestCase):
     def setUp(self):
         # Provide minimal radar data so _radars is not None
         self.radar = DWDRadar()
-        dummy_frame = bytes(1100 * 1200 * 2)
+        dummy_frame = _empty_frame()
         self.radar._radars = {datetime(2024, 1, 1, tzinfo=UTC): dummy_frame}
 
     def test_central_germany(self):
@@ -137,7 +149,7 @@ class TestDWDRadarGetPrecipitationValues(unittest.TestCase):
         self.radar = DWDRadar()
         # Find grid index for Berlin
         tmp_radar = DWDRadar()
-        tmp_radar._radars = {datetime(2024, 1, 1, tzinfo=UTC): bytes(1100 * 1200 * 2)}
+        tmp_radar._radars = {datetime(2024, 1, 1, tzinfo=UTC): _empty_frame()}
         self.berlin_x, self.berlin_y = tmp_radar._get_grid_index(52.52, 13.41)
 
         t1 = datetime(2024, 4, 1, 12, 0, tzinfo=UTC)
@@ -182,7 +194,7 @@ class TestDWDRadarGetCurrentPrecipitation(unittest.TestCase):
     def setUp(self):
         self.radar = DWDRadar()
         tmp_radar = DWDRadar()
-        tmp_radar._radars = {datetime(2024, 1, 1, tzinfo=UTC): bytes(1100 * 1200 * 2)}
+        tmp_radar._radars = {datetime(2024, 1, 1, tzinfo=UTC): _empty_frame()}
         berlin_x, berlin_y = tmp_radar._get_grid_index(52.52, 13.41)
 
         t1 = datetime(2024, 4, 1, 12, 0, tzinfo=UTC)
@@ -207,12 +219,43 @@ class TestDWDRadarGetCurrentPrecipitation(unittest.TestCase):
         self.assertAlmostEqual(result, 12.0)
 
 
+class TestDWDRadarNext5Minutes(unittest.TestCase):
+    def test_next_step_after_timestamp(self):
+        radar = DWDRadar()
+        tmp = DWDRadar()
+        tmp._radars = {datetime(2024, 1, 1, tzinfo=UTC): _empty_frame()}
+        bx, by = tmp._get_grid_index(52.52, 13.41)
+        t0 = datetime(2024, 4, 1, 12, 0, tzinfo=UTC)
+        t1 = t0 + timedelta(minutes=5)
+        radar._radars = {
+            t0: _make_radar_frame(bx, by, 0),
+            t1: _make_radar_frame(bx, by, 100),
+        }
+        radar._analysis_time = None
+        result = radar.get_precipitation_next_5_minutes(
+            52.52, 13.41, t0 + timedelta(minutes=1)
+        )
+        self.assertEqual(result["time"], t1)
+        self.assertAlmostEqual(result["intensity"], 12.0)
+        self.assertAlmostEqual(result["amount"], 1.0)
+
+    def test_none_when_no_later_step(self):
+        radar = DWDRadar()
+        t0 = datetime(2024, 4, 1, 12, 0, tzinfo=UTC)
+        radar._radars = {t0: _empty_frame()}
+        self.assertIsNone(
+            radar.get_precipitation_next_5_minutes(
+                52.52, 13.41, t0 + timedelta(minutes=1)
+            )
+        )
+
+
 class TestDWDRadarGetNextPrecipitation(unittest.TestCase):
     def _setup_radar(self, values_sequence):
         """Create a radar with given precipitation values at 5-min intervals."""
         radar = DWDRadar()
         tmp = DWDRadar()
-        tmp._radars = {datetime(2024, 1, 1, tzinfo=UTC): bytes(1100 * 1200 * 2)}
+        tmp._radars = {datetime(2024, 1, 1, tzinfo=UTC): _empty_frame()}
         bx, by = tmp._get_grid_index(52.52, 13.41)
         base_time = datetime(2024, 4, 1, 12, 0, tzinfo=UTC)
         radars = {}
@@ -260,14 +303,12 @@ class TestDWDRadarGetNextPrecipitation(unittest.TestCase):
 
 class TestDWDRadarUpdate(unittest.TestCase):
     def test_update_populates_radars(self):
-        """Test that update() correctly parses a tar.bz2 archive."""
-        # Name format: last 14 chars before last 3 = timestamp, last 3 = delta
-        # e.g. "DE1200_RV_2404011200_000"
+        """Test that update() correctly parses a tar archive of HDF5 frames."""
         frames = {
-            "DE1200_RV_2404011200_000": bytes(1100 * 1200 * 2),
-            "DE1200_RV_2404011200_005": bytes(1100 * 1200 * 2),
+            "composite_rv_20240401_1200_000-hd5": _make_hdf5({}),
+            "composite_rv_20240401_1200_005-hd5": _make_hdf5({}),
         }
-        tar_data = _make_tar_bz2(frames)
+        tar_data = _make_tar(frames)
         mock_response = MagicMock()
         mock_response.content = tar_data
         mock_response.raise_for_status = MagicMock()
@@ -298,9 +339,9 @@ class TestDWDRadarUpdate(unittest.TestCase):
     def test_update_uses_etag_and_handles_304(self):
         """Test that update() sends If-None-Match and keeps cached data on 304."""
         frames = {
-            "DE1200_RV_2404011200_000": bytes(1100 * 1200 * 2),
+            "composite_rv_20240401_1200_000-hd5": _make_hdf5({}),
         }
-        tar_data = _make_tar_bz2(frames)
+        tar_data = _make_tar(frames)
 
         first_response = MagicMock()
         first_response.status_code = 200
@@ -334,7 +375,7 @@ class TestWeatherRadarMethods(unittest.TestCase):
         self.dwd_weather = dwdforecast.Weather("L821")
         # Provide mock radar data
         tmp = DWDRadar()
-        tmp._radars = {datetime(2024, 1, 1, tzinfo=UTC): bytes(1100 * 1200 * 2)}
+        tmp._radars = {datetime(2024, 1, 1, tzinfo=UTC): _empty_frame()}
         bx, by = tmp._get_grid_index(
             float(self.dwd_weather.station["lat"]),
             float(self.dwd_weather.station["lon"]),
@@ -417,7 +458,7 @@ class TestDWDRadarDirection(unittest.TestCase):
 
     def setUp(self):
         tmp = DWDRadar()
-        tmp._radars = {datetime(2024, 1, 1, tzinfo=UTC): bytes(1100 * 1200 * 2)}
+        tmp._radars = {datetime(2024, 1, 1, tzinfo=UTC): _empty_frame()}
         self.bx, self.by = tmp._get_grid_index(52.52, 13.41)
 
     def test_no_lookback_returns_none(self):
@@ -484,7 +525,7 @@ class TestDWDRadarDirection(unittest.TestCase):
 
     def test_scan_directions_all_zero(self):
         """_scan_directions returns 0 for all directions on an empty frame."""
-        empty_frame = bytes(1100 * 1200 * 2)
+        empty_frame = _empty_frame()
         radar = DWDRadar()
         radar._radars = {datetime(2024, 1, 1, tzinfo=UTC): empty_frame}
         scan = radar._scan_directions(self.bx, self.by, empty_frame, 5)
@@ -494,7 +535,7 @@ class TestDWDRadarDirection(unittest.TestCase):
     def test_get_grid_value_out_of_bounds(self):
         """_get_grid_value returns 0 for coordinates outside the grid."""
         radar = DWDRadar()
-        frame = bytes(1100 * 1200 * 2)
+        frame = _empty_frame()
         self.assertEqual(radar._get_grid_value(-1, 0, frame), 0.0)
         self.assertEqual(radar._get_grid_value(0, -1, frame), 0.0)
         self.assertEqual(radar._get_grid_value(1100, 0, frame), 0.0)
@@ -504,7 +545,7 @@ class TestDWDRadarDirection(unittest.TestCase):
         """dwdforecast.get_radar_next_precipitation exposes direction keys."""
         dwd_weather = dwdforecast.Weather("L821")
         tmp = DWDRadar()
-        tmp._radars = {datetime(2024, 1, 1, tzinfo=UTC): bytes(1100 * 1200 * 2)}
+        tmp._radars = {datetime(2024, 1, 1, tzinfo=UTC): _empty_frame()}
         bx, by = tmp._get_grid_index(
             float(dwd_weather.station["lat"]),
             float(dwd_weather.station["lon"]),
@@ -516,3 +557,19 @@ class TestDWDRadarDirection(unittest.TestCase):
         result = dwd_weather.get_radar_next_precipitation(shouldUpdate=False)
         self.assertIn("direction_deg", result)
         self.assertIn("direction", result)
+
+
+class TestDWDRadarStaleData(unittest.TestCase):
+    def test_stale_data_raises(self):
+        radar = DWDRadar()
+        radar._radars = {datetime(2024, 1, 1, tzinfo=UTC): _empty_frame()}
+        radar._analysis_time = datetime.now(UTC) - timedelta(hours=1)
+        with self.assertRaises(RadarNotAvailableError):
+            radar.get_precipitation_values(52.52, 13.41)
+
+    def test_fresh_data_ok(self):
+        radar = DWDRadar()
+        now = datetime.now(UTC)
+        radar._radars = {now: _empty_frame()}
+        radar._analysis_time = now
+        self.assertEqual(len(radar.get_precipitation_values(52.52, 13.41)), 1)

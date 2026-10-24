@@ -4,3 +4,5 @@ Pillow
 arrow
 stream-unzip==0.0.101
 httpx
+h5py
+numpy

@@ -623,6 +623,29 @@ class Weather:
         except (NotInAreaError, RadarNotAvailableError):
             return None
 
+    def get_radar_precipitation_next_5_minutes(
+        self,
+        lat: float | None = None,
+        lon: float | None = None,
+        shouldUpdate: bool = True,
+    ) -> dict[str, datetime | float] | None:
+        """Get the radar precipitation for the next 5-minute step.
+
+        Returns:
+            Dictionary with ``time`` (UTC datetime of the radar step),
+            ``intensity`` (mm/h) and ``amount`` (mm), or ``None`` if the
+            location is outside the radar area or data is unavailable.
+
+        """
+        if shouldUpdate:
+            self._radar.update()
+        _lat = lat if lat is not None else float(self.station["lat"])  # type: ignore[index]
+        _lon = lon if lon is not None else float(self.station["lon"])  # type: ignore[index]
+        try:
+            return self._radar.get_precipitation_next_5_minutes(_lat, _lon)
+        except (NotInAreaError, RadarNotAvailableError):
+            return None
+
     def get_radar_next_precipitation(
         self,
         lat: float | None = None,
