@@ -47,3 +47,20 @@ class KMLParseFullTestCase(unittest.TestCase):
             self.dwd_weather.station_id, force_hourly=True
         )
         self.assertEqual(self.dwd_weather.forecast_data, dummy_data_full.parsed_data)
+
+
+class KMLParseWithoutConditionTestCase(unittest.TestCase):
+    FILE_NAME = "development/TEST_N4333.kml"
+
+    def setUp(self):
+        self.dwd_weather = dwdforecast.Weather("N4333")
+
+    def test_parse_kml_without_condition(self):
+        with open(self.FILE_NAME, "rb") as kml:
+            content = kml.read().replace(
+                b'dwd:elementName="ww"', b'dwd:elementName="xx"'
+            )
+        self.dwd_weather.parse_kml(content)
+        self.assertTrue(self.dwd_weather.forecast_data)
+        for values in self.dwd_weather.forecast_data.values():
+            self.assertIsNone(values["condition"])

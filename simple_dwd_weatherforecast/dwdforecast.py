@@ -1027,13 +1027,14 @@ class Weather:
         ]
 
     def parse_condition(self, tree):
-        return [
-            elem.split(".")[0]
-            for elem in tree.xpath(
-                './kml:Document/kml:Placemark/kml:ExtendedData/dwd:Forecast[@dwd:elementName="ww"]/dwd:value',
-                namespaces=self.namespaces,
-            )[0].text.split()
-        ]
+        result = tree.xpath(
+            './kml:Document/kml:Placemark/kml:ExtendedData/dwd:Forecast[@dwd:elementName="ww"]/dwd:value',
+            namespaces=self.namespaces,
+        )
+        # Some KML files have no "ww" element; parse_kml then sets the condition to None
+        if len(result) == 0:
+            return []
+        return [elem.split(".")[0] for elem in result[0].text.split()]
 
     def get_relative_humidity(self, temperature, dewpoint):
         if None in (temperature, dewpoint):
