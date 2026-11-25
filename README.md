@@ -250,6 +250,8 @@ class WeatherBackgroundMapType(Enum):
     KREISE = "dwd:Warngebiete_Kreise"
     GEMEINDEN = "dwd:Warngebiete_Gemeinden"
     SATELLIT = "dwd:bluemarble"
+    TOPPLUS_LIGHT = "bkg:topplus_light" # Map by BKG, see "Base map"
+    TOPPLUS_DARK = "bkg:topplus_dark"
 
 class MarkerShape(Enum):
     CIRCLE = "circle"
@@ -265,12 +267,30 @@ class Marker(
         width: int = 0,
     )
 
-get_from_location(longitude, latitude, radius_km, map_type: [WeatherMapType], background_type: [WeatherBackgroundMapType], optional integer image_width, optional integer image_height, optional markers: list[Marker], optional bool dark_mode) #Returns map as pillow image with given radius from coordinates
+get_from_location(longitude, latitude, radius_km, map_type: [WeatherMapType], background_type: [WeatherBackgroundMapType], optional integer image_width, optional integer image_height, optional markers: list[Marker], optional bool dark_mode, optional string basemap_cache_dir, optional bool basemap_blend) #Returns map as pillow image with given radius from coordinates
 
-get_germany(map_type: [WeatherMapType], optional [WeatherBackgroundMapType] background_type, optional integer image_width, optional integer image_height, optional markers: list[Marker], optional bool dark_mode) #Returns map as pillow image of whole germany
+get_germany(map_type: [WeatherMapType], optional [WeatherBackgroundMapType] background_type, optional integer image_width, optional integer image_height, optional markers: list[Marker], optional bool dark_mode, optional string basemap_cache_dir, optional bool basemap_blend) #Returns map as pillow image of whole germany
 
-get_map(minx,miny,maxx,maxy, map_type: [WeatherMapType], background_type: [WeatherBackgroundMapType], optional integer image_width, optional integer image_height, optional markers: list[Marker], optional bool dark_mode) #Returns map as pillow image
+get_map(minx,miny,maxx,maxy, map_type: [WeatherMapType], background_type: [WeatherBackgroundMapType], optional integer image_width, optional integer image_height, optional markers: list[Marker], optional bool dark_mode, optional string basemap_cache_dir, optional bool basemap_blend) #Returns map as pillow image
 ```
+
+#### Base map
+
+The background layers of the DWD show areas only. With `TOPPLUS_LIGHT` or `TOPPLUS_DARK` as background type the weather is drawn onto a map with towns, roads and rivers instead, the [TopPlusOpen](https://gdz.bkg.bund.de/index.php/default/wms-topplusopen-wms-topplus-open.html) web map by the German Federal Agency for Cartography and Geodesy (BKG).
+
+```python
+image = dwdmap.get_germany(
+    [dwdmap.WeatherMapType.NIEDERSCHLAGSRADAR],
+    [dwdmap.WeatherBackgroundMapType.TOPPLUS_LIGHT],
+    basemap_cache_dir="/tmp/basemap",
+)
+```
+
+- The map is requested from a server of the BKG (sgx.geodatenzentrum.de). It is kept in memory and, if `basemap_cache_dir` is given, on disk. After 90 days it is downloaded again. Without a connection the old map stays in use; without any map the weather is drawn on a blank background.
+- Other background types can be added, they are drawn on top of the base map. It is not visible below layers which cover the whole area, e.g. `UVINDEX` and the satellite images.
+- `TOPPLUS_DARK` is the same map with inverted lightness.
+- With `basemap_blend=True` the names and roads stay readable below the weather, while its colors stay the same on the plain background of the map. The images become larger, by about a quarter if it rains in a large part of the section.
+- The map is licensed under [dl-de/by-2-0](https://www.govdata.de/dl-de/by-2-0). The short source note is drawn onto the image. If you publish the images, also show the complete source note, which is available as `basemap.get_basemap(...).attribution`.
 
 
 ### Image loop
@@ -301,7 +321,7 @@ for image in enumerate(maploop._images):
 
 ```python
 ImageLoop(minx: float, miny: float, maxx: float, maxy: float, map_type: [WeatherMapType], background_type: [WeatherBackgroundMapType],
-        steps: int = 6, image_width: int = 520,image_height: int = 580, markers: list[Marker] = [], optional bool dark_mode) -> ImageLoop
+        steps: int = 6, image_width: int = 520,image_height: int = 580, markers: list[Marker] = [], optional bool dark_mode, optional string basemap_cache_dir, optional bool basemap_blend) -> ImageLoop
 
 get_images() -> Iterable[ImageFile.ImageFile] # Returns the image loop
 
