@@ -7,6 +7,13 @@ from enum import Enum
 from collections import deque
 from datetime import datetime, timedelta, timezone
 
+from simple_dwd_weatherforecast.basemap import (
+    BaseMap,
+    BaseMapNotAvailableError,
+    BaseMapStyle,
+    get_basemap,
+)
+
 
 class WeatherMapType(Enum):
     NIEDERSCHLAGSRADAR = "dwd:Radar_rv_product_1x1km_ger"
@@ -27,6 +34,15 @@ class WeatherBackgroundMapType(Enum):
     GEMEINDEN = "dwd:Warngebiete_Gemeinden"
     SATELLIT = "dwd:bluemarble"
     GEWAESSER = "dwd:Gewaesser"
+    # Not a DWD layer: map by BKG with towns, roads and rivers, see basemap.py
+    TOPPLUS_LIGHT = "bkg:topplus_light"
+    TOPPLUS_DARK = "bkg:topplus_dark"
+
+
+BASEMAP_STYLES = {
+    WeatherBackgroundMapType.TOPPLUS_LIGHT: BaseMapStyle.LIGHT,
+    WeatherBackgroundMapType.TOPPLUS_DARK: BaseMapStyle.DARK,
+}
 
 
 class germany_boundaries:
@@ -93,6 +109,8 @@ def get_from_location(
     image_height=580,
     markers: list[Marker] = [],
     dark_mode: bool = False,
+    basemap_cache_dir: str | None = None,
+    basemap_blend: bool = False,
 ):
     if radius_km <= 0:
         raise ValueError("Radius must be greater than 0")
@@ -112,6 +130,8 @@ def get_from_location(
         image_height,
         markers,
         dark_mode,
+        basemap_cache_dir,
+        basemap_blend,
     )
 
 
@@ -124,6 +144,8 @@ def get_germany(
     image_height=580,
     markers: list[Marker] = [],
     dark_mode: bool = False,
+    basemap_cache_dir: str | None = None,
+    basemap_blend: bool = False,
 ):
     return get_map(
         germany_boundaries.minx,
@@ -136,6 +158,8 @@ def get_germany(
         image_height,
         markers,
         dark_mode,
+        basemap_cache_dir,
+        basemap_blend,
     )
 
 
@@ -150,11 +174,23 @@ def get_map(
     image_height=580,
     markers: list[Marker] = [],
     dark_mode: bool = False,
+    basemap_cache_dir: str | None = None,
+    basemap_blend: bool = False,
 ):
     if image_width > 1200 or image_height > 1400:
         raise ValueError(
             "Width and height must not exceed 1200 and 1400 respectively. Please be kind to the DWD servers."
         )
+    basemap, background_types = split_basemap(
+        background_types,
+        minx,
+        miny,
+        maxx,
+        maxy,
+        image_width,
+        image_height,
+        basemap_cache_dir,
+    )
     # Separate special layers and others for background types
     special_layers = [
         layer.value
@@ -186,6 +222,8 @@ def get_map(
     if dark_mode:
         bgcolor = "0x1C1C1C"
     url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.3.0&request=GetMap&layers={layers}&bbox={miny},{minx},{maxy},{maxx}&width={image_width}&height={image_height}&srs=EPSG:4326&styles=&format=image/png&bgcolor={bgcolor}"
+    if basemap is not None:
+        url += "&transparent=true"
 
     request = requests.get(url, stream=True)
     if request.status_code == 200:
@@ -195,6 +233,8 @@ def get_map(
             raise RuntimeError(
                 f"Error during image request from DWD servers: {url}"
             ) from e
+        if basemap is not None:
+            image, _ = put_on_basemap(image, basemap, dark_mode, basemap_blend)
         image = draw_marker(image, ImageBoundaries(minx, maxx, miny, maxy), markers)
         return image
     else:
@@ -227,6 +267,8 @@ class ImageLoop:
         image_height: int = 580,
         markers: list[Marker] = [],
         dark_mode: bool = False,
+        basemap_cache_dir: str | None = None,
+        basemap_blend: bool = False,
     ):
         if WeatherMapType.NIEDERSCHLAGSRADAR not in map_types:
             raise ValueError("Only NIEDERSCHLAGSRADAR is supported in a loop")
@@ -240,6 +282,18 @@ class ImageLoop:
         self._maxy = maxy
         self._map_types = map_types
         self._background_types = background_types
+        self._basemap, self._dwd_background_types = split_basemap(
+            background_types,
+            minx,
+            miny,
+            maxx,
+            maxy,
+            image_width,
+            image_height,
+            basemap_cache_dir,
+        )
+        self._basemap_blend = basemap_blend
+        self._basemap_missing = False
         self._steps = steps
         self._image_width = image_width
         self._image_height = image_height
@@ -257,6 +311,7 @@ class ImageLoop:
 
     def _full_reload(self):
         self._images.clear()
+        self._basemap_missing = False
         now = get_time_last_5_min(datetime.now(timezone.utc))
         self._last_update = now - timedelta(minutes=5) * self._steps
 
@@ -267,6 +322,9 @@ class ImageLoop:
 
         # If last update is older than the buffer can hold, reload the whole buffer
         if now - self._last_update > self._steps * timedelta(minutes=5):
+            self._full_reload()
+        # Images drawn while the base map was not available have a blank background
+        elif self._basemap_missing and self._basemap.available:
             self._full_reload()
         # Update the buffer and fetch only the new images
         else:
@@ -315,7 +373,7 @@ class ImageLoop:
         # Separate special layers and others for background types
         special_layers = [
             layer.value
-            for layer in self._background_types
+            for layer in self._dwd_background_types
             if layer
             in [
                 WeatherBackgroundMapType.SATELLIT,
@@ -325,7 +383,7 @@ class ImageLoop:
         ]
         other_layers = [
             layer.value
-            for layer in self._background_types
+            for layer in self._dwd_background_types
             if layer
             not in [
                 WeatherBackgroundMapType.SATELLIT,
@@ -343,6 +401,8 @@ class ImageLoop:
         if self.dark_mode:
             bgcolor = "0x1C1C1C"
         url = f"https://maps.dwd.de/geoserver/dwd/wms?service=WMS&version=1.3.0&request=GetMap&layers={layers}&bbox={self._miny},{self._minx},{self._maxy},{self._maxx}&width={self._image_width}&height={self._image_height}&srs=EPSG:4326&styles=&format=image/png&TIME={date.strftime('%Y-%m-%dT%H:%M:00.0Z')}&bgcolor={bgcolor}"
+        if self._basemap is not None:
+            url += "&transparent=true"
         request = requests.get(url, stream=True)
         if request.status_code != 200:
             raise ConnectionError(f"Error during image request from DWD servers: {url}")
@@ -354,12 +414,61 @@ class ImageLoop:
             image = Image.open(BytesIO(request.content))
         except Exception as e:
             raise RuntimeError(f"Error during image parsing: {url}") from e
+        if self._basemap is not None:
+            image, complete = put_on_basemap(
+                image, self._basemap, self.dark_mode, self._basemap_blend
+            )
+            if not complete:
+                self._basemap_missing = True
         image = draw_marker(
             image,
             ImageBoundaries(self._minx, self._maxx, self._miny, self._maxy),
             self.markers,
         )
         return image
+
+
+def split_basemap(
+    background_types: list[WeatherBackgroundMapType],
+    minx: float,
+    miny: float,
+    maxx: float,
+    maxy: float,
+    image_width: int,
+    image_height: int,
+    cache_dir: str | None = None,
+) -> tuple[BaseMap | None, list[WeatherBackgroundMapType]]:
+    """Return the base map, if one is requested, and the remaining DWD layers."""
+    dwd_types = [layer for layer in background_types if layer not in BASEMAP_STYLES]
+    styles = [
+        BASEMAP_STYLES[layer] for layer in background_types if layer in BASEMAP_STYLES
+    ]
+    if not styles:
+        return None, dwd_types
+    basemap = get_basemap(
+        minx, miny, maxx, maxy, image_width, image_height, styles[0], cache_dir
+    )
+    return basemap, dwd_types
+
+
+def put_on_basemap(
+    image: Image.Image,
+    basemap: BaseMap,
+    dark_mode: bool = False,
+    blend: bool = False,
+) -> tuple[Image.Image, bool]:
+    """Put a transparent weather image onto the base map.
+
+    With blend the map stays readable below the weather. Without a base map the weather is shown on a blank background. The second
+    value tells whether the base map was available.
+    """
+    try:
+        return basemap.apply(image, blend=blend), True
+    except BaseMapNotAvailableError:
+        blank = Image.new(
+            "RGBA", image.size, (28, 28, 28) if dark_mode else (255, 255, 255)
+        )
+        return Image.alpha_composite(blank, image.convert("RGBA")).convert("RGB"), False
 
 
 def get_time_last_5_min(date: datetime) -> datetime:
