@@ -149,6 +149,8 @@ class Weather:
 
     get_weather_report(optional bool shouldUpdate) # Returns the weather report for the geographical region of the station as HTML
 
+    get_fire_index(int days_from_today (values: 0-6), optional str kind ("woodland" = WBI (default) or "grassland" = GLFI)) # Returns the fire danger level 1-5 (very low - very high) of the nearest DWD fire index station
+    get_fire_index_station_name() # Name of the nearest fire index station
     get_uv_index(int day_from_today (values: 0-2)) # Returns the UV index for the nearest station available for today, tomorrow or the day after tomorrow
 
     supports_apparent_temperature() # Returns True if GRIB/eccodes backend is available
@@ -159,7 +161,7 @@ class Weather:
 
     get_apparent_temperature_forecast(optional bool shouldUpdate) # Returns hourly apparent/perceived temperature forecast as dict[{timestamp_utc: value_celsius}] starting from current UTC hour
 
-    update(self, optional bool force_hourly (default: False), optional bool with_forecast (default: True), optional bool with_measurements (default: False), optional bool with_report (default: False), optional bool with_uv (default: True), optional bool with_apparent_temperature (default: False)) # Updates the weather data
+    update(self, optional bool force_hourly (default: False), optional bool with_forecast (default: True), optional bool with_measurements (default: False), optional bool with_report (default: False), optional bool with_uv (default: True), optional bool with_apparent_temperature (default: False), optional bool with_fire_index (default: False)) # Updates the weather data
 
     # {datetime(2025,4,1,12,0,UTC): 3.6, datetime(2025,4,1,12,5,UTC): 0.0, ...}
     get_radar_precipitation_forecast()
