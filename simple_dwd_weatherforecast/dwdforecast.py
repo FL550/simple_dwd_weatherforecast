@@ -25,6 +25,7 @@ except Exception:
     eccodes = None  # type: ignore
     _ECCODES_AVAILABLE = False
 
+from . import dwdfire
 from .dwdairquality import AirQuality as AirQuality
 from .dwdradar import DWDRadar as DWDRadar
 from .dwdradar import NotInAreaError, RadarNotAvailableError
@@ -176,6 +177,8 @@ class Weather:
     report_data = None
     weather_report = None
     uv_reports = {}
+    fire_indexes = {}
+    nearest_fire_index_station = None
     etags = None
     airquality_daily = None
     airquality_hourly = None
@@ -556,6 +559,49 @@ class Weather:
             else None
         )
 
+    def get_fire_index(
+        self, days_from_today: int, kind: str = "woodland", shouldUpdate=True
+    ) -> int | None:
+        """Fire danger level (1-5) of the nearest fire index station.
+
+        kind is "woodland" (WBI) or "grassland" (GLFI); days_from_today is 0-6.
+        """
+        if kind not in dwdfire.INDEXES:
+            print("kind must be 'woodland' or 'grassland'")
+            return None
+        if not 0 <= days_from_today <= 6:
+            print("days_from_today must be between 0 and 6")
+            return None
+        if kind not in self.fire_indexes and shouldUpdate:
+            self.download_fire_indexes()
+        report = self.fire_indexes.get(kind)
+        if not report:
+            return None
+        return report["values"][days_from_today]
+
+    def get_fire_index_station_name(self) -> str | None:
+        station = dwdfire.load_stations().get(self.nearest_fire_index_station or "")
+        return station["name"] if station else None
+
+    def download_fire_indexes(self):
+        try:
+            if self.nearest_fire_index_station is None:
+                self.nearest_fire_index_station = dwdfire.nearest_station_id(
+                    self.station["lat"],  # type: ignore
+                    self.station["lon"],  # type: ignore
+                )
+            for kind in dwdfire.INDEXES:
+                try:
+                    report = dwdfire.download_fire_index(
+                        kind, self.nearest_fire_index_station  # type: ignore
+                    )
+                except httpx.HTTPError:
+                    report = None  # not every station has both indexes
+                if report:
+                    self.fire_indexes[kind] = report
+        except Exception as error:
+            print(f"Error in download_fire_indexes: {type(error)} args: {error.args}")
+
     def get_apparent_temperature(self, shouldUpdate=True) -> float | None:
         """Get the current apparent/perceived temperature (gefühlte Temperatur).
 
@@ -935,6 +981,7 @@ class Weather:
         with_report=False,
         with_uv=True,
         with_apparent_temperature=False,
+        with_fire_index=False,
     ):
         if with_measurements and self.has_measurement(self.station_id):
             self.download_latest_report()
@@ -952,6 +999,8 @@ class Weather:
             self.download_uv_index()
         if with_apparent_temperature:
             self.download_apparent_temperature()
+        if with_fire_index:
+            self.download_fire_indexes()
 
     def get_weather_type(self, kmlTree, weatherDataType: WeatherDataType):
         """Parses the kml-File to the requested value and returns the items as array"""
